@@ -7,13 +7,13 @@
 | 項目 | 決定 |
 |------|------|
 | 相関の方向 | 符号付きで保持。`abs()` は取らず正負を記録。ランキングは絶対値で行う |
-| サンドボックス | `subprocess` + `resource` モジュールでプロセスレベル隔離 |
+| サンドボックス | `multiprocessing.Pool` による事前起動ワーカー + 制限付き `exec` |
 | ベースライン | PySR + 軽量統計ベースライン（RandomForest, 線形回帰） |
 | LLMモデル | ローカル8B (Ollama) をメイン。必要になった場合のみ Gemini API ($10/month上限) |
 | 探索戦略 | 完全自由生成（現状維持）。関数シグネチャのみ固定 |
 | 淘汰戦略 | 島モデル（Island Model） |
 | グラフ規模 | 段階的拡大: Phase 1は N=30〜100、Phase 2で N=30〜1000 |
-| 簡潔性スコア | ASTノード数 + SymPy簡約後の文字数を重み付け平均 |
+| 簡潔性スコア | ASTノード数（対数スケール）+ SymPy簡約後の文字数（対数スケール）を重み付け平均 |
 | Phase 1 成功基準 | Valセットでスピアマン相関 ≥ 0.85 |
 | 再現性 | 全ログ保存（LLM入出力・シード・評価結果をJSON） |
 | OODデータセット | Phase 1の結果を見て後で決定 |
@@ -31,7 +31,7 @@
 | Island 0 | 0.3 | 改良特化（既存式のrefine指示） | 局所最適の追求 |
 | Island 1 | 0.3 | 組合せ特化（2式を組み合わせる指示） | 既存知識の統合 |
 | Island 2 | 0.8 | 改良特化 | バランス型探索 |
-| Island 3 | 1.2 | 新規発想（全く新しいアプローチ指示） | 大胆な探索 |
+| Island 3 | 1.2 | 新規発想（全く新しいアプローチ指示）。Gemini APIフォールバック対象 | 大胆な探索 |
 
 ### 2.2 移住（Migration）
 
@@ -40,7 +40,14 @@
 - **方法**: 各島のトップ1候補を右隣の島に送出（1対1）
 - **移住時の処理**: 受け入れ島の最下位候補と置換（移住候補のスコアが上回る場合のみ）
 
-### 2.3 淘汰
+### 2.3 Gemini APIフォールバック
+
+- **条件**: Island 3（高温・新規発想島）が**3世代連続**で有効な候補（Train スコア > 0.3）を1つも生成できなかった場合
+- **動作**: 次の1世代のみ、Island 3のLLMバックエンドをローカル8BからGemini APIに切り替え
+- **目的**: ローカルモデルの能力限界で探索が停滞した際に、高品質な多様性を注入する
+- **コスト管理**: $10/month上限は変更しない。フォールバック発動は1実験あたり最大3回に制限
+
+### 2.4 淘汰
 
 - 各島で独立にknowledge_baseを管理
 - 各島で上位5〜10個を保持（島ごとの多様性は4島の差別化で確保）
@@ -49,7 +56,27 @@
 
 ## 3. データ分割
 
-### Phase 1 (N=30〜100)
+### 3.1 グラフ生成器
+
+以下の5種類を均等に生成する（初期提案書に記載のGeometric Graphを含む）:
+
+| 種類 | NetworkX関数 | パラメータ範囲 |
+|------|-------------|---------------|
+| Erdos-Renyi | `erdos_renyi_graph(N, p)` | p ∈ [0.05, 0.3] |
+| Barabasi-Albert | `barabasi_albert_graph(N, m)` | m ∈ [1, 4] |
+| Watts-Strogatz | `watts_strogatz_graph(N, k, p)` | k ∈ [4, 8], p ∈ [0.1, 0.5] |
+| Random Geometric | `random_geometric_graph(N, r)` | r ∈ [0.1, 0.4] |
+| Stochastic Block Model | `stochastic_block_model(sizes, probs)` | 3ブロック |
+
+### 3.2 Sanity Check セット（実世界グラフ）
+
+探索・選抜には使わないが、パイプラインの健全性検証として初期から組み込む:
+
+- `nx.karate_club_graph()` (34ノード, ソーシャルネットワーク)
+- `nx.les_miserables_graph()` (77ノード, 共起ネットワーク)
+- `nx.florentine_families_graph()` (15ノード, 歴史的ネットワーク)
+
+### 3.3 Phase 1 (N=30〜100)
 
 | セット | サイズ | 用途 |
 |--------|--------|------|
@@ -57,7 +84,7 @@
 | Validation | 200 | 世代選抜（知識ベース更新の判断） |
 | Test | 200 | 最終評価専用（選抜に一切使わない） |
 
-### Phase 2 (N=30〜1000)
+### 3.4 Phase 2 (N=30〜1000)
 
 - 発見された式のスケーリング挙動検証用に別途生成
 - Test セットを拡張（N=100〜1000の大規模グラフを追加）
@@ -74,12 +101,13 @@
 ### 4.2 簡潔性スコア
 
 ```
-simplicity_score = w1 * (1 / max(ast_node_count, 1)) + w2 * (1 / max(sympy_simplified_length, 1))
+simplicity_score = w1 * (1 / (1 + log2(max(ast_node_count, 1)))) + w2 * (1 / (1 + log2(max(sympy_simplified_length, 1))))
 ```
 
-- `ast_node_count`: Python ASTのノード数（コード複雑度）。下限1（空の式は評価対象外のため到達しないが安全策として）
-- `sympy_simplified_length`: SymPyで簡約化後の数式文字列長（数学的簡潔性）。下限1（同上）
-- 両項とも `[0, 1]` の範囲に収まるため、重み `w1=0.5, w2=0.5` で均等に寄与する
+- `ast_node_count`: Python ASTのノード数（コード複雑度）
+- `sympy_simplified_length`: SymPyで簡約化後の数式文字列長（数学的簡潔性）
+- 対数スケールを採用: `1/x` は小さな差を過大評価するが、`1/(1+log2(x))` は中程度の複雑さを許容しつつ指数的な複雑性増加を抑制する
+- 両項とも `(0, 1]` の範囲に収まるため、重み `w1=0.5, w2=0.5` で均等に寄与する
 - 重みはチューニング可能に設計。Phase 1終了時に分布を確認し必要に応じて調整
 
 ### 4.3 新規性
@@ -111,21 +139,34 @@ total_score = alpha * |spearman_corr| + beta * simplicity_score + gamma * novelt
 
 ## 5. サンドボックス設計
 
-### 5.1 プロセス隔離
+### 5.1 アーキテクチャ
+
+`multiprocessing.Pool` で事前にワーカープロセスを起動し、各ワーカー内で制限付き `exec` を実行する。`subprocess.run()` をグラフごとに呼ぶ方式は、プロセス起動オーバーヘッド（約50-100ms/回）により1世代あたり数分のボトルネックとなるため採用しない。
 
 ```
-subprocess.run() で各コード実行を別プロセスに分離
-├── __builtins__ = {} でビルトイン遮断
-├── ホワイトリスト: np, nx, math, abs, min, max, sum, len, sorted, range, enumerate
-├── resource.setrlimit() で制約:
+multiprocessing.Pool(initializer=worker_init)  # ワーカーを事前起動
+├── worker_init(): ワーカー内で resource.setrlimit() を設定
 │   ├── CPU時間: TIMEOUT_SEC (2秒)
 │   └── メモリ: 256MB
+├── exec(code, safe_globals) をワーカー内で実行
+│   ├── safe_globals = {"__builtins__": {}, ...ホワイトリスト}
+│   └── ホワイトリスト: np, nx, math, abs, min, max, sum, len, sorted, range, enumerate
+├── signal.alarm(TIMEOUT_SEC) で個別タイムアウト
 └── エラー時は None を返す（0.0 ではなく）
 ```
 
-### 5.2 禁止パターン
+### 5.2 禁止パターン（静的チェック）
 
-- `import`, `__import__`, `eval`, `exec`, `open`, `os`, `sys`, `subprocess` を文字列レベルで事前検出・拒否
+- `exec` 実行前に文字列レベルで以下を検出・拒否:
+  - `import`, `__import__`, `eval`, `exec`, `open`, `os`, `sys`, `subprocess`
+  - `__class__`, `__subclasses__`, `__globals__` （属性アクセスによるサンドボックス脱出防止）
+
+### 5.3 性能見積もり
+
+| 方式 | 1世代あたりのオーバーヘッド (200グラフ × 20候補) |
+|------|------------------------------------------------|
+| subprocess.run() per call | ~400秒（プロセス起動） |
+| **multiprocessing.Pool** | **~2秒（関数呼び出しのみ）** |
 
 ---
 
@@ -188,7 +229,7 @@ graph_invariant/
 │   ├── config.py          # 全設定値（データサイズ、世代数、温度等）
 │   ├── graph_generator.py # グラフ生成・データセット管理
 │   ├── generator.py       # LLM呼び出し・コード生成
-│   ├── sandbox.py         # subprocess隔離実行・安全性チェック
+│   ├── sandbox.py         # multiprocessing.Pool隔離実行・安全性チェック
 │   ├── evaluator.py       # 仮説評価（相関計算・簡潔性スコア）
 │   ├── knowledge_base.py  # 島モデル・淘汰・移住ロジック
 │   ├── logger.py          # JSONL ログ管理
@@ -216,7 +257,7 @@ graph_invariant/
 ## 10. 未決定事項（Phase 1完了後に決定）
 
 - OOD検証用の実世界データセット選定
-- Gemini API の導入タイミングと利用戦略
+- Gemini API フォールバックの効果検証（Phase 1で発動した場合、その寄与を分析）
 - Phase 2 のターゲット（algebraic_connectivity で確定か、他の候補も検討するか）
 - 論文の投稿先（Workshop or Main conference）
 

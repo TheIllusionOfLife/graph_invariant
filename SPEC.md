@@ -8,7 +8,7 @@
 |------|------|
 | 相関の方向 | 符号付きで保持。`abs()` は取らず正負を記録。ランキングは絶対値で行う |
 | サンドボックス | `subprocess` + `resource` モジュールでプロセスレベル隔離 |
-| ベースライン | PySRのみ（シンボリック回帰との直接比較） |
+| ベースライン | PySR + 軽量統計ベースライン（RandomForest, 線形回帰） |
 | LLMモデル | ローカル8B (Ollama) をメイン。必要になった場合のみ Gemini API ($10/month上限) |
 | 探索戦略 | 完全自由生成（現状維持）。関数シグネチャのみ固定 |
 | 淘汰戦略 | 島モデル（Island Model） |
@@ -36,8 +36,9 @@
 ### 2.2 移住（Migration）
 
 - **頻度**: 10世代ごと
-- **方法**: 各島のトップ1候補を全他島に共有（リング型トポロジ）
-- **移住時の処理**: 受け入れ島の最下位候補と置換（スコア比較後）
+- **トポロジ**: リング型（Island 0→1→2→3→0）。各島は隣接1島にのみ送出する
+- **方法**: 各島のトップ1候補を右隣の島に送出（1対1）
+- **移住時の処理**: 受け入れ島の最下位候補と置換（移住候補のスコアが上回る場合のみ）
 
 ### 2.3 淘汰
 
@@ -73,24 +74,37 @@
 ### 4.2 簡潔性スコア
 
 ```
-simplicity_score = w1 * (1 / ast_node_count) + w2 * (1 / sympy_simplified_length)
+simplicity_score = w1 * (1 / max(ast_node_count, 1)) + w2 * (1 / max(sympy_simplified_length, 1))
 ```
 
-- `ast_node_count`: Python ASTのノード数（コード複雑度）
-- `sympy_simplified_length`: SymPyで簡約化後の数式文字列長（数学的簡潔性）
-- 重み `w1=0.5, w2=0.5` を初期値とし、チューニング可能に設計
+- `ast_node_count`: Python ASTのノード数（コード複雑度）。下限1（空の式は評価対象外のため到達しないが安全策として）
+- `sympy_simplified_length`: SymPyで簡約化後の数式文字列長（数学的簡潔性）。下限1（同上）
+- 両項とも `[0, 1]` の範囲に収まるため、重み `w1=0.5, w2=0.5` で均等に寄与する
+- 重みはチューニング可能に設計。Phase 1終了時に分布を確認し必要に応じて調整
 
 ### 4.3 新規性
 
 - 発見された式と既存不変量（density, clustering_coefficient, degree_assortativity, transitivity）との相関行列を算出
-- 全既存指標との $|\rho| < 0.7$ を「新規」と判定
+- 各既存指標との相関について、ブートストラップ法（1000回リサンプリング）で95%信頼区間を算出
+- 全既存指標との相関の95%信頼区間上限が $|\rho| < 0.7$ を満たす場合に「新規」と判定
 
-### 4.4 総合スコア
+### 4.4 新規性ボーナス（novelty_bonus）
+
+```
+novelty_bonus = max(0, 1 - max_rho_known)
+```
+
+- `max_rho_known`: 全既存指標との $|\rho|$ の最大値
+- 範囲: `[0, 1]`。既存指標と全く無相関なら1.0、完全に既存指標と一致なら0.0
+- 例: 最も相関の高い既存指標との $|\rho|$ が0.4 → `novelty_bonus = 0.6`
+
+### 4.5 総合スコア
 
 ```
 total_score = alpha * |spearman_corr| + beta * simplicity_score + gamma * novelty_bonus
 ```
 
+- 全項が `[0, 1]` 範囲のため、重みが直感的に解釈可能
 - 初期値: `alpha=0.6, beta=0.2, gamma=0.2`
 
 ---
@@ -180,7 +194,8 @@ graph_invariant/
 │   ├── logger.py          # JSONL ログ管理
 │   └── main.py            # メインループ（進化ループ制御）
 ├── baselines/
-│   └── pysr_baseline.py   # PySRベースライン比較
+│   ├── pysr_baseline.py   # PySRベースライン比較（シンボリック回帰）
+│   └── stat_baselines.py  # 統計ベースライン（RandomForest, 線形回帰）
 └── tests/
     ├── test_graph_generator.py
     ├── test_sandbox.py
@@ -204,3 +219,5 @@ graph_invariant/
 - Gemini API の導入タイミングと利用戦略
 - Phase 2 のターゲット（algebraic_connectivity で確定か、他の候補も検討するか）
 - 論文の投稿先（Workshop or Main conference）
+
+> **注:** OODデータセットとPhase 2ターゲットが未確定のため、現時点ではエンドツーエンドの成功条件が閉じていない。Phase 1完了時に全未決定事項を確定し、本文書を改訂する。

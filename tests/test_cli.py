@@ -173,3 +173,24 @@ def test_run_phase1_resume_continues_from_saved_generation(monkeypatch, tmp_path
 
     gen3 = json.loads((experiment_dir / "gen_3.json").read_text(encoding="utf-8"))
     assert gen3["generation"] == 3
+
+
+def test_run_phase1_rejects_invalid_experiment_id(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=0,
+        experiment_id="../escape",
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4)],
+        val=[nx.path_graph(4)],
+        test=[nx.path_graph(4)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.cli.list_available_models", lambda _url: ["gpt-oss:20b"])
+
+    with pytest.raises(ValueError, match="experiment_id"):
+        run_phase1(cfg)

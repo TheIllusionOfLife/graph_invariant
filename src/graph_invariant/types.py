@@ -33,3 +33,6 @@ class CheckpointState:
     rng_state: dict[str, Any] | None = None
     best_val_score: float = 0.0
     no_improve_count: int = 0
+    island_stagnation: dict[int, int] = field(default_factory=dict)
+    island_prompt_mode: dict[int, str] = field(default_factory=dict)
+    island_constrained_generations: dict[int, int] = field(default_factory=dict)

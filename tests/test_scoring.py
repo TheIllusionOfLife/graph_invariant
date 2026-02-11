@@ -16,6 +16,22 @@ def test_compute_metrics_perfect_monotonic_signal():
     assert metrics.error_count == 0
 
 
+def test_compute_metrics_single_sample_is_safe():
+    metrics = compute_metrics([1.0], [2.0])
+    assert metrics.rho_spearman == 0.0
+    assert metrics.r_pearson == 0.0
+    assert metrics.valid_count == 1
+
+
+def test_compute_metrics_empty_input_is_safe():
+    metrics = compute_metrics([], [])
+    assert metrics.rho_spearman == 0.0
+    assert metrics.r_pearson == 0.0
+    assert metrics.rmse == 0.0
+    assert metrics.mae == 0.0
+    assert metrics.valid_count == 0
+
+
 def test_compute_simplicity_score_prefers_shorter_code():
     short_code = "def new_invariant(G):\n    return G.number_of_nodes()"
     long_code = (

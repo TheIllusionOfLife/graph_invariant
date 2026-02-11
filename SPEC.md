@@ -292,6 +292,20 @@ curl -fsSL https://install.julialang.org | sh
 # PySR初回実行時にJuliaパッケージが自動インストールされる（数分かかる）
 ```
 
+### 8.2 CLI実行コマンド
+
+```bash
+uv run python -m graph_invariant.cli phase1 --config <config.json>
+```
+
+runs Phase 1 using the given config
+
+```bash
+uv run python -m graph_invariant.cli report --artifacts <artifacts_dir>
+```
+
+renders a markdown report from the specified artifacts directory
+
 ---
 
 ## 9. Phase 1 ターゲットと成功基準

@@ -28,11 +28,22 @@ class Phase1Config:
     allow_remote_ollama: bool = False
     checkpoint_keep_last: int = 3
     experiment_id: str | None = None
+    enable_constrained_fallback: bool = True
+    stagnation_trigger_generations: int = 5
+    constrained_recovery_generations: int = 3
+    allow_late_constrained_recovery: bool = True
+    run_baselines: bool = False
+    persist_candidate_code_in_summary: bool = False
+    success_spearman_threshold: float = 0.85
 
     def __post_init__(self) -> None:
         self.island_temperatures = tuple(float(x) for x in self.island_temperatures)
         if len(self.island_temperatures) != 4:
             raise ValueError("island_temperatures must contain exactly 4 values")
+        if self.stagnation_trigger_generations < 1:
+            raise ValueError("stagnation_trigger_generations must be >= 1")
+        if self.constrained_recovery_generations < 1:
+            raise ValueError("constrained_recovery_generations must be >= 1")
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> "Phase1Config":

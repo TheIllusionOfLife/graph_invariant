@@ -1,3 +1,5 @@
+import pytest
+
 from graph_invariant.config import Phase1Config
 
 
@@ -10,6 +12,13 @@ def test_phase1_config_defaults_are_valid():
     assert cfg.population_size == 5
     assert cfg.migration_interval == 10
     assert cfg.model_name == "gpt-oss:20b"
+    assert cfg.enable_constrained_fallback is True
+    assert cfg.stagnation_trigger_generations == 5
+    assert cfg.constrained_recovery_generations == 3
+    assert cfg.allow_late_constrained_recovery is True
+    assert cfg.run_baselines is False
+    assert cfg.persist_candidate_code_in_summary is False
+    assert cfg.success_spearman_threshold == 0.85
 
 
 def test_phase1_config_from_dict_overrides_values():
@@ -22,3 +31,10 @@ def test_phase1_config_from_dict_overrides_values():
 def test_phase1_config_from_dict_converts_island_temperatures_to_tuple():
     cfg = Phase1Config.from_dict({"island_temperatures": [0.1, 0.2, 0.3, 0.4]})
     assert cfg.island_temperatures == (0.1, 0.2, 0.3, 0.4)
+
+
+def test_phase1_config_validates_constrained_fallback_thresholds():
+    with pytest.raises(ValueError, match="stagnation_trigger_generations"):
+        Phase1Config(stagnation_trigger_generations=0)
+    with pytest.raises(ValueError, match="constrained_recovery_generations"):
+        Phase1Config(constrained_recovery_generations=0)

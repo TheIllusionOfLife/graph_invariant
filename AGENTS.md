@@ -17,6 +17,8 @@ There is no build pipeline yet; contributors mainly edit and validate documents/
 - `git log --oneline -n 10` checks recent change patterns before committing.
 - `uv run pytest` runs tests once Python modules are introduced.
 - `uv run ruff check . && uv run ruff format .` lints and formats Python code when code exists.
+- `uv run python -m graph_invariant.cli phase1 --config <config.json>` runs Phase 1.
+- `uv run python -m graph_invariant.cli report --artifacts <artifacts_dir>` renders a markdown report.
 
 If you add runnable scripts, document the exact command in `SPEC.md` and this file in the same PR.
 

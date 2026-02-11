@@ -474,3 +474,54 @@ def test_run_phase1_success_threshold_is_configurable(monkeypatch, tmp_path):
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
     assert summary["success"] is False
+
+
+def test_random_forest_baseline_skips_when_inputs_contain_nan():
+    import numpy as np
+
+    from graph_invariant.baselines.stat_baselines import _run_random_forest_optional
+
+    x_train = np.asarray([[1.0], [np.nan]], dtype=float)
+    y_train = np.asarray([1.0, 2.0], dtype=float)
+    x_val = np.asarray([[1.0]], dtype=float)
+    y_val = np.asarray([1.0], dtype=float)
+    x_test = np.asarray([[1.0]], dtype=float)
+    y_test = np.asarray([1.0], dtype=float)
+
+    payload = _run_random_forest_optional(
+        x_train=x_train,
+        y_train=y_train,
+        x_val=x_val,
+        y_val=y_val,
+        x_test=x_test,
+        y_test=y_test,
+    )
+    assert payload == {"status": "skipped", "reason": "nan in features/targets"}
+
+
+def test_stat_baseline_feature_matrix_has_stable_empty_shape():
+    from graph_invariant.baselines.stat_baselines import _features_from_graphs
+
+    x = _features_from_graphs([])
+    assert x.shape == (0, 9)
+
+
+def test_linear_and_random_forest_skip_on_empty_training_data():
+    import numpy as np
+
+    from graph_invariant.baselines.stat_baselines import (
+        _run_linear_regression,
+        _run_random_forest_optional,
+    )
+
+    x_train = np.empty((0, 9), dtype=float)
+    y_train = np.empty((0,), dtype=float)
+    x_val = np.empty((0, 9), dtype=float)
+    y_val = np.empty((0,), dtype=float)
+    x_test = np.empty((0, 9), dtype=float)
+    y_test = np.empty((0,), dtype=float)
+
+    lr = _run_linear_regression(x_train, y_train, x_val, y_val, x_test, y_test)
+    rf = _run_random_forest_optional(x_train, y_train, x_val, y_val, x_test, y_test)
+    assert lr == {"status": "skipped", "reason": "empty training data"}
+    assert rf == {"status": "skipped", "reason": "empty training data"}

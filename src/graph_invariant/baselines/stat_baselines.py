@@ -20,6 +20,8 @@ _FEATURE_ORDER = (
 
 
 def _features_from_graphs(graphs: list[nx.Graph]) -> np.ndarray:
+    if not graphs:
+        return np.empty((0, len(_FEATURE_ORDER)), dtype=float)
     values = compute_known_invariant_values(graphs)
     cols = [values[name] for name in _FEATURE_ORDER]
     return np.asarray(list(zip(*cols, strict=True)), dtype=float)
@@ -44,6 +46,9 @@ def _run_linear_regression(
     x_test: np.ndarray,
     y_test: np.ndarray,
 ) -> dict[str, object]:
+    if x_train.shape[0] == 0 or y_train.size == 0:
+        return {"status": "skipped", "reason": "empty training data"}
+
     # Fit intercept without building augmented matrices on every predict call.
     x_mean = np.mean(x_train, axis=0)
     y_mean = float(np.mean(y_train))
@@ -70,6 +75,13 @@ def _run_random_forest_optional(
     x_test: np.ndarray,
     y_test: np.ndarray,
 ) -> dict[str, object]:
+    if x_train.shape[0] == 0 or y_train.size == 0:
+        return {"status": "skipped", "reason": "empty training data"}
+
+    arrays = (x_train, y_train, x_val, y_val, x_test, y_test)
+    if any(np.isnan(arr).any() for arr in arrays):
+        return {"status": "skipped", "reason": "nan in features/targets"}
+
     try:
         from sklearn.ensemble import RandomForestRegressor
     except ImportError:

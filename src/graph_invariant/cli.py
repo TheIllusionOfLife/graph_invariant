@@ -50,7 +50,14 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
     y_t, y_p = zip(*pairs, strict=True)
     metrics = compute_metrics(list(y_t), list(y_p))
     simplicity = compute_simplicity_score(candidate_code)
-    total = compute_total_score(abs(metrics.rho_spearman), simplicity, novelty_bonus=1.0)
+    total = compute_total_score(
+        abs(metrics.rho_spearman),
+        simplicity,
+        novelty_bonus=1.0,  # MVP placeholder until known-invariant correlation matrix is wired.
+        alpha=cfg.alpha,
+        beta=cfg.beta,
+        gamma=cfg.gamma,
+    )
     candidate = Candidate(
         id="seed_candidate",
         code=candidate_code,

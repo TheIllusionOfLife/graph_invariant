@@ -20,6 +20,13 @@ def test_validate_code_static_rejects_getattr_bypass():
     assert reason is not None
 
 
+def test_validate_code_static_rejects_non_whitelisted_call():
+    code = "def new_invariant(G):\n    return round(G.number_of_nodes())"
+    ok, reason = validate_code_static(code)
+    assert not ok
+    assert reason is not None
+
+
 def test_evaluate_candidate_on_graphs_times_out_and_returns_none():
     import networkx as nx
 

@@ -7,7 +7,7 @@ import pytest
 from graph_invariant.cli import run_phase1
 from graph_invariant.config import Phase1Config
 from graph_invariant.data import DatasetBundle
-from graph_invariant.types import EvaluationResult
+from graph_invariant.types import CheckpointState, EvaluationResult
 
 
 def _patch_sandbox_evaluator(monkeypatch, evaluate_fn):  # noqa: ANN001
@@ -590,6 +590,42 @@ def test_target_values_handles_disconnected_graph():
 
     assert _target_values([g], "average_shortest_path_length") == [0.0]
     assert _target_values([g], "diameter") == [0.0]
+
+
+def test_summarize_error_details_uses_detail_for_top_category():
+    from graph_invariant.cli import _summarize_error_details
+
+    details = [
+        {
+            "value": None,
+            "error_type": "timeout",
+            "error_detail": "candidate evaluation timed out",
+        },
+        {
+            "value": None,
+            "error_type": "runtime_exception",
+            "error_detail": "ZeroDivisionError: division by zero",
+        },
+        {
+            "value": None,
+            "error_type": "runtime_exception",
+            "error_detail": "TypeError: bad operand",
+        },
+    ]
+    summary = _summarize_error_details(details)
+    assert summary.startswith("runtime_exception:")
+    assert "timed out" not in summary
+
+
+def test_record_recent_failure_deduplicates_and_keeps_recency():
+    from graph_invariant.cli import _record_recent_failure
+
+    state = CheckpointState(experiment_id="exp", generation=0, islands={0: []})
+    _record_recent_failure(state, island_id=0, failure_text="a", max_items=3)
+    _record_recent_failure(state, island_id=0, failure_text="b", max_items=3)
+    _record_recent_failure(state, island_id=0, failure_text="a", max_items=3)
+    _record_recent_failure(state, island_id=0, failure_text="c", max_items=3)
+    assert state.island_recent_failures[0] == ["b", "a", "c"]
 
 
 def test_run_phase1_success_threshold_is_configurable(monkeypatch, tmp_path):

@@ -46,6 +46,14 @@ def test_evaluate_candidate_on_graphs_times_out_and_returns_none():
     assert result == [None]
 
 
+def test_evaluate_candidate_on_graphs_allows_float_and_int_builtins():
+    import networkx as nx
+
+    code = "def new_invariant(G):\n    return float(int(G.number_of_nodes()))"
+    result = evaluate_candidate_on_graphs(code, [nx.path_graph(5)], timeout_sec=0.2, memory_mb=128)
+    assert result == [5.0]
+
+
 def test_sandbox_evaluate_detailed_reports_static_invalid_without_pool():
     evaluator = SandboxEvaluator(timeout_sec=0.1, memory_mb=128)
     details = evaluator.evaluate_detailed("import os\n", [])

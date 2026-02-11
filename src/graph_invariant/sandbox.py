@@ -157,7 +157,7 @@ def _compiled_candidate_code(code: str) -> Any:
     return compiled
 
 
-def _run_candidate(code: str, graph: nx.Graph) -> float | None:
+def _safe_globals() -> dict[str, Any]:
     safe_builtins = {
         "abs": abs,
         "min": min,
@@ -167,32 +167,17 @@ def _run_candidate(code: str, graph: nx.Graph) -> float | None:
         "sorted": sorted,
         "range": range,
         "enumerate": enumerate,
+        "float": float,
+        "int": int,
     }
-    safe_globals: dict[str, Any] = {
+    return {
         "__builtins__": safe_builtins,
         "math": math,
     }
-    safe_locals: dict[str, Any] = {}
-    try:
-        if _TASK_TIMEOUT_SEC > 0 and hasattr(signal, "setitimer"):
-            signal.setitimer(signal.ITIMER_REAL, _TASK_TIMEOUT_SEC)
-        compiled_code = _compiled_candidate_code(code)
-        exec(compiled_code, safe_globals, safe_locals)
-        fn = safe_locals.get("new_invariant")
-        if fn is None:
-            return None
-        value = fn(graph)
-        if value is None:
-            return None
-        return float(value)
-    except CandidateTimeoutError:
-        return None
-    except Exception:
-        LOGGER.debug("candidate execution failed", exc_info=True)
-        return None
-    finally:
-        if hasattr(signal, "setitimer"):
-            signal.setitimer(signal.ITIMER_REAL, 0.0)
+
+
+def _run_candidate(code: str, graph: nx.Graph) -> float | None:
+    return _run_candidate_detailed(code, graph).get("value")
 
 
 def _run_candidate_with_queue_result(code: str, graph: nx.Graph) -> float | None:
@@ -200,20 +185,7 @@ def _run_candidate_with_queue_result(code: str, graph: nx.Graph) -> float | None
 
 
 def _run_candidate_detailed(code: str, graph: nx.Graph) -> dict[str, Any]:
-    safe_builtins = {
-        "abs": abs,
-        "min": min,
-        "max": max,
-        "sum": sum,
-        "len": len,
-        "sorted": sorted,
-        "range": range,
-        "enumerate": enumerate,
-    }
-    safe_globals: dict[str, Any] = {
-        "__builtins__": safe_builtins,
-        "math": math,
-    }
+    safe_globals = _safe_globals()
     safe_locals: dict[str, Any] = {}
     try:
         if _TASK_TIMEOUT_SEC > 0 and hasattr(signal, "setitimer"):

@@ -151,6 +151,8 @@ def _record_recent_failure(
     max_items: int,
 ) -> None:
     items = state.island_recent_failures.setdefault(island_id, [])
+    if failure_text in items:
+        items.remove(failure_text)
     items.append(failure_text)
     if len(items) > max_items:
         del items[:-max_items]
@@ -160,21 +162,20 @@ def _summarize_error_details(details: list[dict[str, Any]]) -> str:
     if not details:
         return "unknown"
     categories: dict[str, int] = {}
-    sample_detail: str | None = None
     for payload in details:
         error_type = payload.get("error_type")
         if not isinstance(error_type, str) or not error_type:
             continue
         categories[error_type] = categories.get(error_type, 0) + 1
-        if sample_detail is None:
-            raw_detail = payload.get("error_detail")
-            if raw_detail is not None:
-                sample_detail = str(raw_detail)
     if not categories:
         return "unknown"
     top_category = max(categories.items(), key=lambda item: item[1])[0]
-    if sample_detail:
-        return f"{top_category}: {sample_detail}"
+    for payload in details:
+        if payload.get("error_type") != top_category:
+            continue
+        raw_detail = payload.get("error_detail")
+        if raw_detail is not None:
+            return f"{top_category}: {raw_detail}"
     return top_category
 
 
@@ -349,10 +350,7 @@ def _run_one_generation(
                         log_path,
                     )
 
-                    repairable = rejection_reason in {
-                        "no_valid_train_predictions",
-                        "no_valid_val_predictions",
-                    }
+                    repairable = rejection_reason == "no_valid_train_predictions"
                     if repairable and attempt_idx + 1 < max_attempts:
                         self_correction_stats["attempted_repairs"] = (
                             int(self_correction_stats.get("attempted_repairs", 0)) + 1

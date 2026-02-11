@@ -10,6 +10,36 @@ from graph_invariant.data import DatasetBundle
 from graph_invariant.types import EvaluationResult
 
 
+def _patch_sandbox_evaluator(monkeypatch, evaluate_fn):  # noqa: ANN001
+    class FakeSandboxEvaluator:
+        def __init__(
+            self,
+            timeout_sec: float,
+            memory_mb: int,
+            max_workers: int | None = None,
+        ):
+            self.timeout_sec = timeout_sec
+            self.memory_mb = memory_mb
+            self.max_workers = max_workers
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            del exc_type, exc, tb
+            return False
+
+        def evaluate(self, code, graphs):  # noqa: ANN001
+            return evaluate_fn(
+                code,
+                graphs,
+                timeout_sec=self.timeout_sec,
+                memory_mb=self.memory_mb,
+            )
+
+    monkeypatch.setattr("graph_invariant.cli.SandboxEvaluator", FakeSandboxEvaluator)
+
+
 def test_run_phase1_uses_configured_score_weights(monkeypatch, tmp_path):
     import networkx as nx
 
@@ -46,8 +76,8 @@ def test_run_phase1_uses_configured_score_weights(monkeypatch, tmp_path):
         "graph_invariant.cli.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(G):\n    return 1.0",
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.evaluate_candidate_on_graphs",
+    _patch_sandbox_evaluator(
+        monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
     monkeypatch.setattr(
@@ -112,8 +142,8 @@ def test_run_phase1_rotates_generation_checkpoints(monkeypatch, tmp_path):
         "graph_invariant.cli.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(G):\n    return 1.0",
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.evaluate_candidate_on_graphs",
+    _patch_sandbox_evaluator(
+        monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
     monkeypatch.setattr(
@@ -158,8 +188,8 @@ def test_run_phase1_resume_continues_from_saved_generation(monkeypatch, tmp_path
         "graph_invariant.cli.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(G):\n    return 1.0",
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.evaluate_candidate_on_graphs",
+    _patch_sandbox_evaluator(
+        monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
     monkeypatch.setattr(
@@ -239,8 +269,8 @@ def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path
         "graph_invariant.cli.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.evaluate_candidate_on_graphs",
+    _patch_sandbox_evaluator(
+        monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
     monkeypatch.setattr(
@@ -258,8 +288,10 @@ def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path
     assert "test_metrics" in payload
     assert "val_metrics" in payload
     assert "success" in payload
-    assert payload["schema_version"] == 1
+    assert payload["schema_version"] == 2
     assert "best_candidate_code" not in payload
+    assert payload["model_name"] == "gpt-oss:20b"
+    assert payload["config"]["num_train_graphs"] == 2
     assert (
         payload["best_candidate_code_sha256"]
         == hashlib.sha256(expected_code.encode("utf-8")).hexdigest()
@@ -299,8 +331,8 @@ def test_run_phase1_activates_constrained_prompt_after_stagnation(monkeypatch, t
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr("graph_invariant.cli.generate_candidate_code", fake_generate)
-    monkeypatch.setattr(
-        "graph_invariant.cli.evaluate_candidate_on_graphs",
+    _patch_sandbox_evaluator(
+        monkeypatch,
         lambda _code, graphs, **_kw: [None for _ in graphs],
     )
 
@@ -359,6 +391,34 @@ def test_main_report_command_writes_markdown(monkeypatch, tmp_path, capsys):
     assert cli.main() == 0
     assert "Report written to" in capsys.readouterr().out
     assert (artifacts_dir / "report.md").exists()
+
+
+def test_main_report_command_handles_schema_v2_summary(monkeypatch, tmp_path):
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    (artifacts_dir / "phase1_summary.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "success": True,
+                "best_candidate_id": "c1",
+                "stop_reason": "early_stop",
+                "val_metrics": {"spearman": 0.9},
+                "test_metrics": {"spearman": 0.85},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        ["graph_invariant", "report", "--artifacts", str(artifacts_dir)],
+    )
+    from graph_invariant import cli
+
+    assert cli.main() == 0
+    report = (artifacts_dir / "report.md").read_text(encoding="utf-8")
+    assert "Validation Spearman: 0.9" in report
+    assert "Test Spearman: 0.85" in report
 
 
 def test_main_report_command_tolerates_malformed_json(monkeypatch, tmp_path):
@@ -460,8 +520,8 @@ def test_run_phase1_success_threshold_is_configurable(monkeypatch, tmp_path):
         "graph_invariant.cli.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.evaluate_candidate_on_graphs",
+    _patch_sandbox_evaluator(
+        monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
     monkeypatch.setattr(
@@ -474,6 +534,44 @@ def test_run_phase1_success_threshold_is_configurable(monkeypatch, tmp_path):
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
     assert summary["success"] is False
+
+
+def test_run_phase1_with_zero_generations_does_not_initialize_sandbox_pool(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=0,
+        run_baselines=False,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4)],
+        val=[nx.path_graph(4)],
+        test=[nx.path_graph(4)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.sandbox.mp.get_context",
+        lambda: (_ for _ in ()).throw(AssertionError("Pool should not initialize")),
+    )
+
+    assert run_phase1(cfg) == 0
+
+
+def test_dataset_fingerprint_depends_on_graph_counts():
+    from graph_invariant.cli import _dataset_fingerprint
+
+    cfg_a = Phase1Config(num_train_graphs=1, num_val_graphs=2, num_test_graphs=3)
+    cfg_b = Phase1Config(num_train_graphs=2, num_val_graphs=2, num_test_graphs=3)
+
+    fp_a = _dataset_fingerprint(cfg_a, [1.0], [2.0], [3.0])
+    fp_b = _dataset_fingerprint(cfg_b, [1.0], [2.0], [3.0])
+    assert fp_a != fp_b
 
 
 def test_random_forest_baseline_skips_when_inputs_contain_nan():

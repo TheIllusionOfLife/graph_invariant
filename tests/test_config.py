@@ -38,3 +38,36 @@ def test_phase1_config_validates_constrained_fallback_thresholds():
         Phase1Config(stagnation_trigger_generations=0)
     with pytest.raises(ValueError, match="constrained_recovery_generations"):
         Phase1Config(constrained_recovery_generations=0)
+
+
+def test_phase1_config_validates_success_threshold_range():
+    with pytest.raises(ValueError, match="success_spearman_threshold"):
+        Phase1Config(success_spearman_threshold=-0.1)
+    with pytest.raises(ValueError, match="success_spearman_threshold"):
+        Phase1Config(success_spearman_threshold=1.1)
+
+
+def test_phase1_config_validates_score_weight_range_and_sum():
+    with pytest.raises(ValueError, match="alpha"):
+        Phase1Config(alpha=-0.1)
+    with pytest.raises(ValueError, match="sum"):
+        Phase1Config(alpha=0.0, beta=0.0, gamma=0.0)
+
+
+def test_phase1_config_normalizes_non_unit_score_weights():
+    with pytest.warns(UserWarning, match="normalizing weights"):
+        cfg = Phase1Config(alpha=0.7, beta=0.2, gamma=0.2)
+    assert cfg.alpha == pytest.approx(0.6363636, rel=1e-6)
+    assert cfg.beta == pytest.approx(0.1818181, rel=1e-6)
+    assert cfg.gamma == pytest.approx(0.1818181, rel=1e-6)
+
+
+def test_phase1_config_validates_sandbox_and_pysr_budget_fields():
+    with pytest.raises(ValueError, match="sandbox_max_workers"):
+        Phase1Config(sandbox_max_workers=0)
+    with pytest.raises(ValueError, match="pysr_niterations"):
+        Phase1Config(pysr_niterations=0)
+    with pytest.raises(ValueError, match="pysr_populations"):
+        Phase1Config(pysr_populations=0)
+    with pytest.raises(ValueError, match="pysr_timeout_in_seconds"):
+        Phase1Config(pysr_timeout_in_seconds=0.0)

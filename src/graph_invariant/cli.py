@@ -21,7 +21,7 @@ from .logging_io import (
     save_checkpoint,
     write_json,
 )
-from .sandbox import evaluate_candidate_on_graphs
+from .sandbox import SandboxEvaluator
 from .scoring import (
     compute_metrics,
     compute_novelty_bonus,
@@ -190,6 +190,7 @@ def _update_prompt_mode_after_generation(
 def _run_one_generation(
     cfg: Phase1Config,
     state: CheckpointState,
+    evaluator: SandboxEvaluator,
     datasets_train: list[nx.Graph],
     datasets_val: list[nx.Graph],
     y_true_train: list[float],
@@ -211,9 +212,7 @@ def _run_one_generation(
                 url=cfg.ollama_url,
                 allow_remote=cfg.allow_remote_ollama,
             )
-            y_pred_train_raw = evaluate_candidate_on_graphs(
-                code, datasets_train, timeout_sec=cfg.timeout_sec, memory_mb=cfg.memory_mb
-            )
+            y_pred_train_raw = evaluator.evaluate(code, datasets_train)
             train_pairs = [
                 (idx, yt, yp)
                 for idx, (yt, yp) in enumerate(zip(y_true_train, y_pred_train_raw, strict=True))
@@ -252,9 +251,7 @@ def _run_one_generation(
                 continue
 
             had_valid_train_candidate = True
-            y_pred_val_raw = evaluate_candidate_on_graphs(
-                code, datasets_val, timeout_sec=cfg.timeout_sec, memory_mb=cfg.memory_mb
-            )
+            y_pred_val_raw = evaluator.evaluate(code, datasets_val)
             val_pairs = [
                 (idx, yt, yp)
                 for idx, (yt, yp) in enumerate(zip(y_true_val, y_pred_val_raw, strict=True))
@@ -343,14 +340,10 @@ def _evaluate_split(
     graphs: list[nx.Graph],
     y_true: list[float],
     cfg: Phase1Config,
+    evaluator: SandboxEvaluator,
     known_invariants: dict[str, list[float]] | None = None,
 ) -> dict[str, float | int | None]:
-    y_pred_raw = evaluate_candidate_on_graphs(
-        code,
-        graphs,
-        timeout_sec=cfg.timeout_sec,
-        memory_mb=cfg.memory_mb,
-    )
+    y_pred_raw = evaluator.evaluate(code, graphs)
     valid_pairs = [
         (idx, yt, yp)
         for idx, (yt, yp) in enumerate(zip(y_true, y_pred_raw, strict=True))
@@ -392,6 +385,10 @@ def _dataset_fingerprint(
     payload = {
         "seed": cfg.seed,
         "target_name": cfg.target_name,
+        "model_name": cfg.model_name,
+        "num_train_graphs": cfg.num_train_graphs,
+        "num_val_graphs": cfg.num_val_graphs,
+        "num_test_graphs": cfg.num_test_graphs,
         "train": y_train,
         "val": y_val,
         "test": y_test,
@@ -403,6 +400,7 @@ def _dataset_fingerprint(
 def _write_phase1_summary(
     cfg: Phase1Config,
     state: CheckpointState,
+    evaluator: SandboxEvaluator,
     artifacts_dir: Path,
     stop_reason: str,
     datasets_train: list[nx.Graph],
@@ -428,19 +426,46 @@ def _write_phase1_summary(
     known_val = compute_known_invariant_values(datasets_val)
     known_test = compute_known_invariant_values(datasets_test)
     y_sanity = _target_values(datasets_sanity, cfg.target_name)
-    val_metrics = _evaluate_split(best.code, datasets_val, y_true_val, cfg, known_val)
-    test_metrics = _evaluate_split(best.code, datasets_test, y_true_test, cfg, known_test)
-    train_metrics = _evaluate_split(best.code, datasets_train, y_true_train, cfg)
-    sanity_metrics = _evaluate_split(best.code, datasets_sanity, y_sanity, cfg)
+    val_metrics = _evaluate_split(best.code, datasets_val, y_true_val, cfg, evaluator, known_val)
+    test_metrics = _evaluate_split(
+        best.code, datasets_test, y_true_test, cfg, evaluator, known_test
+    )
+    train_metrics = _evaluate_split(best.code, datasets_train, y_true_train, cfg, evaluator)
+    sanity_metrics = _evaluate_split(best.code, datasets_sanity, y_sanity, cfg, evaluator)
 
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
         "experiment_id": state.experiment_id,
+        "model_name": cfg.model_name,
         "best_candidate_id": best.id,
         "best_candidate_code_sha256": sha256(best.code.encode("utf-8")).hexdigest(),
         "best_val_score": state.best_val_score,
         "stop_reason": stop_reason,
         "success": abs(float(val_metrics["spearman"])) >= cfg.success_spearman_threshold,
+        "config": {
+            "seed": cfg.seed,
+            "target_name": cfg.target_name,
+            "num_train_graphs": cfg.num_train_graphs,
+            "num_val_graphs": cfg.num_val_graphs,
+            "num_test_graphs": cfg.num_test_graphs,
+            "sandbox_max_workers": cfg.sandbox_max_workers,
+            "max_generations": cfg.max_generations,
+            "population_size": cfg.population_size,
+            "migration_interval": cfg.migration_interval,
+            "train_score_threshold": cfg.train_score_threshold,
+            "early_stop_patience": cfg.early_stop_patience,
+            "success_spearman_threshold": cfg.success_spearman_threshold,
+            "pysr_niterations": cfg.pysr_niterations,
+            "pysr_populations": cfg.pysr_populations,
+            "pysr_timeout_in_seconds": cfg.pysr_timeout_in_seconds,
+            "alpha": cfg.alpha,
+            "beta": cfg.beta,
+            "gamma": cfg.gamma,
+        },
+        "final_generation": state.generation,
+        "island_candidate_counts": {
+            str(island_id): len(candidates) for island_id, candidates in state.islands.items()
+        },
         "train_metrics": train_metrics,
         "val_metrics": val_metrics,
         "test_metrics": test_metrics,
@@ -480,6 +505,9 @@ def _write_baseline_summary(
         y_train=y_true_train,
         y_val=y_true_val,
         y_test=y_true_test,
+        niterations=cfg.pysr_niterations,
+        populations=cfg.pysr_populations,
+        timeout_in_seconds=cfg.pysr_timeout_in_seconds,
     )
     write_json(
         {
@@ -548,59 +576,66 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
     )
 
     stop_reason = "max_generations_reached"
-    for _ in range(state.generation, cfg.max_generations):
-        _run_one_generation(
+    with SandboxEvaluator(
+        timeout_sec=cfg.timeout_sec,
+        memory_mb=cfg.memory_mb,
+        max_workers=cfg.sandbox_max_workers,
+    ) as evaluator:
+        for _ in range(state.generation, cfg.max_generations):
+            _run_one_generation(
+                cfg=cfg,
+                state=state,
+                evaluator=evaluator,
+                datasets_train=datasets.train,
+                datasets_val=datasets.val,
+                y_true_train=y_true_train,
+                y_true_val=y_true_val,
+                known_invariants_val=known_invariants_val,
+                rng=rng,
+                log_path=log_path,
+            )
+            current_best = _global_best_score(state)
+            improved = current_best > state.best_val_score + 1e-12
+            if improved:
+                state.best_val_score = current_best
+                state.no_improve_count = 0
+            else:
+                state.no_improve_count += 1
+
+            state.generation += 1
+            state.rng_state = rng.bit_generator.state
+            checkpoint_path = checkpoint_dir / f"gen_{state.generation}.json"
+            save_checkpoint(state, checkpoint_path)
+            rotate_generation_checkpoints(checkpoint_dir, cfg.checkpoint_keep_last)
+            append_jsonl(
+                "generation_summary",
+                {
+                    "experiment_id": experiment_id,
+                    "generation": state.generation,
+                    "model_name": cfg.model_name,
+                    "best_val_score": state.best_val_score,
+                    "no_improve_count": state.no_improve_count,
+                },
+                log_path,
+            )
+            if state.no_improve_count >= cfg.early_stop_patience:
+                stop_reason = "early_stop"
+                break
+
+        _write_phase1_summary(
             cfg=cfg,
             state=state,
+            evaluator=evaluator,
+            artifacts_dir=artifacts_dir,
+            stop_reason=stop_reason,
             datasets_train=datasets.train,
             datasets_val=datasets.val,
+            datasets_test=datasets.test,
+            datasets_sanity=datasets.sanity,
             y_true_train=y_true_train,
             y_true_val=y_true_val,
-            known_invariants_val=known_invariants_val,
-            rng=rng,
-            log_path=log_path,
+            y_true_test=y_true_test,
         )
-        current_best = _global_best_score(state)
-        improved = current_best > state.best_val_score + 1e-12
-        if improved:
-            state.best_val_score = current_best
-            state.no_improve_count = 0
-        else:
-            state.no_improve_count += 1
-
-        state.generation += 1
-        state.rng_state = rng.bit_generator.state
-        checkpoint_path = checkpoint_dir / f"gen_{state.generation}.json"
-        save_checkpoint(state, checkpoint_path)
-        rotate_generation_checkpoints(checkpoint_dir, cfg.checkpoint_keep_last)
-        append_jsonl(
-            "generation_summary",
-            {
-                "experiment_id": experiment_id,
-                "generation": state.generation,
-                "model_name": cfg.model_name,
-                "best_val_score": state.best_val_score,
-                "no_improve_count": state.no_improve_count,
-            },
-            log_path,
-        )
-        if state.no_improve_count >= cfg.early_stop_patience:
-            stop_reason = "early_stop"
-            break
-
-    _write_phase1_summary(
-        cfg=cfg,
-        state=state,
-        artifacts_dir=artifacts_dir,
-        stop_reason=stop_reason,
-        datasets_train=datasets.train,
-        datasets_val=datasets.val,
-        datasets_test=datasets.test,
-        datasets_sanity=datasets.sanity,
-        y_true_train=y_true_train,
-        y_true_val=y_true_val,
-        y_true_test=y_true_test,
-    )
     _write_baseline_summary(
         cfg=cfg,
         artifacts_dir=artifacts_dir,

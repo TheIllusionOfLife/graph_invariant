@@ -18,6 +18,8 @@ uv run --group dev ruff check .
 uv run --group dev ruff format --check .
 ```
 
+These commands mirror the `Python CI` GitHub Actions workflow.
+
 3. Run a small Phase 1 execution:
 
 ```bash

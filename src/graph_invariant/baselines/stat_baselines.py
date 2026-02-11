@@ -3,28 +3,15 @@ from __future__ import annotations
 import networkx as nx
 import numpy as np
 
-from ..known_invariants import compute_known_invariant_values
 from ..scoring import compute_metrics
+from .features import FEATURE_ORDER, features_from_graphs
 
-_FEATURE_ORDER = (
-    "density",
-    "clustering_coefficient",
-    "degree_assortativity",
-    "transitivity",
-    "average_degree",
-    "max_degree",
-    "spectral_radius",
-    "diameter",
-    "algebraic_connectivity",
-)
+# Backwards-compatible alias retained for existing tests and imports.
+_FEATURE_ORDER = FEATURE_ORDER
 
 
 def _features_from_graphs(graphs: list[nx.Graph]) -> np.ndarray:
-    if not graphs:
-        return np.empty((0, len(_FEATURE_ORDER)), dtype=float)
-    values = compute_known_invariant_values(graphs)
-    cols = [values[name] for name in _FEATURE_ORDER]
-    return np.asarray(list(zip(*cols, strict=True)), dtype=float)
+    return features_from_graphs(graphs)
 
 
 def _metrics_dict(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float | int]:

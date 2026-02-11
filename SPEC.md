@@ -246,7 +246,7 @@ multiprocessing.Pool(initializer=worker_init)  # ワーカーを事前起動
 - **保存タイミング**: 各世代の評価完了後
 - **保存内容**: 各島のknowledge_base（候補リスト・スコア）、現在の世代番号、早期停止カウンタ、乱数状態
 - **保存先**: `checkpoints/{experiment_id}/gen_{N}.json`
-- **レジューム**: `main.py --resume checkpoints/{experiment_id}/gen_{N}.json` で指定世代から再開
+- **レジューム**: `uv run python -m graph_invariant.cli phase1 --config <config.json> --resume checkpoints/{experiment_id}/gen_{N}.json` で指定世代から再開
 - **ローテーション**: 直近3世代分のチェックポイントを保持し、古いものは自動削除
 
 ---
@@ -260,24 +260,28 @@ graph_invariant/
 ├── Research_Plan_Graph_Invariant_Discovery.md
 ├── pyproject.toml          # uv管理。PySR依存のためJuliaランタイムが必要（setup手順は下記参照）
 ├── src/
-│   ├── __init__.py
-│   ├── config.py          # 全設定値（データサイズ、世代数、温度等）
-│   ├── graph_generator.py # グラフ生成・データセット管理
-│   ├── generator.py       # LLM呼び出し・コード生成
-│   ├── sandbox.py         # multiprocessing.Pool隔離実行・安全性チェック
-│   ├── evaluator.py       # 仮説評価（相関計算・簡潔性スコア）
-│   ├── knowledge_base.py  # 島モデル・淘汰・移住ロジック
-│   ├── logger.py          # JSONL ログ管理
-│   ├── checkpoint.py      # チェックポイント保存・レジューム・ローテーション
-│   └── main.py            # メインループ（進化ループ制御、--resume対応）
-├── baselines/
-│   ├── pysr_baseline.py   # PySRベースライン比較（シンボリック回帰）
-│   └── stat_baselines.py  # 統計ベースライン（RandomForest, 線形回帰）
+│   └── graph_invariant/
+│       ├── __init__.py
+│       ├── cli.py                 # フェーズ実行/レポート出力CLI
+│       ├── config.py              # 全設定値（データサイズ、世代数、温度等）
+│       ├── data.py                # グラフ生成・データセット管理
+│       ├── llm_ollama.py          # Ollama呼び出し・コード抽出
+│       ├── sandbox.py             # multiprocessing.Pool隔離実行・安全性チェック
+│       ├── scoring.py             # 相関/簡潔性/新規性/総合スコア
+│       ├── known_invariants.py    # 既知指標計算（新規性評価用）
+│       ├── evolution.py           # 島モデル移住ロジック
+│       ├── logging_io.py          # JSONL/チェックポイントI/O
+│       ├── types.py               # 共通データ型
+│       └── baselines/
+│           ├── pysr_baseline.py   # PySRベースライン比較（シンボリック回帰）
+│           └── stat_baselines.py  # 統計ベースライン（RandomForest, 線形回帰）
 └── tests/
-    ├── test_graph_generator.py
+    ├── test_cli.py
+    ├── test_config.py
+    ├── test_data.py
     ├── test_sandbox.py
-    ├── test_evaluator.py
-    └── test_knowledge_base.py
+    ├── test_scoring.py
+    └── ...
 ```
 
 ### 8.1 環境セットアップ

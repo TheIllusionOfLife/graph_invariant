@@ -28,6 +28,24 @@ uv run python -m graph_invariant.cli phase1 --config /tmp/phase1_config.json
 ```
 
 Artifacts are written under `artifacts*/logs` and `artifacts*/checkpoints`.
+Additional summary artifacts:
+- `artifacts*/phase1_summary.json`
+- `artifacts*/baselines_summary.json` (only when `run_baselines=true`)
+
+4. Generate a markdown report from artifacts:
+
+```bash
+uv run python -m graph_invariant.cli report --artifacts artifacts_smoke
+```
+
+This writes `artifacts_smoke/report.md`.
+
+## Optional Baseline Dependencies
+
+`run_baselines` is disabled by default. If enabled:
+- Linear regression baseline uses NumPy only.
+- Random forest baseline requires `scikit-learn`.
+- PySR baseline requires `pysr` and a Julia runtime.
 
 ## Security Note
 

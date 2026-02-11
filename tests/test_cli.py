@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 
@@ -209,3 +210,187 @@ def test_run_phase1_rejects_invalid_experiment_id(monkeypatch, tmp_path):
 
     with pytest.raises(ValueError, match="experiment_id"):
         run_phase1(cfg)
+
+
+def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.evaluate_candidate_on_graphs",
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+
+    assert run_phase1(cfg) == 0
+
+    summary_path = Path(cfg.artifacts_dir) / "phase1_summary.json"
+    payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    expected_code = "def new_invariant(G):\n    return float(G.number_of_nodes())"
+    assert "test_metrics" in payload
+    assert "val_metrics" in payload
+    assert "success" in payload
+    assert payload["schema_version"] == 1
+    assert "best_candidate_code" not in payload
+    assert (
+        payload["best_candidate_code_sha256"]
+        == hashlib.sha256(expected_code.encode("utf-8")).hexdigest()
+    )
+    assert payload["stop_reason"] in {"max_generations_reached", "early_stop"}
+
+
+def test_run_phase1_activates_constrained_prompt_after_stagnation(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=3,
+        population_size=1,
+        num_train_graphs=1,
+        num_val_graphs=1,
+        num_test_graphs=1,
+        stagnation_trigger_generations=2,
+        early_stop_patience=10,
+        run_baselines=False,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4)],
+        val=[nx.path_graph(4)],
+        test=[nx.path_graph(4)],
+        sanity=[nx.path_graph(4)],
+    )
+    prompts: list[str] = []
+
+    def fake_generate(prompt: str, *_args, **_kwargs) -> str:
+        prompts.append(prompt)
+        return "def new_invariant(G):\n    return 1.0"
+
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_candidate_code", fake_generate)
+    monkeypatch.setattr(
+        "graph_invariant.cli.evaluate_candidate_on_graphs",
+        lambda _code, graphs, **_kw: [None for _ in graphs],
+    )
+
+    assert run_phase1(cfg) == 0
+    assert any("Use only these operators" in prompt for prompt in prompts)
+
+
+def test_run_phase1_writes_baseline_summary(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=0,
+        num_train_graphs=1,
+        num_val_graphs=1,
+        num_test_graphs=1,
+        run_baselines=True,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4)],
+        val=[nx.path_graph(4)],
+        test=[nx.path_graph(4)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+
+    assert run_phase1(cfg) == 0
+    summary_path = Path(cfg.artifacts_dir) / "baselines_summary.json"
+    payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    assert payload["schema_version"] == 1
+    assert "stat_baselines" in payload
+    assert "pysr_baseline" in payload
+
+
+def test_main_report_command_writes_markdown(monkeypatch, tmp_path):
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    (artifacts_dir / "phase1_summary.json").write_text(
+        json.dumps({"success": True, "best_candidate_id": "c1"}),
+        encoding="utf-8",
+    )
+    (artifacts_dir / "baselines_summary.json").write_text(
+        json.dumps({"stat_baselines": {"linear_regression": {"status": "ok"}}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        ["graph_invariant", "report", "--artifacts", str(artifacts_dir)],
+    )
+    from graph_invariant import cli
+
+    assert cli.main() == 0
+    assert (artifacts_dir / "report.md").exists()
+
+
+def test_main_report_command_tolerates_malformed_json(monkeypatch, tmp_path):
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    (artifacts_dir / "phase1_summary.json").write_text("{bad json", encoding="utf-8")
+    monkeypatch.setattr(
+        "sys.argv",
+        ["graph_invariant", "report", "--artifacts", str(artifacts_dir)],
+    )
+    from graph_invariant import cli
+
+    assert cli.main() == 0
+    report = (artifacts_dir / "report.md").read_text(encoding="utf-8")
+    assert "Phase 1 Report" in report
+
+
+def test_constrained_mode_respects_recovery_window():
+    from graph_invariant.cli import _update_prompt_mode_after_generation
+    from graph_invariant.types import CheckpointState
+
+    cfg = Phase1Config(
+        constrained_recovery_generations=2,
+        run_baselines=False,
+    )
+    state = CheckpointState(
+        experiment_id="exp",
+        generation=0,
+        islands={0: []},
+        island_prompt_mode={0: "constrained"},
+        island_constrained_generations={0: 3},
+        island_stagnation={0: 3},
+    )
+
+    _update_prompt_mode_after_generation(cfg, state, island_id=0, had_valid_train_candidate=True)
+    assert state.island_prompt_mode[0] == "constrained"

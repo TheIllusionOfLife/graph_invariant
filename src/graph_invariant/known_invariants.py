@@ -33,11 +33,11 @@ def compute_known_invariant_values(graphs: list[nx.Graph]) -> dict[str, list[flo
         spectral_radius = float(np.max(np.abs(eigvals))) if eigvals.size else 0.0
         try:
             diameter = float(nx.diameter(graph))
-        except Exception:
+        except nx.NetworkXError:
             diameter = 0.0
         try:
             algebraic = float(nx.algebraic_connectivity(graph))
-        except Exception:
+        except nx.NetworkXError:
             algebraic = 0.0
 
         out["density"].append(_safe_float(nx.density(graph)))

@@ -25,6 +25,7 @@ class Phase1Config:
     artifacts_dir: str = "artifacts"
     model_name: str = "gpt-oss:20b"
     ollama_url: str = "http://localhost:11434/api/generate"
+    allow_remote_ollama: bool = False
     checkpoint_keep_last: int = 3
     experiment_id: str | None = None
 

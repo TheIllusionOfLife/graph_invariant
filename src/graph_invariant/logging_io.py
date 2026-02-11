@@ -56,6 +56,6 @@ def rotate_generation_checkpoints(checkpoint_dir: str | Path, keep_last: int) ->
     root = Path(checkpoint_dir)
     if keep_last <= 0 or not root.exists():
         return
-    checkpoints = sorted(root.glob("gen_*.json"))
+    checkpoints = sorted(root.glob("gen_*.json"), key=lambda p: int(p.stem.split("_")[-1]))
     for old_path in checkpoints[:-keep_last]:
         old_path.unlink(missing_ok=True)

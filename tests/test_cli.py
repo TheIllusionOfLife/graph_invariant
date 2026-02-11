@@ -37,7 +37,10 @@ def test_run_phase1_uses_configured_score_weights(monkeypatch, tmp_path):
         return 0.5
 
     monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
-    monkeypatch.setattr("graph_invariant.cli.list_available_models", lambda _url: ["gpt-oss:20b"])
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
     monkeypatch.setattr(
         "graph_invariant.cli.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(G):\n    return 1.0",
@@ -71,7 +74,10 @@ def test_run_phase1_fails_fast_when_ollama_model_is_missing(monkeypatch, tmp_pat
         sanity=[nx.path_graph(4)],
     )
     monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
-    monkeypatch.setattr("graph_invariant.cli.list_available_models", lambda _url: ["gemma3:4b"])
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gemma3:4b"],
+    )
 
     with pytest.raises(RuntimeError, match="gpt-oss:20b"):
         run_phase1(cfg)
@@ -97,7 +103,10 @@ def test_run_phase1_rotates_generation_checkpoints(monkeypatch, tmp_path):
         sanity=[nx.path_graph(4)],
     )
     monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
-    monkeypatch.setattr("graph_invariant.cli.list_available_models", lambda _url: ["gpt-oss:20b"])
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
     monkeypatch.setattr(
         "graph_invariant.cli.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(G):\n    return 1.0",
@@ -140,7 +149,10 @@ def test_run_phase1_resume_continues_from_saved_generation(monkeypatch, tmp_path
         sanity=[nx.path_graph(4)],
     )
     monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
-    monkeypatch.setattr("graph_invariant.cli.list_available_models", lambda _url: ["gpt-oss:20b"])
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
     monkeypatch.setattr(
         "graph_invariant.cli.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(G):\n    return 1.0",
@@ -190,7 +202,10 @@ def test_run_phase1_rejects_invalid_experiment_id(monkeypatch, tmp_path):
         sanity=[nx.path_graph(4)],
     )
     monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
-    monkeypatch.setattr("graph_invariant.cli.list_available_models", lambda _url: ["gpt-oss:20b"])
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
 
     with pytest.raises(ValueError, match="experiment_id"):
         run_phase1(cfg)

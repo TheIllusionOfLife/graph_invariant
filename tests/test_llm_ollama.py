@@ -32,10 +32,11 @@ def test_generate_candidate_code_parses_response(monkeypatch):
         def json(self) -> dict[str, str]:
             return {"response": "```python\ndef new_invariant(G):\n    return 7\n```"}
 
-    def fake_post(url, json, timeout):  # noqa: ANN001
+    def fake_post(url, json, timeout, allow_redirects):  # noqa: ANN001
         assert "model" in json
         assert timeout == 60
         assert isinstance(url, str)
+        assert allow_redirects is False
         return DummyResponse()
 
     monkeypatch.setattr("graph_invariant.llm_ollama.requests.post", fake_post)

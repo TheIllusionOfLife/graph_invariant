@@ -1,4 +1,5 @@
 import argparse
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -60,7 +61,7 @@ def _restore_rng(state: CheckpointState) -> np.random.Generator:
 
 
 def _require_model_available(cfg: Phase1Config) -> None:
-    available_models = list_available_models(cfg.ollama_url)
+    available_models = list_available_models(cfg.ollama_url, allow_remote=cfg.allow_remote_ollama)
     if cfg.model_name not in available_models:
         if available_models:
             available = ", ".join(available_models)
@@ -87,6 +88,23 @@ def _candidate_prompt(state: CheckpointState, island_id: int, target_name: str) 
     )
 
 
+def _validate_experiment_id(value: str) -> str:
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", value):
+        raise ValueError("experiment_id must match [A-Za-z0-9._-]+")
+    return value
+
+
+def _checkpoint_dir_for_experiment(artifacts_dir: Path, experiment_id: str) -> Path:
+    safe_experiment_id = _validate_experiment_id(experiment_id)
+    root = artifacts_dir / "checkpoints"
+    checkpoint_dir = root / safe_experiment_id
+    resolved_root = root.resolve()
+    resolved_target = checkpoint_dir.resolve()
+    if resolved_root not in resolved_target.parents and resolved_target != resolved_root:
+        raise ValueError("checkpoint path escapes artifacts_dir/checkpoints")
+    return checkpoint_dir
+
+
 def _run_one_generation(
     cfg: Phase1Config,
     state: CheckpointState,
@@ -108,6 +126,7 @@ def _run_one_generation(
                 model=cfg.model_name,
                 temperature=cfg.island_temperatures[island_id],
                 url=cfg.ollama_url,
+                allow_remote=cfg.allow_remote_ollama,
             )
             y_pred_train_raw = evaluate_candidate_on_graphs(
                 code, datasets_train, timeout_sec=cfg.timeout_sec, memory_mb=cfg.memory_mb
@@ -242,9 +261,24 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
 
     if resume:
         state = load_checkpoint(resume)
-        experiment_id = state.experiment_id
+        resume_experiment_id = _validate_experiment_id(state.experiment_id)
+        if cfg.experiment_id:
+            resume_experiment_id = _validate_experiment_id(cfg.experiment_id)
+            state.experiment_id = resume_experiment_id
+        experiment_id = resume_experiment_id
+    elif cfg.experiment_id:
+        experiment_id = _validate_experiment_id(cfg.experiment_id)
+        state = CheckpointState(
+            experiment_id=experiment_id,
+            generation=0,
+            islands={i: [] for i in range(4)},
+            rng_seed=cfg.seed,
+            rng_state=None,
+            best_val_score=0.0,
+            no_improve_count=0,
+        )
     else:
-        experiment_id = cfg.experiment_id or _new_experiment_id()
+        experiment_id = _new_experiment_id()
         state = CheckpointState(
             experiment_id=experiment_id,
             generation=0,
@@ -255,11 +289,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
             no_improve_count=0,
         )
 
-    if cfg.experiment_id:
-        experiment_id = cfg.experiment_id
-        state.experiment_id = cfg.experiment_id
-
-    checkpoint_dir = artifacts_dir / "checkpoints" / experiment_id
+    checkpoint_dir = _checkpoint_dir_for_experiment(artifacts_dir, experiment_id)
     rng = _restore_rng(state)
     y_true_train = _target_values(datasets.train, cfg.target_name)
     y_true_val = _target_values(datasets.val, cfg.target_name)

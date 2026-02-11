@@ -242,6 +242,7 @@ class SandboxEvaluator:
         if self._pool is None:
             raise RuntimeError("sandbox pool is not initialized")
         tasks = [(code, graph) for graph in graphs]
+        # Keep chunksize small for fairness; tune upward if IPC becomes dominant.
         return self._pool.starmap(_run_candidate_with_queue_result, tasks, chunksize=1)
 
     def evaluate(self, code: str, graphs: list[nx.Graph]) -> list[float | None]:

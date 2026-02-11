@@ -39,6 +39,7 @@ class Phase1Config:
     success_spearman_threshold: float = 0.85
     pysr_niterations: int = 30
     pysr_populations: int = 8
+    pysr_procs: int = 0
     pysr_timeout_in_seconds: float | None = 60.0
 
     def __post_init__(self) -> None:
@@ -70,6 +71,8 @@ class Phase1Config:
             raise ValueError("pysr_niterations must be >= 1")
         if self.pysr_populations < 1:
             raise ValueError("pysr_populations must be >= 1")
+        if self.pysr_procs < 0:
+            raise ValueError("pysr_procs must be >= 0")
         if self.pysr_timeout_in_seconds is not None and self.pysr_timeout_in_seconds <= 0.0:
             raise ValueError("pysr_timeout_in_seconds must be > 0.0")
 

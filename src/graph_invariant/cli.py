@@ -441,7 +441,7 @@ def _write_phase1_summary(
         "best_candidate_code_sha256": sha256(best.code.encode("utf-8")).hexdigest(),
         "best_val_score": state.best_val_score,
         "stop_reason": stop_reason,
-        "success": abs(float(val_metrics["spearman"])) >= cfg.success_spearman_threshold,
+        "success": abs(float(val_metrics.get("spearman") or 0.0)) >= cfg.success_spearman_threshold,
         "config": cfg.to_dict(),
         "final_generation": state.generation,
         "island_candidate_counts": {
@@ -488,6 +488,7 @@ def _write_baseline_summary(
         y_test=y_true_test,
         niterations=cfg.pysr_niterations,
         populations=cfg.pysr_populations,
+        procs=cfg.pysr_procs,
         timeout_in_seconds=cfg.pysr_timeout_in_seconds,
     )
     write_json(

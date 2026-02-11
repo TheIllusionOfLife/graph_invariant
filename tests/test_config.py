@@ -69,5 +69,7 @@ def test_phase1_config_validates_sandbox_and_pysr_budget_fields():
         Phase1Config(pysr_niterations=0)
     with pytest.raises(ValueError, match="pysr_populations"):
         Phase1Config(pysr_populations=0)
+    with pytest.raises(ValueError, match="pysr_procs"):
+        Phase1Config(pysr_procs=-1)
     with pytest.raises(ValueError, match="pysr_timeout_in_seconds"):
         Phase1Config(pysr_timeout_in_seconds=0.0)

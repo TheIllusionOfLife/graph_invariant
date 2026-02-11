@@ -35,7 +35,7 @@ def test_run_pysr_baseline_runs_with_fake_module(monkeypatch):
             self._mean = float(np.mean(y))
 
         def predict(self, x):
-            return np.full((x.shape[0],), self._mean, dtype=float)
+            return np.full((x.shape[0], 1), self._mean, dtype=float)
 
     fake_module = SimpleNamespace(PySRRegressor=FakeRegressor)
     monkeypatch.setitem(sys.modules, "pysr", fake_module)
@@ -52,6 +52,7 @@ def test_run_pysr_baseline_runs_with_fake_module(monkeypatch):
         y_test=[1.5],
         niterations=12,
         populations=3,
+        procs=2,
         timeout_in_seconds=9.0,
     )
     assert payload["status"] == "ok"
@@ -60,6 +61,7 @@ def test_run_pysr_baseline_runs_with_fake_module(monkeypatch):
     assert "test_metrics" in payload
     assert captured_kwargs["niterations"] == 12
     assert captured_kwargs["populations"] == 3
+    assert captured_kwargs["procs"] == 2
     assert captured_kwargs["timeout_in_seconds"] == 9.0
 
 
@@ -89,3 +91,31 @@ def test_run_pysr_baseline_returns_error_status_on_fit_failure(monkeypatch):
     )
     assert payload["status"] == "error"
     assert payload["error_type"] == "RuntimeError"
+
+
+def test_run_pysr_baseline_returns_error_on_prediction_shape_mismatch(monkeypatch):
+    class BadShapeRegressor:
+        def __init__(self, **kwargs):
+            del kwargs
+
+        def fit(self, _x, _y):
+            return None
+
+        def predict(self, _x):
+            return np.asarray([1.0, 2.0, 3.0], dtype=float)
+
+    fake_module = SimpleNamespace(PySRRegressor=BadShapeRegressor)
+    monkeypatch.setattr(
+        "graph_invariant.baselines.pysr_baseline._load_pysr_module",
+        lambda: fake_module,
+    )
+    payload = run_pysr_baseline(
+        train_graphs=[nx.path_graph(4)],
+        val_graphs=[nx.path_graph(4)],
+        test_graphs=[nx.path_graph(4)],
+        y_train=[1.0],
+        y_val=[1.0],
+        y_test=[1.0],
+    )
+    assert payload["status"] == "error"
+    assert payload["error_type"] == "ValueError"

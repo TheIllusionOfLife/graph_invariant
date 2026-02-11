@@ -32,10 +32,18 @@ def _metrics_dict(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float | i
     }
 
 
+def _numeric_vector(values: Any, expected_size: int) -> np.ndarray:
+    arr = np.asarray(values, dtype=float).reshape(-1)
+    if arr.size != expected_size:
+        raise ValueError(f"prediction size mismatch: expected {expected_size}, got {arr.size}")
+    return arr
+
+
 def _make_regressor(
     pysr_module: ModuleType,
     niterations: int,
     populations: int,
+    procs: int,
     timeout_in_seconds: float | None,
 ):
     regressor_cls = getattr(pysr_module, "PySRRegressor", None)
@@ -46,7 +54,7 @@ def _make_regressor(
     kwargs: dict[str, Any] = {
         "niterations": niterations,
         "populations": populations,
-        "procs": 0,
+        "procs": procs,  # Sequential by default to avoid nested pool contention.
         "random_state": 42,
     }
     if timeout_in_seconds is not None:
@@ -63,6 +71,7 @@ def run_pysr_baseline(
     y_test: list[float],
     niterations: int = 30,
     populations: int = 8,
+    procs: int = 0,
     timeout_in_seconds: float | None = 60.0,
 ) -> dict[str, object]:
     pysr_module = _load_pysr_module()
@@ -86,6 +95,7 @@ def run_pysr_baseline(
         pysr_module=pysr_module,
         niterations=niterations,
         populations=populations,
+        procs=procs,
         timeout_in_seconds=timeout_in_seconds,
     )
     if model is None:
@@ -93,13 +103,13 @@ def run_pysr_baseline(
 
     try:
         model.fit(x_train, y_train_np)
+        val_pred = _numeric_vector(model.predict(x_val), expected_size=y_val_np.size)
+        test_pred = _numeric_vector(model.predict(x_test), expected_size=y_test_np.size)
         return {
             "status": "ok",
             "model": "pysr",
-            "val_metrics": _metrics_dict(y_val_np, np.asarray(model.predict(x_val), dtype=float)),
-            "test_metrics": _metrics_dict(
-                y_test_np, np.asarray(model.predict(x_test), dtype=float)
-            ),
+            "val_metrics": _metrics_dict(y_val_np, val_pred),
+            "test_metrics": _metrics_dict(y_test_np, test_pred),
         }
     except Exception as exc:
         LOGGER.exception("pysr baseline execution failed")

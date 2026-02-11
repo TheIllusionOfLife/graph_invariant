@@ -4,6 +4,7 @@ import re
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
+from typing import Any
 
 import networkx as nx
 import numpy as np
@@ -122,6 +123,7 @@ def _state_defaults(state: CheckpointState) -> None:
         state.island_stagnation.setdefault(island_id, 0)
         state.island_prompt_mode.setdefault(island_id, "free")
         state.island_constrained_generations.setdefault(island_id, 0)
+        state.island_recent_failures.setdefault(island_id, [])
 
 
 def _candidate_prompt(state: CheckpointState, island_id: int, target_name: str) -> str:
@@ -134,12 +136,88 @@ def _candidate_prompt(state: CheckpointState, island_id: int, target_name: str) 
     prompt = build_prompt(
         island_mode=f"island_{island_id}_{state.island_prompt_mode.get(island_id, 'free')}",
         top_candidates=top_candidates,
-        failures=[],
+        failures=state.island_recent_failures.get(island_id, []),
         target_name=target_name,
     )
     if state.island_prompt_mode.get(island_id, "free") == "constrained":
         return prompt + _CONSTRAINED_SUFFIX
     return prompt
+
+
+def _record_recent_failure(
+    state: CheckpointState,
+    island_id: int,
+    failure_text: str,
+    max_items: int,
+) -> None:
+    items = state.island_recent_failures.setdefault(island_id, [])
+    if failure_text in items:
+        items.remove(failure_text)
+    items.append(failure_text)
+    if len(items) > max_items:
+        del items[:-max_items]
+
+
+def _summarize_error_details(details: list[dict[str, Any]]) -> str:
+    if not details:
+        return "unknown"
+    categories: dict[str, int] = {}
+    for payload in details:
+        error_type = payload.get("error_type")
+        if not isinstance(error_type, str) or not error_type:
+            continue
+        categories[error_type] = categories.get(error_type, 0) + 1
+    if not categories:
+        return "unknown"
+    top_category = max(categories.items(), key=lambda item: item[1])[0]
+    for payload in details:
+        if payload.get("error_type") != top_category:
+            continue
+        raw_detail = payload.get("error_detail")
+        if raw_detail is not None:
+            return f"{top_category}: {raw_detail}"
+    return top_category
+
+
+def _build_repair_prompt(
+    original_prompt: str,
+    candidate_code: str,
+    failure_feedback: str,
+) -> str:
+    return (
+        f"{original_prompt}\n\n"
+        "Repair this candidate. It failed evaluation.\n"
+        f"Failure: {failure_feedback}\n"
+        "Previous candidate code:\n"
+        f"```python\n{candidate_code}\n```\n"
+        "Return only corrected python code defining `def new_invariant(G):`."
+    )
+
+
+def _generate_candidate(
+    cfg: Phase1Config,
+    prompt: str,
+    temperature: float,
+) -> tuple[str, str | None]:
+    if cfg.persist_prompt_and_response_logs:
+        payload = generate_candidate_payload(
+            prompt=prompt,
+            model=cfg.model_name,
+            temperature=temperature,
+            url=cfg.ollama_url,
+            allow_remote=cfg.allow_remote_ollama,
+            timeout_sec=cfg.llm_timeout_sec,
+        )
+        return payload["code"], payload["response"]
+    code = generate_candidate_code(
+        prompt=prompt,
+        model=cfg.model_name,
+        temperature=temperature,
+        url=cfg.ollama_url,
+        allow_remote=cfg.allow_remote_ollama,
+        timeout_sec=cfg.llm_timeout_sec,
+    )
+    return code, None
 
 
 def _validate_experiment_id(value: str) -> str:
@@ -204,141 +282,237 @@ def _run_one_generation(
     known_invariants_val: dict[str, list[float]],
     rng: np.random.Generator,
     log_path: Path,
+    self_correction_stats: dict[str, Any],
 ) -> None:
+    failure_categories = self_correction_stats.setdefault("failure_categories", {})
+
+    def _count_failure(reason: str) -> None:
+        failure_categories[reason] = int(failure_categories.get(reason, 0)) + 1
+
+    def _handle_rejection(
+        *,
+        island_id: int,
+        pop_idx: int,
+        attempt_idx: int,
+        rejection_reason: str,
+        failure_feedback: str | None,
+        base_prompt: str,
+        code: str,
+        max_attempts: int,
+        repairable: bool,
+        train_signal: float | None = None,
+    ) -> tuple[bool, str | None]:
+        _count_failure(rejection_reason)
+        _record_recent_failure(
+            state,
+            island_id=island_id,
+            failure_text=f"{rejection_reason}: {failure_feedback}",
+            max_items=cfg.self_correction_feedback_window,
+        )
+        rejected_payload: dict[str, Any] = {
+            "generation": state.generation,
+            "island_id": island_id,
+            "population_idx": pop_idx,
+            "attempt_index": attempt_idx,
+            "reason": rejection_reason,
+            "failure_feedback": failure_feedback,
+            "model_name": cfg.model_name,
+        }
+        if train_signal is not None:
+            rejected_payload["train_signal"] = train_signal
+        append_jsonl("candidate_rejected", rejected_payload, log_path)
+
+        if repairable and attempt_idx + 1 < max_attempts:
+            self_correction_stats["attempted_repairs"] = (
+                int(self_correction_stats.get("attempted_repairs", 0)) + 1
+            )
+            append_jsonl(
+                "candidate_repair_attempted",
+                {
+                    "generation": state.generation,
+                    "island_id": island_id,
+                    "population_idx": pop_idx,
+                    "attempt_index": attempt_idx,
+                    "reason": rejection_reason,
+                    "failure_feedback": failure_feedback,
+                    "model_name": cfg.model_name,
+                },
+                log_path,
+            )
+            next_prompt = _build_repair_prompt(
+                original_prompt=base_prompt,
+                candidate_code=code,
+                failure_feedback=failure_feedback or rejection_reason,
+            )
+            return True, next_prompt
+
+        if attempt_idx > 0:
+            self_correction_stats["failed_repairs"] = (
+                int(self_correction_stats.get("failed_repairs", 0)) + 1
+            )
+            append_jsonl(
+                "candidate_repair_result",
+                {
+                    "generation": state.generation,
+                    "island_id": island_id,
+                    "population_idx": pop_idx,
+                    "status": "failed",
+                    "reason": rejection_reason,
+                    "model_name": cfg.model_name,
+                },
+                log_path,
+            )
+        return False, None
+
     island_ids = sorted(state.islands.keys())
     for island_id in island_ids:
         new_candidates: list[Candidate] = []
         had_valid_train_candidate = False
         for pop_idx in range(cfg.population_size):
-            prompt = _candidate_prompt(state, island_id, cfg.target_name)
-            llm_response: str | None = None
-            if cfg.persist_prompt_and_response_logs:
-                payload = generate_candidate_payload(
-                    prompt=prompt,
-                    model=cfg.model_name,
+            base_prompt = _candidate_prompt(state, island_id, cfg.target_name)
+            current_prompt = base_prompt
+            max_attempts = 1 + (
+                cfg.self_correction_max_retries if cfg.enable_self_correction else 0
+            )
+            for attempt_idx in range(max_attempts):
+                code, llm_response = _generate_candidate(
+                    cfg=cfg,
+                    prompt=current_prompt,
                     temperature=cfg.island_temperatures[island_id],
-                    url=cfg.ollama_url,
-                    allow_remote=cfg.allow_remote_ollama,
-                    timeout_sec=cfg.llm_timeout_sec,
                 )
-                code = payload["code"]
-                llm_response = payload["response"]
-            else:
-                code = generate_candidate_code(
-                    prompt=prompt,
-                    model=cfg.model_name,
-                    temperature=cfg.island_temperatures[island_id],
-                    url=cfg.ollama_url,
-                    allow_remote=cfg.allow_remote_ollama,
-                    timeout_sec=cfg.llm_timeout_sec,
-                )
-            y_pred_train_raw = evaluator.evaluate(code, datasets_train)
-            train_pairs = [
-                (idx, yt, yp)
-                for idx, (yt, yp) in enumerate(zip(y_true_train, y_pred_train_raw, strict=True))
-                if yp is not None
-            ]
-            if not train_pairs:
-                append_jsonl(
-                    "candidate_rejected",
-                    {
-                        "generation": state.generation,
-                        "island_id": island_id,
-                        "population_idx": pop_idx,
-                        "reason": "no_valid_train_predictions",
-                        "model_name": cfg.model_name,
-                    },
-                    log_path,
-                )
-                continue
+                train_details = evaluator.evaluate_detailed(code, datasets_train)
+                y_pred_train_raw = [payload.get("value") for payload in train_details]
+                train_pairs = [
+                    (idx, yt, yp)
+                    for idx, (yt, yp) in enumerate(zip(y_true_train, y_pred_train_raw, strict=True))
+                    if isinstance(yp, float)
+                ]
+                rejection_reason: str | None = None
+                failure_feedback: str | None = None
+                train_signal: float | None = None
 
-            _, y_t_train, y_p_train = zip(*train_pairs, strict=True)
-            train_metrics = compute_metrics(list(y_t_train), list(y_p_train))
-            train_signal = abs(train_metrics.rho_spearman)
-            if train_signal <= cfg.train_score_threshold:
+                if not train_pairs:
+                    rejection_reason = "no_valid_train_predictions"
+                    failure_feedback = _summarize_error_details(train_details)
+                else:
+                    _, y_t_train, y_p_train = zip(*train_pairs, strict=True)
+                    train_metrics = compute_metrics(list(y_t_train), list(y_p_train))
+                    train_signal = abs(train_metrics.rho_spearman)
+                    if train_signal <= cfg.train_score_threshold:
+                        rejection_reason = "below_train_threshold"
+                        failure_feedback = f"train_signal={train_signal:.6f}"
+
+                if rejection_reason is not None:
+                    should_retry, next_prompt = _handle_rejection(
+                        island_id=island_id,
+                        pop_idx=pop_idx,
+                        attempt_idx=attempt_idx,
+                        rejection_reason=rejection_reason,
+                        failure_feedback=failure_feedback,
+                        base_prompt=base_prompt,
+                        code=code,
+                        max_attempts=max_attempts,
+                        repairable=rejection_reason == "no_valid_train_predictions",
+                        train_signal=train_signal,
+                    )
+                    if should_retry and next_prompt is not None:
+                        current_prompt = next_prompt
+                        continue
+                    break
+
+                had_valid_train_candidate = True
+                val_details = evaluator.evaluate_detailed(code, datasets_val)
+                y_pred_val_raw = [payload.get("value") for payload in val_details]
+                val_pairs = [
+                    (idx, yt, yp)
+                    for idx, (yt, yp) in enumerate(zip(y_true_val, y_pred_val_raw, strict=True))
+                    if isinstance(yp, float)
+                ]
+                if not val_pairs:
+                    rejection_reason = "no_valid_val_predictions"
+                    failure_feedback = _summarize_error_details(val_details)
+                    should_retry, next_prompt = _handle_rejection(
+                        island_id=island_id,
+                        pop_idx=pop_idx,
+                        attempt_idx=attempt_idx,
+                        rejection_reason=rejection_reason,
+                        failure_feedback=failure_feedback,
+                        base_prompt=base_prompt,
+                        code=code,
+                        max_attempts=max_attempts,
+                        repairable=True,
+                    )
+                    if should_retry and next_prompt is not None:
+                        current_prompt = next_prompt
+                        continue
+                    break
+
+                valid_indices, y_t_val, y_p_val = zip(*val_pairs, strict=True)
+                val_metrics = compute_metrics(list(y_t_val), list(y_p_val))
+                simplicity = compute_simplicity_score(code)
+                known_subset = {
+                    name: [values[idx] for idx in valid_indices]
+                    for name, values in known_invariants_val.items()
+                }
+                novelty_bonus = compute_novelty_bonus(list(y_p_val), known_subset)
+                total = compute_total_score(
+                    abs(val_metrics.rho_spearman),
+                    simplicity,
+                    novelty_bonus=novelty_bonus,
+                    alpha=cfg.alpha,
+                    beta=cfg.beta,
+                    gamma=cfg.gamma,
+                )
+                candidate = Candidate(
+                    id=f"g{state.generation}_i{island_id}_p{pop_idx}_{int(rng.integers(1_000_000_000))}",
+                    code=code,
+                    island_id=island_id,
+                    generation=state.generation,
+                    train_score=float(train_signal or 0.0),
+                    val_score=total,
+                    simplicity_score=simplicity,
+                    novelty_bonus=novelty_bonus,
+                )
+                new_candidates.append(candidate)
                 append_jsonl(
-                    "candidate_rejected",
+                    "candidate_evaluated",
                     {
+                        "candidate_id": candidate.id,
                         "generation": state.generation,
                         "island_id": island_id,
-                        "population_idx": pop_idx,
-                        "reason": "below_train_threshold",
+                        "model_name": cfg.model_name,
                         "train_signal": train_signal,
-                        "model_name": cfg.model_name,
+                        "spearman": val_metrics.rho_spearman,
+                        "pearson": val_metrics.r_pearson,
+                        "rmse": val_metrics.rmse,
+                        "mae": val_metrics.mae,
+                        "simplicity_score": simplicity,
+                        "novelty_bonus": novelty_bonus,
+                        "total_score": total,
+                        "prompt": current_prompt if cfg.persist_prompt_and_response_logs else None,
+                        "llm_response": llm_response
+                        if cfg.persist_prompt_and_response_logs
+                        else None,
+                        "extracted_code": code if cfg.persist_prompt_and_response_logs else None,
                     },
                     log_path,
                 )
-                continue
-
-            had_valid_train_candidate = True
-            y_pred_val_raw = evaluator.evaluate(code, datasets_val)
-            val_pairs = [
-                (idx, yt, yp)
-                for idx, (yt, yp) in enumerate(zip(y_true_val, y_pred_val_raw, strict=True))
-                if yp is not None
-            ]
-            if not val_pairs:
-                append_jsonl(
-                    "candidate_rejected",
-                    {
-                        "generation": state.generation,
-                        "island_id": island_id,
-                        "population_idx": pop_idx,
-                        "reason": "no_valid_val_predictions",
-                        "model_name": cfg.model_name,
-                    },
-                    log_path,
-                )
-                continue
-
-            valid_indices, y_t_val, y_p_val = zip(*val_pairs, strict=True)
-            val_metrics = compute_metrics(list(y_t_val), list(y_p_val))
-            simplicity = compute_simplicity_score(code)
-            known_subset = {
-                name: [values[idx] for idx in valid_indices]
-                for name, values in known_invariants_val.items()
-            }
-            novelty_bonus = compute_novelty_bonus(list(y_p_val), known_subset)
-            total = compute_total_score(
-                abs(val_metrics.rho_spearman),
-                simplicity,
-                novelty_bonus=novelty_bonus,
-                alpha=cfg.alpha,
-                beta=cfg.beta,
-                gamma=cfg.gamma,
-            )
-            candidate = Candidate(
-                id=f"g{state.generation}_i{island_id}_p{pop_idx}_{int(rng.integers(1_000_000_000))}",
-                code=code,
-                island_id=island_id,
-                generation=state.generation,
-                train_score=train_signal,
-                val_score=total,
-                simplicity_score=simplicity,
-                novelty_bonus=novelty_bonus,
-            )
-            new_candidates.append(candidate)
-            append_jsonl(
-                "candidate_evaluated",
-                {
-                    "candidate_id": candidate.id,
-                    "generation": state.generation,
-                    "island_id": island_id,
-                    "model_name": cfg.model_name,
-                    "train_signal": train_signal,
-                    "spearman": val_metrics.rho_spearman,
-                    "pearson": val_metrics.r_pearson,
-                    "rmse": val_metrics.rmse,
-                    "mae": val_metrics.mae,
-                    "simplicity_score": simplicity,
-                    "novelty_bonus": novelty_bonus,
-                    "total_score": total,
-                    "prompt": prompt if cfg.persist_prompt_and_response_logs else None,
-                    "llm_response": llm_response if cfg.persist_prompt_and_response_logs else None,
-                    "extracted_code": code if cfg.persist_prompt_and_response_logs else None,
-                },
-                log_path,
-            )
+                if attempt_idx > 0:
+                    self_correction_stats["successful_repairs"] = (
+                        int(self_correction_stats.get("successful_repairs", 0)) + 1
+                    )
+                    append_jsonl(
+                        "candidate_repair_result",
+                        {
+                            "generation": state.generation,
+                            "island_id": island_id,
+                            "population_idx": pop_idx,
+                            "status": "success",
+                            "model_name": cfg.model_name,
+                        },
+                        log_path,
+                    )
+                break
 
         merged = state.islands.get(island_id, []) + new_candidates
         merged.sort(key=lambda candidate: candidate.val_score, reverse=True)
@@ -434,6 +608,7 @@ def _write_phase1_summary(
     y_true_val: list[float],
     y_true_test: list[float],
     baseline_results: dict[str, object] | None,
+    self_correction_stats: dict[str, Any],
 ) -> None:
     def _extract_spearman(metrics: dict[str, object] | None) -> float | None:
         if not isinstance(metrics, dict):
@@ -600,6 +775,7 @@ def _write_phase1_summary(
         "baseline_comparison": baseline_comparison,
         "success_criteria": success_criteria,
         "dataset_fingerprint": _dataset_fingerprint(cfg, y_true_train, y_true_val, y_true_test),
+        "self_correction_stats": self_correction_stats,
     }
     if cfg.persist_candidate_code_in_summary:
         payload["best_candidate_code"] = best.code
@@ -721,6 +897,15 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         y_true_val=y_true_val,
         y_true_test=y_true_test,
     )
+    self_correction_stats: dict[str, Any] = {
+        "enabled": cfg.enable_self_correction,
+        "max_retries": cfg.self_correction_max_retries,
+        "feedback_window": cfg.self_correction_feedback_window,
+        "attempted_repairs": 0,
+        "successful_repairs": 0,
+        "failed_repairs": 0,
+        "failure_categories": {},
+    }
     with SandboxEvaluator(
         timeout_sec=cfg.timeout_sec,
         memory_mb=cfg.memory_mb,
@@ -738,6 +923,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
                 known_invariants_val=known_invariants_val,
                 rng=rng,
                 log_path=log_path,
+                self_correction_stats=self_correction_stats,
             )
             current_best = _global_best_score(state)
             improved = current_best > state.best_val_score + 1e-12
@@ -781,6 +967,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
             y_true_val=y_true_val,
             y_true_test=y_true_test,
             baseline_results=baseline_results,
+            self_correction_stats=self_correction_stats,
         )
     _write_baseline_summary(
         payload=baseline_results,
@@ -827,6 +1014,14 @@ def write_report(artifacts_dir: str | Path) -> Path:
         lines.extend(["", "## Baselines", ""])
         for name, payload in stat.items():
             lines.append(f"- {name}: {payload.get('status', 'unknown')}")
+
+    self_correction = phase1.get("self_correction_stats", {})
+    if isinstance(self_correction, dict) and self_correction:
+        lines.extend(["", "## Self-Correction", ""])
+        lines.append(f"- Enabled: {self_correction.get('enabled', False)}")
+        lines.append(f"- Attempted repairs: {self_correction.get('attempted_repairs', 0)}")
+        lines.append(f"- Successful repairs: {self_correction.get('successful_repairs', 0)}")
+        lines.append(f"- Failed repairs: {self_correction.get('failed_repairs', 0)}")
 
     report_path = root / "report.md"
     report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -157,7 +157,7 @@ def _compiled_candidate_code(code: str) -> Any:
     return compiled
 
 
-def _run_candidate(code: str, graph: nx.Graph) -> float | None:
+def _safe_globals() -> dict[str, Any]:
     safe_builtins = {
         "abs": abs,
         "min": min,
@@ -167,11 +167,25 @@ def _run_candidate(code: str, graph: nx.Graph) -> float | None:
         "sorted": sorted,
         "range": range,
         "enumerate": enumerate,
+        "float": float,
+        "int": int,
     }
-    safe_globals: dict[str, Any] = {
+    return {
         "__builtins__": safe_builtins,
         "math": math,
     }
+
+
+def _run_candidate(code: str, graph: nx.Graph) -> float | None:
+    return _run_candidate_detailed(code, graph).get("value")
+
+
+def _run_candidate_with_queue_result(code: str, graph: nx.Graph) -> float | None:
+    return _run_candidate(code, graph)
+
+
+def _run_candidate_detailed(code: str, graph: nx.Graph) -> dict[str, Any]:
+    safe_globals = _safe_globals()
     safe_locals: dict[str, Any] = {}
     try:
         if _TASK_TIMEOUT_SEC > 0 and hasattr(signal, "setitimer"):
@@ -180,23 +194,35 @@ def _run_candidate(code: str, graph: nx.Graph) -> float | None:
         exec(compiled_code, safe_globals, safe_locals)
         fn = safe_locals.get("new_invariant")
         if fn is None:
-            return None
+            return {"value": None, "error_type": "runtime_exception", "error_detail": "missing_fn"}
         value = fn(graph)
         if value is None:
-            return None
-        return float(value)
+            return {
+                "value": None,
+                "error_type": "runtime_exception",
+                "error_detail": "returned_none",
+            }
+        return {"value": float(value), "error_type": None, "error_detail": None}
     except CandidateTimeoutError:
-        return None
-    except Exception:
+        return {
+            "value": None,
+            "error_type": "timeout",
+            "error_detail": "candidate evaluation timed out",
+        }
+    except Exception as exc:  # pragma: no cover - type variation depends on candidate/runtime.
         LOGGER.debug("candidate execution failed", exc_info=True)
-        return None
+        return {
+            "value": None,
+            "error_type": "runtime_exception",
+            "error_detail": f"{type(exc).__name__}: {exc}",
+        }
     finally:
         if hasattr(signal, "setitimer"):
             signal.setitimer(signal.ITIMER_REAL, 0.0)
 
 
-def _run_candidate_with_queue_result(code: str, graph: nx.Graph) -> float | None:
-    return _run_candidate(code, graph)
+def _run_candidate_with_queue_result_detailed(code: str, graph: nx.Graph) -> dict[str, Any]:
+    return _run_candidate_detailed(code, graph)
 
 
 class SandboxEvaluator:
@@ -245,6 +271,12 @@ class SandboxEvaluator:
         # Keep chunksize small for fairness; tune upward if IPC becomes dominant.
         return self._pool.starmap(_run_candidate_with_queue_result, tasks, chunksize=1)
 
+    def _evaluate_once_detailed(self, code: str, graphs: list[nx.Graph]) -> list[dict[str, Any]]:
+        if self._pool is None:
+            raise RuntimeError("sandbox pool is not initialized")
+        tasks = [(code, graph) for graph in graphs]
+        return self._pool.starmap(_run_candidate_with_queue_result_detailed, tasks, chunksize=1)
+
     def evaluate(self, code: str, graphs: list[nx.Graph]) -> list[float | None]:
         ok, _ = validate_code_static(code)
         if not ok:
@@ -260,6 +292,25 @@ class SandboxEvaluator:
             self.close()
             self._ensure_pool()
             return self._evaluate_once(code, graphs)
+
+    def evaluate_detailed(self, code: str, graphs: list[nx.Graph]) -> list[dict[str, Any]]:
+        ok, reason = validate_code_static(code)
+        if not ok:
+            return [
+                {"value": None, "error_type": "static_invalid", "error_detail": reason}
+                for _ in graphs
+            ]
+        if not graphs:
+            return []
+
+        self._ensure_pool()
+        try:
+            return self._evaluate_once_detailed(code, graphs)
+        except (BrokenPipeError, EOFError, OSError):
+            LOGGER.debug("sandbox pool failed; rebuilding once", exc_info=True)
+            self.close()
+            self._ensure_pool()
+            return self._evaluate_once_detailed(code, graphs)
 
 
 def evaluate_candidate_on_graphs(

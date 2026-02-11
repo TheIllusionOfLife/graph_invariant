@@ -49,6 +49,9 @@ class Phase1Config:
     require_baselines_for_success: bool = True
     persist_prompt_and_response_logs: bool = False
     llm_timeout_sec: float = 60.0
+    enable_self_correction: bool = True
+    self_correction_max_retries: int = 1
+    self_correction_feedback_window: int = 3
 
     def __post_init__(self) -> None:
         self.island_temperatures = tuple(float(x) for x in self.island_temperatures)
@@ -94,6 +97,10 @@ class Phase1Config:
             raise ValueError("pysr_parity_epsilon must be >= 0.0")
         if self.llm_timeout_sec <= 0.0:
             raise ValueError("llm_timeout_sec must be > 0.0")
+        if self.self_correction_max_retries < 0:
+            raise ValueError("self_correction_max_retries must be >= 0")
+        if self.self_correction_feedback_window < 1:
+            raise ValueError("self_correction_feedback_window must be >= 1")
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> "Phase1Config":

@@ -33,6 +33,9 @@ def save_checkpoint(state: CheckpointState, path: str | Path) -> None:
         "island_constrained_generations": {
             str(k): v for k, v in state.island_constrained_generations.items()
         },
+        "island_recent_failures": {
+            str(k): list(v) for k, v in state.island_recent_failures.items()
+        },
         "islands": {
             str(island): [asdict(candidate) for candidate in candidates]
             for island, candidates in state.islands.items()
@@ -56,6 +59,11 @@ def load_checkpoint(path: str | Path) -> CheckpointState:
         int(island): int(value)
         for island, value in payload.get("island_constrained_generations", {}).items()
     }
+    island_recent_failures = {
+        int(island): [str(item) for item in values]
+        for island, values in payload.get("island_recent_failures", {}).items()
+        if isinstance(values, list)
+    }
     return CheckpointState(
         experiment_id=str(payload.get("experiment_id", "phase1")),
         generation=int(payload["generation"]),
@@ -67,6 +75,7 @@ def load_checkpoint(path: str | Path) -> CheckpointState:
         island_stagnation=island_stagnation,
         island_prompt_mode=island_prompt_mode,
         island_constrained_generations=island_constrained_generations,
+        island_recent_failures=island_recent_failures,
     )
 
 

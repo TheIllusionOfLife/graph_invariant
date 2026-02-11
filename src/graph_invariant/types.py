@@ -36,3 +36,4 @@ class CheckpointState:
     island_stagnation: dict[int, int] = field(default_factory=dict)
     island_prompt_mode: dict[int, str] = field(default_factory=dict)
     island_constrained_generations: dict[int, int] = field(default_factory=dict)
+    island_recent_failures: dict[int, list[str]] = field(default_factory=dict)

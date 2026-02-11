@@ -27,12 +27,27 @@ def test_checkpoint_roundtrip(tmp_path):
         generation=3,
         islands={0: [Candidate(id="c1", code="def new_invariant(G):\n    return 1")]},
         rng_seed=42,
+        island_recent_failures={0: ["static_invalid: bad syntax"]},
     )
     save_checkpoint(state, ckpt_path)
     loaded = load_checkpoint(ckpt_path)
     assert loaded.generation == 3
     assert loaded.rng_seed == 42
     assert loaded.islands[0][0].id == "c1"
+    assert loaded.island_recent_failures[0] == ["static_invalid: bad syntax"]
+
+
+def test_load_checkpoint_defaults_missing_recent_failures(tmp_path):
+    ckpt_path = tmp_path / "state.json"
+    payload = {
+        "experiment_id": "exp",
+        "generation": 1,
+        "rng_seed": 42,
+        "islands": {"0": []},
+    }
+    ckpt_path.write_text(json.dumps(payload), encoding="utf-8")
+    loaded = load_checkpoint(ckpt_path)
+    assert loaded.island_recent_failures == {}
 
 
 def test_rotate_generation_checkpoints_uses_numeric_generation_order(tmp_path):

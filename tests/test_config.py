@@ -27,6 +27,9 @@ def test_phase1_config_defaults_are_valid():
     assert cfg.novelty_threshold == 0.7
     assert cfg.pysr_parity_epsilon == 0.0
     assert cfg.llm_timeout_sec == 60.0
+    assert cfg.enable_self_correction is True
+    assert cfg.self_correction_max_retries == 1
+    assert cfg.self_correction_feedback_window == 3
 
 
 def test_phase1_config_from_dict_overrides_values():
@@ -96,3 +99,10 @@ def test_phase1_config_validates_benchmark_and_novelty_settings():
         Phase1Config(pysr_parity_epsilon=-1e-3)
     with pytest.raises(ValueError, match="llm_timeout_sec"):
         Phase1Config(llm_timeout_sec=0.0)
+
+
+def test_phase1_config_validates_self_correction_fields():
+    with pytest.raises(ValueError, match="self_correction_max_retries"):
+        Phase1Config(self_correction_max_retries=-1)
+    with pytest.raises(ValueError, match="self_correction_feedback_window"):
+        Phase1Config(self_correction_feedback_window=0)

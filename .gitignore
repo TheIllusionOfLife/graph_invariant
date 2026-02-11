@@ -1,6 +1,26 @@
-.venv/
+# Python bytecode and caches
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local tool/editor files
+.DS_Store
+
+# Build and packaging outputs
+build/
+dist/
+*.egg-info/
+
+# Experiment outputs
 artifacts/
 artifacts_*/
-pytest_cache/
+artifacts_smoke/

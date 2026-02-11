@@ -46,6 +46,27 @@ def test_evaluate_candidate_on_graphs_times_out_and_returns_none():
     assert result == [None]
 
 
+def test_sandbox_evaluate_detailed_reports_static_invalid_without_pool():
+    evaluator = SandboxEvaluator(timeout_sec=0.1, memory_mb=128)
+    details = evaluator.evaluate_detailed("import os\n", [])
+    assert details == []
+
+    details = evaluator.evaluate_detailed("import os\n", [object()])
+    assert details[0]["value"] is None
+    assert details[0]["error_type"] == "static_invalid"
+    assert "forbidden token" in str(details[0]["error_detail"])
+
+
+def test_sandbox_evaluate_detailed_reports_runtime_exception():
+    import networkx as nx
+
+    code = "def new_invariant(G):\n    return 1 / 0"
+    with SandboxEvaluator(timeout_sec=0.1, memory_mb=128) as evaluator:
+        details = evaluator.evaluate_detailed(code, [nx.path_graph(5)])
+    assert details[0]["value"] is None
+    assert details[0]["error_type"] == "runtime_exception"
+
+
 def test_sandbox_evaluator_reuses_pool_within_context(monkeypatch):
     import networkx as nx
 

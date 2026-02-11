@@ -37,6 +37,24 @@ def _patch_sandbox_evaluator(monkeypatch, evaluate_fn):  # noqa: ANN001
                 memory_mb=self.memory_mb,
             )
 
+        def evaluate_detailed(self, code, graphs):  # noqa: ANN001
+            values = self.evaluate(code, graphs)
+            details = []
+            for value in values:
+                if value is None:
+                    details.append(
+                        {
+                            "value": None,
+                            "error_type": "runtime_exception",
+                            "error_detail": "fake evaluator returned None",
+                        }
+                    )
+                else:
+                    details.append(
+                        {"value": float(value), "error_type": None, "error_detail": None}
+                    )
+            return details
+
     monkeypatch.setattr("graph_invariant.cli.SandboxEvaluator", FakeSandboxEvaluator)
 
 
@@ -340,6 +358,66 @@ def test_run_phase1_activates_constrained_prompt_after_stagnation(monkeypatch, t
 
     assert run_phase1(cfg) == 0
     assert any("Use only these operators" in prompt for prompt in prompts)
+
+
+def test_run_phase1_self_correction_repairs_failed_candidate_once(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        enable_self_correction=True,
+        self_correction_max_retries=1,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    prompts: list[str] = []
+    calls = {"count": 0}
+
+    def _fake_generate(prompt: str, *_args, **_kwargs) -> str:
+        prompts.append(prompt)
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return "def new_invariant(G):\n    BROKEN"
+        return "def new_invariant(G):\n    return float(G.number_of_nodes())"
+
+    def _fake_eval(code, graphs, **_kwargs):  # noqa: ANN001
+        if "BROKEN" in code:
+            return [None for _ in graphs]
+        return [float(i + 1) for i in range(len(graphs))]
+
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_candidate_code", _fake_generate)
+    _patch_sandbox_evaluator(monkeypatch, _fake_eval)
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+
+    assert run_phase1(cfg) == 0
+    assert calls["count"] == 5
+    assert any("Repair this candidate" in prompt for prompt in prompts)
+
+    summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
+    stats = summary["self_correction_stats"]
+    assert stats["attempted_repairs"] == 1
+    assert stats["successful_repairs"] == 1
+    assert stats["failed_repairs"] == 0
 
 
 def test_run_phase1_writes_baseline_summary(monkeypatch, tmp_path):

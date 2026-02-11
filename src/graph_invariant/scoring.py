@@ -96,3 +96,71 @@ def compute_total_score(
     gamma: float = 0.2,
 ) -> float:
     return (alpha * abs_spearman) + (beta * simplicity) + (gamma * novelty_bonus)
+
+
+def _bootstrap_abs_spearman_ci_upper(
+    candidate_values: np.ndarray,
+    known_values: np.ndarray,
+    n_bootstrap: int,
+    rng: np.random.Generator,
+) -> tuple[float, float]:
+    if candidate_values.shape != known_values.shape:
+        raise ValueError("candidate_values and known_values must have the same shape")
+    if candidate_values.size < 2:
+        return 0.0, 0.0
+
+    point_rho, _ = scipy.stats.spearmanr(candidate_values, known_values)
+    point_abs_rho = abs(_nan_to_zero(float(point_rho)))
+    sample_size = candidate_values.size
+    bootstrap_abs_rhos: list[float] = []
+    for _ in range(n_bootstrap):
+        sample_idx = rng.integers(0, sample_size, size=sample_size)
+        sampled_candidate = candidate_values[sample_idx]
+        sampled_known = known_values[sample_idx]
+        sampled_rho, _ = scipy.stats.spearmanr(sampled_candidate, sampled_known)
+        bootstrap_abs_rhos.append(abs(_nan_to_zero(float(sampled_rho))))
+    upper = float(np.quantile(np.asarray(bootstrap_abs_rhos, dtype=float), 0.95))
+    return point_abs_rho, upper
+
+
+def compute_novelty_ci(
+    candidate_values: list[float],
+    known_invariants: dict[str, list[float]],
+    n_bootstrap: int = 1000,
+    seed: int = 42,
+    novelty_threshold: float = 0.7,
+) -> dict[str, object]:
+    if n_bootstrap < 1:
+        raise ValueError("n_bootstrap must be >= 1")
+    if not known_invariants:
+        return {
+            "max_ci_upper_abs_rho": 0.0,
+            "novelty_passed": True,
+            "threshold": novelty_threshold,
+            "per_invariant": {},
+        }
+
+    candidate_arr = np.asarray(candidate_values, dtype=float)
+    rng = np.random.default_rng(seed)
+    per_invariant: dict[str, dict[str, float]] = {}
+    max_upper = 0.0
+    for name, values in known_invariants.items():
+        known_arr = np.asarray(values, dtype=float)
+        point_abs_rho, ci_upper = _bootstrap_abs_spearman_ci_upper(
+            candidate_values=candidate_arr,
+            known_values=known_arr,
+            n_bootstrap=n_bootstrap,
+            rng=rng,
+        )
+        max_upper = max(max_upper, ci_upper)
+        per_invariant[name] = {
+            "point_abs_rho": point_abs_rho,
+            "ci_upper_abs_rho": ci_upper,
+        }
+
+    return {
+        "max_ci_upper_abs_rho": max_upper,
+        "novelty_passed": max_upper < novelty_threshold,
+        "threshold": novelty_threshold,
+        "per_invariant": per_invariant,
+    }

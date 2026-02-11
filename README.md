@@ -42,6 +42,20 @@ uv run python -m graph_invariant.cli report --artifacts artifacts_smoke
 
 This writes `artifacts_smoke/report.md`.
 
+5. Run a multi-seed benchmark sweep:
+
+```bash
+cat > /tmp/benchmark_config.json <<'JSON'
+{"benchmark_seeds": [11, 22, 33], "max_generations": 0, "run_baselines": true, "artifacts_dir": "artifacts_benchmark"}
+JSON
+uv run python -m graph_invariant.cli benchmark --config /tmp/benchmark_config.json
+```
+
+This writes one benchmark directory under `artifacts_benchmark/benchmark_*` with:
+- `benchmark_summary.json`
+- `benchmark_report.md`
+- per-seed subdirectories (`seed_<N>/`) containing regular Phase 1 artifacts.
+
 ## Optional Baseline Dependencies
 
 `run_baselines` is disabled by default. If enabled:

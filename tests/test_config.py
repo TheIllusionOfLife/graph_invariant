@@ -19,6 +19,11 @@ def test_phase1_config_defaults_are_valid():
     assert cfg.run_baselines is False
     assert cfg.persist_candidate_code_in_summary is False
     assert cfg.success_spearman_threshold == 0.85
+    assert cfg.benchmark_seeds == (11, 22, 33, 44, 55)
+    assert cfg.novelty_bootstrap_samples == 1000
+    assert cfg.enforce_pysr_parity_for_success is True
+    assert cfg.require_baselines_for_success is True
+    assert cfg.persist_prompt_and_response_logs is False
 
 
 def test_phase1_config_from_dict_overrides_values():
@@ -73,3 +78,10 @@ def test_phase1_config_validates_sandbox_and_pysr_budget_fields():
         Phase1Config(pysr_procs=-1)
     with pytest.raises(ValueError, match="pysr_timeout_in_seconds"):
         Phase1Config(pysr_timeout_in_seconds=0.0)
+
+
+def test_phase1_config_validates_benchmark_and_novelty_settings():
+    with pytest.raises(ValueError, match="benchmark_seeds"):
+        Phase1Config(benchmark_seeds=())
+    with pytest.raises(ValueError, match="novelty_bootstrap_samples"):
+        Phase1Config(novelty_bootstrap_samples=0)

@@ -32,6 +32,19 @@ def _extract_code_block(text: str) -> str:
 def generate_candidate_code(
     prompt: str, model: str, temperature: float, url: str, allow_remote: bool = False
 ) -> str:
+    payload = generate_candidate_payload(
+        prompt=prompt,
+        model=model,
+        temperature=temperature,
+        url=url,
+        allow_remote=allow_remote,
+    )
+    return payload["code"]
+
+
+def generate_candidate_payload(
+    prompt: str, model: str, temperature: float, url: str, allow_remote: bool = False
+) -> dict[str, str]:
     validate_ollama_url(url, allow_remote=allow_remote)
     payload = {
         "model": model,
@@ -43,7 +56,7 @@ def generate_candidate_code(
     response.raise_for_status()
     body = response.json()
     text = str(body.get("response", "")).strip()
-    return _extract_code_block(text)
+    return {"response": text, "code": _extract_code_block(text)}
 
 
 def _tags_endpoint(generate_url: str) -> str:

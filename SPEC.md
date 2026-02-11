@@ -310,6 +310,12 @@ uv run python -m graph_invariant.cli report --artifacts <artifacts_dir>
 
 renders a markdown report from the specified artifacts directory
 
+```bash
+uv run python -m graph_invariant.cli benchmark --config <config.json>
+```
+
+runs a deterministic multi-seed Phase 1 benchmark sweep and aggregates results
+
 ---
 
 ## 9. Phase 1 ターゲットと成功基準

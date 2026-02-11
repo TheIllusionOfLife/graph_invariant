@@ -184,6 +184,7 @@ multiprocessing.Pool(initializer=worker_init)  # ワーカーを事前起動
 - `exec` 実行前に文字列レベルで以下を検出・拒否:
   - `import`, `__import__`, `eval`, `exec`, `open`, `os`, `sys`, `subprocess`
   - `__class__`, `__subclasses__`, `__globals__` （属性アクセスによるサンドボックス脱出防止）
+- **重要な制約**: 静的チェック + 制限付き `exec` は研究用途のベストエフォート防御であり、完全なセキュリティ境界ではない。本番運用で第三者コードを実行する場合は、コンテナ/VM/nsjail などOSレベル隔離を必須とする。
 
 ### 5.3 性能見積もり
 

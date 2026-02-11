@@ -1,0 +1,36 @@
+[project]
+name = "graph-invariant"
+version = "0.1.0"
+description = "Phase 1 MVP for graph invariant discovery"
+requires-python = ">=3.11"
+dependencies = [
+  "networkx>=3.4",
+  "numpy>=2.2",
+  "requests>=2.32",
+  "scipy>=1.15",
+  "sympy>=1.13",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "ruff>=0.9",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/graph_invariant"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

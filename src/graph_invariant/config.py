@@ -14,14 +14,24 @@ class Phase1Config:
     max_generations: int = 20
     population_size: int = 5
     migration_interval: int = 10
+    island_temperatures: tuple[float, float, float, float] = (0.3, 0.3, 0.8, 1.2)
     timeout_sec: float = 2.0
     memory_mb: int = 256
     alpha: float = 0.6
     beta: float = 0.2
     gamma: float = 0.2
+    train_score_threshold: float = 0.3
+    early_stop_patience: int = 10
     artifacts_dir: str = "artifacts"
-    model_name: str = "llama3"
+    model_name: str = "gpt-oss:20b"
     ollama_url: str = "http://localhost:11434/api/generate"
+    checkpoint_keep_last: int = 3
+    experiment_id: str | None = None
+
+    def __post_init__(self) -> None:
+        self.island_temperatures = tuple(float(x) for x in self.island_temperatures)
+        if len(self.island_temperatures) != 4:
+            raise ValueError("island_temperatures must contain exactly 4 values")
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> "Phase1Config":

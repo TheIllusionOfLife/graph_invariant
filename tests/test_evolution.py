@@ -4,6 +4,7 @@ from graph_invariant.types import Candidate, CheckpointState
 
 def test_migrate_ring_top1_moves_best_candidate_when_better():
     state = CheckpointState(
+        experiment_id="exp",
         generation=10,
         islands={
             0: [Candidate(id="a", code="def new_invariant(G):\n    return 1", val_score=0.9)],

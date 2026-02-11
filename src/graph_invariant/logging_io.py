@@ -22,8 +22,12 @@ def save_checkpoint(state: CheckpointState, path: str | Path) -> None:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     payload = {
+        "experiment_id": state.experiment_id,
         "generation": state.generation,
         "rng_seed": state.rng_seed,
+        "rng_state": state.rng_state,
+        "best_val_score": state.best_val_score,
+        "no_improve_count": state.no_improve_count,
         "islands": {
             str(island): [asdict(candidate) for candidate in candidates]
             for island, candidates in state.islands.items()
@@ -38,7 +42,20 @@ def load_checkpoint(path: str | Path) -> CheckpointState:
     for island, candidates in payload["islands"].items():
         islands[int(island)] = [Candidate(**candidate) for candidate in candidates]
     return CheckpointState(
+        experiment_id=str(payload.get("experiment_id", "phase1")),
         generation=int(payload["generation"]),
         islands=islands,
         rng_seed=int(payload["rng_seed"]),
+        rng_state=payload.get("rng_state"),
+        best_val_score=float(payload.get("best_val_score", 0.0)),
+        no_improve_count=int(payload.get("no_improve_count", 0)),
     )
+
+
+def rotate_generation_checkpoints(checkpoint_dir: str | Path, keep_last: int) -> None:
+    root = Path(checkpoint_dir)
+    if keep_last <= 0 or not root.exists():
+        return
+    checkpoints = sorted(root.glob("gen_*.json"))
+    for old_path in checkpoints[:-keep_last]:
+        old_path.unlink(missing_ok=True)

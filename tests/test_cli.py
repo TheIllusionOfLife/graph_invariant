@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from graph_invariant.cli import run_phase1
 from graph_invariant.config import Phase1Config
 from graph_invariant.data import DatasetBundle
@@ -41,7 +43,8 @@ def test_run_phase1_uses_configured_score_weights(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: "def new_invariant(G):\n    return 1.0",
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.evaluate_candidate_on_graphs", lambda *_args, **_kw: [1.0, 2.0]
+        "graph_invariant.cli.evaluate_candidate_on_graphs",
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
     monkeypatch.setattr(
         "graph_invariant.cli.compute_metrics",
@@ -70,11 +73,8 @@ def test_run_phase1_fails_fast_when_ollama_model_is_missing(monkeypatch, tmp_pat
     monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr("graph_invariant.cli.list_available_models", lambda _url: ["gemma3:4b"])
 
-    try:
+    with pytest.raises(RuntimeError, match="gpt-oss:20b"):
         run_phase1(cfg)
-        assert False, "run_phase1 should fail if model is not available"
-    except RuntimeError as exc:
-        assert "gpt-oss:20b" in str(exc)
 
 
 def test_run_phase1_rotates_generation_checkpoints(monkeypatch, tmp_path):
@@ -103,7 +103,8 @@ def test_run_phase1_rotates_generation_checkpoints(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: "def new_invariant(G):\n    return 1.0",
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.evaluate_candidate_on_graphs", lambda *_args, **_kw: [1.0, 2.0]
+        "graph_invariant.cli.evaluate_candidate_on_graphs",
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
     monkeypatch.setattr(
         "graph_invariant.cli.compute_metrics",
@@ -145,7 +146,8 @@ def test_run_phase1_resume_continues_from_saved_generation(monkeypatch, tmp_path
         lambda *_args, **_kwargs: "def new_invariant(G):\n    return 1.0",
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.evaluate_candidate_on_graphs", lambda *_args, **_kw: [1.0, 2.0]
+        "graph_invariant.cli.evaluate_candidate_on_graphs",
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
     monkeypatch.setattr(
         "graph_invariant.cli.compute_metrics",

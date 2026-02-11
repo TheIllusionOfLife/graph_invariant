@@ -17,6 +17,7 @@ def test_append_jsonl_writes_one_record(tmp_path):
 def test_checkpoint_roundtrip(tmp_path):
     ckpt_path = tmp_path / "state.json"
     state = CheckpointState(
+        experiment_id="exp",
         generation=3,
         islands={0: [Candidate(id="c1", code="def new_invariant(G):\n    return 1")]},
         rng_seed=42,

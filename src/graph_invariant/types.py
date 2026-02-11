@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass(slots=True)
@@ -25,6 +26,10 @@ class EvaluationResult:
 
 @dataclass(slots=True)
 class CheckpointState:
+    experiment_id: str
     generation: int
     islands: dict[int, list[Candidate]] = field(default_factory=dict)
     rng_seed: int = 42
+    rng_state: dict[str, Any] | None = None
+    best_val_score: float = 0.0
+    no_improve_count: int = 0

@@ -1,0 +1,26 @@
+from __future__ import annotations
+
+import networkx as nx
+import numpy as np
+
+from ..known_invariants import compute_known_invariant_values
+
+FEATURE_ORDER = (
+    "density",
+    "clustering_coefficient",
+    "degree_assortativity",
+    "transitivity",
+    "average_degree",
+    "max_degree",
+    "spectral_radius",
+    "diameter",
+    "algebraic_connectivity",
+)
+
+
+def features_from_graphs(graphs: list[nx.Graph]) -> np.ndarray:
+    if not graphs:
+        return np.empty((0, len(FEATURE_ORDER)), dtype=float)
+    values = compute_known_invariant_values(graphs)
+    cols = [values[name] for name in FEATURE_ORDER]
+    return np.asarray(list(zip(*cols, strict=True)), dtype=float)

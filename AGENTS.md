@@ -12,7 +12,7 @@ When adding executable code, use a clean split:
 - `artifacts/` for experiment outputs (logs, plots, checkpoints), with large/generated files excluded from Git.
 
 ## Build, Test, and Development Commands
-There is no build pipeline yet; contributors mainly edit and validate documents/specs.
+The repository now includes a Python CI workflow; contributors should keep local checks aligned with CI.
 - `rg --files` lists tracked project files quickly.
 - `git log --oneline -n 10` checks recent change patterns before committing.
 - `uv run pytest` runs tests once Python modules are introduced.

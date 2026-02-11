@@ -1,4 +1,5 @@
 import json
+import warnings
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,7 @@ class Phase1Config:
     island_temperatures: tuple[float, float, float, float] = (0.3, 0.3, 0.8, 1.2)
     timeout_sec: float = 2.0
     memory_mb: int = 256
+    sandbox_max_workers: int | None = None
     alpha: float = 0.6
     beta: float = 0.2
     gamma: float = 0.2
@@ -35,6 +37,10 @@ class Phase1Config:
     run_baselines: bool = False
     persist_candidate_code_in_summary: bool = False
     success_spearman_threshold: float = 0.85
+    pysr_niterations: int = 30
+    pysr_populations: int = 8
+    pysr_procs: int = 0
+    pysr_timeout_in_seconds: float | None = 60.0
 
     def __post_init__(self) -> None:
         self.island_temperatures = tuple(float(x) for x in self.island_temperatures)
@@ -44,6 +50,31 @@ class Phase1Config:
             raise ValueError("stagnation_trigger_generations must be >= 1")
         if self.constrained_recovery_generations < 1:
             raise ValueError("constrained_recovery_generations must be >= 1")
+        if self.sandbox_max_workers is not None and self.sandbox_max_workers < 1:
+            raise ValueError("sandbox_max_workers must be >= 1")
+        if not (0.0 <= self.success_spearman_threshold <= 1.0):
+            raise ValueError("success_spearman_threshold must be between 0.0 and 1.0")
+        if self.alpha < 0.0 or self.beta < 0.0 or self.gamma < 0.0:
+            raise ValueError("alpha, beta, gamma must be >= 0.0")
+        total = self.alpha + self.beta + self.gamma
+        if total <= 0.0:
+            raise ValueError("alpha, beta, gamma must sum to > 0.0")
+        if abs(total - 1.0) > 1e-9:
+            warnings.warn(
+                "alpha, beta, gamma did not sum to 1.0; normalizing weights",
+                stacklevel=2,
+            )
+            self.alpha /= total
+            self.beta /= total
+            self.gamma /= total
+        if self.pysr_niterations < 1:
+            raise ValueError("pysr_niterations must be >= 1")
+        if self.pysr_populations < 1:
+            raise ValueError("pysr_populations must be >= 1")
+        if self.pysr_procs < 0:
+            raise ValueError("pysr_procs must be >= 0")
+        if self.pysr_timeout_in_seconds is not None and self.pysr_timeout_in_seconds <= 0.0:
+            raise ValueError("pysr_timeout_in_seconds must be > 0.0")
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> "Phase1Config":

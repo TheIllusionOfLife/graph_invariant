@@ -4,6 +4,7 @@ import math
 import multiprocessing as mp
 import os
 import signal
+from multiprocessing.pool import Pool
 from typing import Any
 
 import networkx as nx
@@ -71,6 +72,7 @@ ALLOWED_AST_NODES: tuple[type[ast.AST], ...] = (
 
 LOGGER = logging.getLogger(__name__)
 _TASK_TIMEOUT_SEC = 0.0
+_COMPILED_CODE_CACHE: dict[str, Any] = {}
 
 
 class CandidateTimeoutError(RuntimeError):
@@ -84,7 +86,9 @@ def _timeout_handler(signum: int, frame: Any) -> None:
 
 def _initialize_worker(memory_mb: int, timeout_sec: float) -> None:
     global _TASK_TIMEOUT_SEC
+    global _COMPILED_CODE_CACHE
     _TASK_TIMEOUT_SEC = timeout_sec
+    _COMPILED_CODE_CACHE = {}
 
     if resource is not None:
         memory_bytes = max(64, memory_mb) * 1024 * 1024
@@ -144,6 +148,15 @@ def validate_code_static(code: str) -> tuple[bool, str | None]:
     return _validate_ast(tree)
 
 
+def _compiled_candidate_code(code: str) -> Any:
+    cached = _COMPILED_CODE_CACHE.get(code)
+    if cached is not None:
+        return cached
+    compiled = compile(code, "<sandbox>", "exec")
+    _COMPILED_CODE_CACHE[code] = compiled
+    return compiled
+
+
 def _run_candidate(code: str, graph: nx.Graph) -> float | None:
     safe_builtins = {
         "abs": abs,
@@ -163,8 +176,9 @@ def _run_candidate(code: str, graph: nx.Graph) -> float | None:
     try:
         if _TASK_TIMEOUT_SEC > 0 and hasattr(signal, "setitimer"):
             signal.setitimer(signal.ITIMER_REAL, _TASK_TIMEOUT_SEC)
-        exec(code, safe_globals, safe_locals)
-        fn = safe_locals.get("new_invariant", safe_globals.get("new_invariant"))
+        compiled_code = _compiled_candidate_code(code)
+        exec(compiled_code, safe_globals, safe_locals)
+        fn = safe_locals.get("new_invariant")
         if fn is None:
             return None
         value = fn(graph)
@@ -181,28 +195,83 @@ def _run_candidate(code: str, graph: nx.Graph) -> float | None:
             signal.setitimer(signal.ITIMER_REAL, 0.0)
 
 
-def evaluate_candidate_on_graphs(
-    code: str, graphs: list[nx.Graph], timeout_sec: float, memory_mb: int
-) -> list[float | None]:
-    ok, _ = validate_code_static(code)
-    if not ok:
-        return [None for _ in graphs]
-
-    if not graphs:
-        return []
-
-    context = mp.get_context()
-    worker_count = min(max(1, os.cpu_count() or 1), len(graphs))
-    tasks = [(code, graph) for graph in graphs]
-    with context.Pool(
-        processes=worker_count,
-        initializer=_initialize_worker,
-        initargs=(memory_mb, timeout_sec),
-        maxtasksperchild=100,
-    ) as pool:
-        results = pool.starmap(_run_candidate_with_queue_result, tasks, chunksize=1)
-    return results
-
-
 def _run_candidate_with_queue_result(code: str, graph: nx.Graph) -> float | None:
     return _run_candidate(code, graph)
+
+
+class SandboxEvaluator:
+    """Reusable evaluator that keeps a worker pool alive across calls."""
+
+    def __init__(self, timeout_sec: float, memory_mb: int, max_workers: int | None = None):
+        self.timeout_sec = timeout_sec
+        self.memory_mb = memory_mb
+        self._pool: Pool | None = None
+        cpu_workers = max(1, os.cpu_count() or 1)
+        if max_workers is None:
+            self._worker_count = cpu_workers
+        else:
+            self._worker_count = max(1, min(max_workers, cpu_workers))
+
+    def __enter__(self) -> "SandboxEvaluator":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        del exc_type, exc, tb
+        self.close()
+        return False
+
+    def close(self) -> None:
+        if self._pool is None:
+            return
+        self._pool.close()
+        self._pool.join()
+        self._pool = None
+
+    def _ensure_pool(self) -> None:
+        if self._pool is not None:
+            return
+        context = mp.get_context()
+        self._pool = context.Pool(
+            processes=self._worker_count,
+            initializer=_initialize_worker,
+            initargs=(self.memory_mb, self.timeout_sec),
+            maxtasksperchild=100,
+        )
+
+    def _evaluate_once(self, code: str, graphs: list[nx.Graph]) -> list[float | None]:
+        if self._pool is None:
+            raise RuntimeError("sandbox pool is not initialized")
+        tasks = [(code, graph) for graph in graphs]
+        # Keep chunksize small for fairness; tune upward if IPC becomes dominant.
+        return self._pool.starmap(_run_candidate_with_queue_result, tasks, chunksize=1)
+
+    def evaluate(self, code: str, graphs: list[nx.Graph]) -> list[float | None]:
+        ok, _ = validate_code_static(code)
+        if not ok:
+            return [None for _ in graphs]
+        if not graphs:
+            return []
+
+        self._ensure_pool()
+        try:
+            return self._evaluate_once(code, graphs)
+        except (BrokenPipeError, EOFError, OSError):
+            LOGGER.debug("sandbox pool failed; rebuilding once", exc_info=True)
+            self.close()
+            self._ensure_pool()
+            return self._evaluate_once(code, graphs)
+
+
+def evaluate_candidate_on_graphs(
+    code: str,
+    graphs: list[nx.Graph],
+    timeout_sec: float,
+    memory_mb: int,
+    max_workers: int | None = None,
+) -> list[float | None]:
+    with SandboxEvaluator(
+        timeout_sec=timeout_sec,
+        memory_mb=memory_mb,
+        max_workers=max_workers,
+    ) as evaluator:
+        return evaluator.evaluate(code, graphs)

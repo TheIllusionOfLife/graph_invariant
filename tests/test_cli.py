@@ -288,7 +288,7 @@ def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path
     assert "test_metrics" in payload
     assert "val_metrics" in payload
     assert "success" in payload
-    assert payload["schema_version"] == 2
+    assert payload["schema_version"] == 3
     assert "best_candidate_code" not in payload
     assert payload["model_name"] == "gpt-oss:20b"
     assert payload["config"]["num_train_graphs"] == 2
@@ -436,6 +436,26 @@ def test_main_report_command_tolerates_malformed_json(monkeypatch, tmp_path):
     assert cli.main() == 0
     report = (artifacts_dir / "report.md").read_text(encoding="utf-8")
     assert "Phase 1 Report" in report
+
+
+def test_main_benchmark_command_invokes_runner(monkeypatch, tmp_path):
+    calls: dict[str, object] = {}
+
+    def fake_run_benchmark(cfg):  # noqa: ANN001
+        calls["artifacts_dir"] = cfg.artifacts_dir
+        return 0
+
+    config_path = tmp_path / "benchmark.json"
+    config_path.write_text(json.dumps({"artifacts_dir": "artifacts_bench"}), encoding="utf-8")
+    monkeypatch.setattr("graph_invariant.benchmark.run_benchmark", fake_run_benchmark)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["graph_invariant", "benchmark", "--config", str(config_path)],
+    )
+    from graph_invariant import cli
+
+    assert cli.main() == 0
+    assert calls["artifacts_dir"] == "artifacts_bench"
 
 
 def test_constrained_mode_allows_late_recovery_by_default():
@@ -625,3 +645,282 @@ def test_linear_and_random_forest_skip_on_empty_training_data():
     rf = _run_random_forest_optional(x_train, y_train, x_val, y_val, x_test, y_test)
     assert lr == {"status": "skipped", "reason": "empty training data"}
     assert rf == {"status": "skipped", "reason": "empty training data"}
+
+
+def test_run_phase1_summary_enforces_pysr_parity(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=True,
+        enforce_pysr_parity_for_success=True,
+        require_baselines_for_success=True,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.cli.run_pysr_baseline",
+        lambda **_kwargs: {
+            "status": "ok",
+            "val_metrics": {"spearman": 0.95},
+            "test_metrics": {"spearman": 0.95},
+        },
+    )
+
+    assert run_phase1(cfg) == 0
+    summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
+    assert summary["schema_version"] == 3
+    assert summary["success"] is False
+    assert summary["success_criteria"]["pysr_parity_passed"] is False
+
+
+def test_run_phase1_pysr_parity_allows_small_epsilon_gap(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=True,
+        enforce_pysr_parity_for_success=True,
+        require_baselines_for_success=True,
+        pysr_parity_epsilon=0.001,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.cli.run_pysr_baseline",
+        lambda **_kwargs: {
+            "status": "ok",
+            "val_metrics": {"spearman": 0.9005},
+            "test_metrics": {"spearman": 0.9005},
+        },
+    )
+
+    assert run_phase1(cfg) == 0
+    summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
+    assert summary["success_criteria"]["pysr_parity_passed"] is True
+
+
+def test_run_phase1_requires_healthy_baselines_when_configured(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=True,
+        enforce_pysr_parity_for_success=False,
+        require_baselines_for_success=True,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.cli.run_pysr_baseline",
+        lambda **_kwargs: {"status": "error", "reason": "boom"},
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.run_stat_baselines",
+        lambda **_kwargs: {
+            "linear_regression": {"status": "error", "reason": "bad"},
+            "random_forest": {"status": "skipped", "reason": "missing"},
+        },
+    )
+
+    assert run_phase1(cfg) == 0
+    summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
+    assert summary["success"] is False
+    assert summary["success_criteria"]["baselines_passed"] is False
+
+
+def test_run_phase1_accepts_single_healthy_baseline_when_required(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=True,
+        enforce_pysr_parity_for_success=False,
+        require_baselines_for_success=True,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.cli.run_pysr_baseline",
+        lambda **_kwargs: {"status": "error", "reason": "boom"},
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.run_stat_baselines",
+        lambda **_kwargs: {
+            "linear_regression": {"status": "ok", "val_metrics": {"spearman": 0.2}},
+            "random_forest": {"status": "skipped", "reason": "missing"},
+        },
+    )
+
+    assert run_phase1(cfg) == 0
+    summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
+    assert summary["success"] is True
+    assert summary["success_criteria"]["baselines_healthy"] is True
+    assert summary["success_criteria"]["stat_baseline_ok"] is True
+    assert summary["success_criteria"]["pysr_ok"] is False
+    assert summary["success_criteria"]["baselines_passed"] is True
+
+
+def test_run_phase1_persists_prompt_and_response_when_enabled(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=1,
+        num_val_graphs=2,
+        num_test_graphs=1,
+        run_baselines=False,
+        persist_prompt_and_response_logs=True,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_payload",
+        lambda *_args, **_kwargs: {
+            "response": "llm text",
+            "code": "def new_invariant(G):\n    return 1.0",
+        },
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+
+    assert run_phase1(cfg) == 0
+    events_path = Path(cfg.artifacts_dir) / "logs" / "events.jsonl"
+    records = [json.loads(line) for line in events_path.read_text("utf-8").splitlines()]
+    evaluated = [r for r in records if r["event_type"] == "candidate_evaluated"]
+    assert evaluated
+    payload = evaluated[0]["payload"]
+    assert payload["prompt"] is not None
+    assert payload["llm_response"] == "llm text"
+    assert payload["extracted_code"].startswith("def new_invariant")

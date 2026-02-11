@@ -19,6 +19,7 @@ The repository now includes a Python CI workflow; contributors should keep local
 - `uv run ruff check . && uv run ruff format .` lints and formats Python code when code exists.
 - `uv run python -m graph_invariant.cli phase1 --config <config.json>` runs Phase 1.
 - `uv run python -m graph_invariant.cli report --artifacts <artifacts_dir>` renders a markdown report.
+- `uv run python -m graph_invariant.cli benchmark --config <config.json>` runs a deterministic multi-seed benchmark sweep.
 
 If you add runnable scripts, document the exact command in `SPEC.md` and this file in the same PR.
 

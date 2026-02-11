@@ -41,6 +41,14 @@ class Phase1Config:
     pysr_populations: int = 8
     pysr_procs: int = 0
     pysr_timeout_in_seconds: float | None = 60.0
+    benchmark_seeds: tuple[int, ...] = (11, 22, 33, 44, 55)
+    novelty_bootstrap_samples: int = 1000
+    novelty_threshold: float = 0.7
+    enforce_pysr_parity_for_success: bool = True
+    pysr_parity_epsilon: float = 0.0
+    require_baselines_for_success: bool = True
+    persist_prompt_and_response_logs: bool = False
+    llm_timeout_sec: float = 60.0
 
     def __post_init__(self) -> None:
         self.island_temperatures = tuple(float(x) for x in self.island_temperatures)
@@ -75,6 +83,17 @@ class Phase1Config:
             raise ValueError("pysr_procs must be >= 0")
         if self.pysr_timeout_in_seconds is not None and self.pysr_timeout_in_seconds <= 0.0:
             raise ValueError("pysr_timeout_in_seconds must be > 0.0")
+        self.benchmark_seeds = tuple(int(seed) for seed in self.benchmark_seeds)
+        if not self.benchmark_seeds:
+            raise ValueError("benchmark_seeds must contain at least one seed")
+        if self.novelty_bootstrap_samples < 1:
+            raise ValueError("novelty_bootstrap_samples must be >= 1")
+        if not (0.0 <= self.novelty_threshold <= 1.0):
+            raise ValueError("novelty_threshold must be between 0.0 and 1.0")
+        if self.pysr_parity_epsilon < 0.0:
+            raise ValueError("pysr_parity_epsilon must be >= 0.0")
+        if self.llm_timeout_sec <= 0.0:
+            raise ValueError("llm_timeout_sec must be > 0.0")
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> "Phase1Config":

@@ -44,6 +44,32 @@ def test_generate_candidate_code_parses_response(monkeypatch):
     assert "def new_invariant" in code
 
 
+def test_generate_candidate_code_respects_timeout(monkeypatch):
+    class DummyResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, str]:
+            return {"response": "def new_invariant(G):\n    return 3"}
+
+    captured: dict[str, object] = {}
+
+    def fake_post(url, json, timeout, allow_redirects):  # noqa: ANN001
+        captured["timeout"] = timeout
+        del url, json, allow_redirects
+        return DummyResponse()
+
+    monkeypatch.setattr("graph_invariant.llm_ollama.requests.post", fake_post)
+    _ = generate_candidate_code(
+        "p",
+        "m",
+        0.3,
+        "http://localhost:11434/api/generate",
+        timeout_sec=91.0,
+    )
+    assert captured["timeout"] == 91.0
+
+
 def test_tags_endpoint_preserves_subpath():
     endpoint = _tags_endpoint("http://example.com/ollama/api/generate")
     assert endpoint == "http://example.com/ollama/api/tags"

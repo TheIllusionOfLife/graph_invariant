@@ -13,7 +13,12 @@ from .config import Phase1Config
 from .data import generate_phase1_datasets
 from .evolution import migrate_ring_top1
 from .known_invariants import compute_known_invariant_values
-from .llm_ollama import build_prompt, generate_candidate_code, list_available_models
+from .llm_ollama import (
+    build_prompt,
+    generate_candidate_code,
+    generate_candidate_payload,
+    list_available_models,
+)
 from .logging_io import (
     append_jsonl,
     load_checkpoint,
@@ -25,6 +30,7 @@ from .sandbox import SandboxEvaluator
 from .scoring import (
     compute_metrics,
     compute_novelty_bonus,
+    compute_novelty_ci,
     compute_simplicity_score,
     compute_total_score,
 )
@@ -205,13 +211,27 @@ def _run_one_generation(
         had_valid_train_candidate = False
         for pop_idx in range(cfg.population_size):
             prompt = _candidate_prompt(state, island_id, cfg.target_name)
-            code = generate_candidate_code(
-                prompt=prompt,
-                model=cfg.model_name,
-                temperature=cfg.island_temperatures[island_id],
-                url=cfg.ollama_url,
-                allow_remote=cfg.allow_remote_ollama,
-            )
+            llm_response: str | None = None
+            if cfg.persist_prompt_and_response_logs:
+                payload = generate_candidate_payload(
+                    prompt=prompt,
+                    model=cfg.model_name,
+                    temperature=cfg.island_temperatures[island_id],
+                    url=cfg.ollama_url,
+                    allow_remote=cfg.allow_remote_ollama,
+                    timeout_sec=cfg.llm_timeout_sec,
+                )
+                code = payload["code"]
+                llm_response = payload["response"]
+            else:
+                code = generate_candidate_code(
+                    prompt=prompt,
+                    model=cfg.model_name,
+                    temperature=cfg.island_temperatures[island_id],
+                    url=cfg.ollama_url,
+                    allow_remote=cfg.allow_remote_ollama,
+                    timeout_sec=cfg.llm_timeout_sec,
+                )
             y_pred_train_raw = evaluator.evaluate(code, datasets_train)
             train_pairs = [
                 (idx, yt, yp)
@@ -313,6 +333,9 @@ def _run_one_generation(
                     "simplicity_score": simplicity,
                     "novelty_bonus": novelty_bonus,
                     "total_score": total,
+                    "prompt": prompt if cfg.persist_prompt_and_response_logs else None,
+                    "llm_response": llm_response if cfg.persist_prompt_and_response_logs else None,
+                    "extracted_code": code if cfg.persist_prompt_and_response_logs else None,
                 },
                 log_path,
             )
@@ -410,7 +433,43 @@ def _write_phase1_summary(
     y_true_train: list[float],
     y_true_val: list[float],
     y_true_test: list[float],
+    baseline_results: dict[str, object] | None,
 ) -> None:
+    def _extract_spearman(metrics: dict[str, object] | None) -> float | None:
+        if not isinstance(metrics, dict):
+            return None
+        value = metrics.get("spearman")
+        if isinstance(value, (int, float)):
+            return float(value)
+        return None
+
+    def _baseline_health(
+        baseline_payload: dict[str, object] | None,
+    ) -> tuple[bool, bool, str, float | None, float | None]:
+        if not isinstance(baseline_payload, dict):
+            return False, False, "missing", None, None
+        pysr_payload = baseline_payload.get("pysr_baseline")
+        stat_payload = baseline_payload.get("stat_baselines")
+
+        if isinstance(pysr_payload, dict):
+            pysr_status = str(pysr_payload.get("status", "missing"))
+            pysr_val_spearman = _extract_spearman(pysr_payload.get("val_metrics"))
+            pysr_test_spearman = _extract_spearman(pysr_payload.get("test_metrics"))
+        else:
+            pysr_status = "missing"
+            pysr_val_spearman = None
+            pysr_test_spearman = None
+
+        stat_ok = False
+        if isinstance(stat_payload, dict):
+            stat_ok = any(
+                isinstance(result, dict) and str(result.get("status")) == "ok"
+                for result in stat_payload.values()
+            )
+
+        pysr_ok = pysr_status == "ok"
+        return stat_ok, pysr_ok, pysr_status, pysr_val_spearman, pysr_test_spearman
+
     best = _best_candidate(state)
     summary_path = artifacts_dir / "phase1_summary.json"
     if best is None:
@@ -433,15 +492,101 @@ def _write_phase1_summary(
     train_metrics = _evaluate_split(best.code, datasets_train, y_true_train, cfg, evaluator)
     sanity_metrics = _evaluate_split(best.code, datasets_sanity, y_sanity, cfg, evaluator)
 
+    def _novelty_ci_for_split(
+        graphs: list[nx.Graph],
+        known_values: dict[str, list[float]],
+        seed_offset: int,
+    ) -> dict[str, object]:
+        y_pred_raw = evaluator.evaluate(best.code, graphs)
+        valid_pairs = [(idx, yp) for idx, yp in enumerate(y_pred_raw) if yp is not None]
+        if not valid_pairs:
+            return {
+                "max_ci_upper_abs_rho": 0.0,
+                "novelty_passed": False,
+                "threshold": cfg.novelty_threshold,
+                "per_invariant": {},
+            }
+        valid_indices, y_pred_valid = zip(*valid_pairs, strict=True)
+        known_subset = {
+            name: [values[idx] for idx in valid_indices] for name, values in known_values.items()
+        }
+        return compute_novelty_ci(
+            candidate_values=list(y_pred_valid),
+            known_invariants=known_subset,
+            n_bootstrap=cfg.novelty_bootstrap_samples,
+            seed=cfg.seed + seed_offset,
+            novelty_threshold=cfg.novelty_threshold,
+        )
+
+    novelty_ci = {
+        "validation": _novelty_ci_for_split(datasets_val, known_val, seed_offset=17),
+        "test": _novelty_ci_for_split(datasets_test, known_test, seed_offset=29),
+    }
+
+    stat_ok, pysr_ok, pysr_status, pysr_val_spearman, pysr_test_spearman = _baseline_health(
+        baseline_results
+    )
+    candidate_val_spearman = float(val_metrics.get("spearman", 0.0))
+    candidate_test_spearman = float(test_metrics.get("spearman", 0.0))
+
+    threshold_passed = abs(candidate_val_spearman) >= cfg.success_spearman_threshold
+    baselines_available = baseline_results is not None
+    baselines_healthy = stat_ok or pysr_ok
+    baselines_passed = (not cfg.require_baselines_for_success) or (
+        baselines_available and baselines_healthy
+    )
+    pysr_parity_passed = True
+    pysr_parity_reason = "disabled"
+    if cfg.enforce_pysr_parity_for_success:
+        if pysr_status != "ok" or pysr_val_spearman is None:
+            pysr_parity_passed = False
+            pysr_parity_reason = "pysr_missing_or_unavailable"
+        else:
+            pysr_parity_passed = (
+                candidate_val_spearman + cfg.pysr_parity_epsilon >= pysr_val_spearman
+            )
+            pysr_parity_reason = "ok"
+
+    success_criteria = {
+        "success_spearman_threshold": cfg.success_spearman_threshold,
+        "threshold_passed": threshold_passed,
+        "require_baselines_for_success": cfg.require_baselines_for_success,
+        "baselines_available": baselines_available,
+        "baselines_healthy": baselines_healthy,
+        "stat_baseline_ok": stat_ok,
+        "pysr_ok": pysr_ok,
+        "baselines_passed": baselines_passed,
+        "enforce_pysr_parity_for_success": cfg.enforce_pysr_parity_for_success,
+        "pysr_parity_epsilon": cfg.pysr_parity_epsilon,
+        "pysr_status": pysr_status,
+        "candidate_val_spearman": candidate_val_spearman,
+        "pysr_val_spearman": pysr_val_spearman,
+        "pysr_parity_passed": pysr_parity_passed,
+        "pysr_parity_reason": pysr_parity_reason,
+    }
+    success = threshold_passed and baselines_passed and pysr_parity_passed
+
+    baseline_comparison = {
+        "candidate": {
+            "val_spearman": candidate_val_spearman,
+            "test_spearman": candidate_test_spearman,
+        },
+        "pysr": {
+            "status": pysr_status,
+            "val_spearman": pysr_val_spearman,
+            "test_spearman": pysr_test_spearman,
+        },
+    }
+
     payload = {
-        "schema_version": 2,
+        "schema_version": 3,
         "experiment_id": state.experiment_id,
         "model_name": cfg.model_name,
         "best_candidate_id": best.id,
         "best_candidate_code_sha256": sha256(best.code.encode("utf-8")).hexdigest(),
         "best_val_score": state.best_val_score,
         "stop_reason": stop_reason,
-        "success": abs(val_metrics["spearman"]) >= cfg.success_spearman_threshold,
+        "success": success,
         "config": cfg.to_dict(),
         "final_generation": state.generation,
         "island_candidate_counts": {
@@ -451,6 +596,9 @@ def _write_phase1_summary(
         "val_metrics": val_metrics,
         "test_metrics": test_metrics,
         "sanity_metrics": sanity_metrics,
+        "novelty_ci": novelty_ci,
+        "baseline_comparison": baseline_comparison,
+        "success_criteria": success_criteria,
         "dataset_fingerprint": _dataset_fingerprint(cfg, y_true_train, y_true_val, y_true_test),
     }
     if cfg.persist_candidate_code_in_summary:
@@ -459,17 +607,26 @@ def _write_phase1_summary(
 
 
 def _write_baseline_summary(
-    cfg: Phase1Config,
+    payload: dict[str, object] | None,
     artifacts_dir: Path,
+) -> None:
+    if payload is None:
+        return
+
+    write_json(payload, artifacts_dir / "baselines_summary.json")
+
+
+def _collect_baseline_results(
+    cfg: Phase1Config,
     datasets_train: list[nx.Graph],
     datasets_val: list[nx.Graph],
     datasets_test: list[nx.Graph],
     y_true_train: list[float],
     y_true_val: list[float],
     y_true_test: list[float],
-) -> None:
+) -> dict[str, object] | None:
     if not cfg.run_baselines:
-        return
+        return None
 
     stat = run_stat_baselines(
         train_graphs=datasets_train,
@@ -491,15 +648,12 @@ def _write_baseline_summary(
         procs=cfg.pysr_procs,
         timeout_in_seconds=cfg.pysr_timeout_in_seconds,
     )
-    write_json(
-        {
-            "schema_version": 1,
-            "target_name": cfg.target_name,
-            "stat_baselines": stat,
-            "pysr_baseline": pysr,
-        },
-        artifacts_dir / "baselines_summary.json",
-    )
+    return {
+        "schema_version": 1,
+        "target_name": cfg.target_name,
+        "stat_baselines": stat,
+        "pysr_baseline": pysr,
+    }
 
 
 def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
@@ -558,6 +712,15 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
     )
 
     stop_reason = "max_generations_reached"
+    baseline_results = _collect_baseline_results(
+        cfg=cfg,
+        datasets_train=datasets.train,
+        datasets_val=datasets.val,
+        datasets_test=datasets.test,
+        y_true_train=y_true_train,
+        y_true_val=y_true_val,
+        y_true_test=y_true_test,
+    )
     with SandboxEvaluator(
         timeout_sec=cfg.timeout_sec,
         memory_mb=cfg.memory_mb,
@@ -617,16 +780,11 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
             y_true_train=y_true_train,
             y_true_val=y_true_val,
             y_true_test=y_true_test,
+            baseline_results=baseline_results,
         )
     _write_baseline_summary(
-        cfg=cfg,
+        payload=baseline_results,
         artifacts_dir=artifacts_dir,
-        datasets_train=datasets.train,
-        datasets_val=datasets.val,
-        datasets_test=datasets.test,
-        y_true_train=y_true_train,
-        y_true_val=y_true_val,
-        y_true_test=y_true_test,
     )
     return 0
 
@@ -686,6 +844,9 @@ def main() -> int:
     report = sub.add_parser("report")
     report.add_argument("--artifacts", type=str, required=True)
 
+    benchmark = sub.add_parser("benchmark")
+    benchmark.add_argument("--config", type=str, default=None)
+
     args = parser.parse_args()
 
     if args.command == "phase1":
@@ -695,6 +856,11 @@ def main() -> int:
         report_path = write_report(args.artifacts)
         print(f"Report written to {report_path}")
         return 0
+    if args.command == "benchmark":
+        from .benchmark import run_benchmark
+
+        cfg = Phase1Config.from_json(args.config) if args.config else Phase1Config()
+        return run_benchmark(cfg)
     return 1
 
 

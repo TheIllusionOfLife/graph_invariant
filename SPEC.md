@@ -234,6 +234,8 @@ multiprocessing.Pool(initializer=worker_init)  # ワーカーを事前起動
 }
 ```
 
+`phase1_summary.json` は `schema_version=3` を採用する。`report` コマンドは旧スキーマ入力にも耐性を持つ。
+
 ### グラフ生成シード
 
 - データセット生成時のマスターシードを記録
@@ -309,6 +311,12 @@ uv run python -m graph_invariant.cli report --artifacts <artifacts_dir>
 ```
 
 renders a markdown report from the specified artifacts directory
+
+```bash
+uv run python -m graph_invariant.cli benchmark --config <config.json>
+```
+
+runs a deterministic multi-seed Phase 1 benchmark sweep and aggregates results
 
 ---
 

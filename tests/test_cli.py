@@ -292,6 +292,8 @@ def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path
     assert "best_candidate_code" not in payload
     assert payload["model_name"] == "gpt-oss:20b"
     assert payload["config"]["num_train_graphs"] == 2
+    assert payload["config"]["memory_mb"] == cfg.memory_mb
+    assert payload["config"]["island_temperatures"] == list(cfg.island_temperatures)
     assert (
         payload["best_candidate_code_sha256"]
         == hashlib.sha256(expected_code.encode("utf-8")).hexdigest()

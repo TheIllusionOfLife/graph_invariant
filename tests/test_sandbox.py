@@ -154,3 +154,13 @@ def test_sandbox_evaluator_rebuilds_pool_after_broken_pipe(monkeypatch):
     assert result == [2.0]
     assert created_pools == 2
     assert starmap_attempts == 2
+
+
+def test_compiled_candidate_code_uses_cache():
+    from graph_invariant import sandbox
+
+    sandbox._COMPILED_CODE_CACHE = {}
+    code = "def new_invariant(G):\n    return 1.0"
+    first = sandbox._compiled_candidate_code(code)
+    second = sandbox._compiled_candidate_code(code)
+    assert first is second

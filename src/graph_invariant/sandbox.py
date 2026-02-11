@@ -72,6 +72,7 @@ ALLOWED_AST_NODES: tuple[type[ast.AST], ...] = (
 
 LOGGER = logging.getLogger(__name__)
 _TASK_TIMEOUT_SEC = 0.0
+_COMPILED_CODE_CACHE: dict[str, Any] = {}
 
 
 class CandidateTimeoutError(RuntimeError):
@@ -85,7 +86,9 @@ def _timeout_handler(signum: int, frame: Any) -> None:
 
 def _initialize_worker(memory_mb: int, timeout_sec: float) -> None:
     global _TASK_TIMEOUT_SEC
+    global _COMPILED_CODE_CACHE
     _TASK_TIMEOUT_SEC = timeout_sec
+    _COMPILED_CODE_CACHE = {}
 
     if resource is not None:
         memory_bytes = max(64, memory_mb) * 1024 * 1024
@@ -145,6 +148,15 @@ def validate_code_static(code: str) -> tuple[bool, str | None]:
     return _validate_ast(tree)
 
 
+def _compiled_candidate_code(code: str) -> Any:
+    cached = _COMPILED_CODE_CACHE.get(code)
+    if cached is not None:
+        return cached
+    compiled = compile(code, "<sandbox>", "exec")
+    _COMPILED_CODE_CACHE[code] = compiled
+    return compiled
+
+
 def _run_candidate(code: str, graph: nx.Graph) -> float | None:
     safe_builtins = {
         "abs": abs,
@@ -164,7 +176,8 @@ def _run_candidate(code: str, graph: nx.Graph) -> float | None:
     try:
         if _TASK_TIMEOUT_SEC > 0 and hasattr(signal, "setitimer"):
             signal.setitimer(signal.ITIMER_REAL, _TASK_TIMEOUT_SEC)
-        exec(code, safe_globals, safe_locals)
+        compiled_code = _compiled_candidate_code(code)
+        exec(compiled_code, safe_globals, safe_locals)
         fn = safe_locals.get("new_invariant", safe_globals.get("new_invariant"))
         if fn is None:
             return None

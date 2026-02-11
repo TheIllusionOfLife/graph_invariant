@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from importlib import import_module
 from types import ModuleType
+from typing import Any
 
 import networkx as nx
 import numpy as np
@@ -42,14 +43,12 @@ def _make_regressor(
         regressor_cls = getattr(pysr_module, "SymbolicRegressor", None)
     if regressor_cls is None:
         return None
-    kwargs: dict[str, int | float] = {
-        "niterations": 30,
-        "populations": 8,
+    kwargs: dict[str, Any] = {
+        "niterations": niterations,
+        "populations": populations,
         "procs": 0,
         "random_state": 42,
     }
-    kwargs["niterations"] = niterations
-    kwargs["populations"] = populations
     if timeout_in_seconds is not None:
         kwargs["timeout_in_seconds"] = timeout_in_seconds
     return regressor_cls(**kwargs)

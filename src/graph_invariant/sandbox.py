@@ -178,7 +178,7 @@ def _run_candidate(code: str, graph: nx.Graph) -> float | None:
             signal.setitimer(signal.ITIMER_REAL, _TASK_TIMEOUT_SEC)
         compiled_code = _compiled_candidate_code(code)
         exec(compiled_code, safe_globals, safe_locals)
-        fn = safe_locals.get("new_invariant", safe_globals.get("new_invariant"))
+        fn = safe_locals.get("new_invariant")
         if fn is None:
             return None
         value = fn(graph)

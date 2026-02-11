@@ -45,7 +45,7 @@ def _make_regressor(
     populations: int,
     procs: int,
     timeout_in_seconds: float | None,
-):
+) -> Any | None:
     regressor_cls = getattr(pysr_module, "PySRRegressor", None)
     if regressor_cls is None:
         regressor_cls = getattr(pysr_module, "SymbolicRegressor", None)
@@ -111,7 +111,14 @@ def run_pysr_baseline(
             "val_metrics": _metrics_dict(y_val_np, val_pred),
             "test_metrics": _metrics_dict(y_test_np, test_pred),
         }
-    except Exception as exc:
+    except (RuntimeError, ValueError, TypeError) as exc:
+        LOGGER.exception("pysr baseline execution failed")
+        return {
+            "status": "error",
+            "reason": f"pysr execution failed: {type(exc).__name__}",
+            "error_type": type(exc).__name__,
+        }
+    except (ArithmeticError, OverflowError) as exc:
         LOGGER.exception("pysr baseline execution failed")
         return {
             "status": "error",

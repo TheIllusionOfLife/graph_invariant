@@ -441,7 +441,7 @@ def _write_phase1_summary(
         "best_candidate_code_sha256": sha256(best.code.encode("utf-8")).hexdigest(),
         "best_val_score": state.best_val_score,
         "stop_reason": stop_reason,
-        "success": abs(float(val_metrics.get("spearman") or 0.0)) >= cfg.success_spearman_threshold,
+        "success": abs(val_metrics["spearman"]) >= cfg.success_spearman_threshold,
         "config": cfg.to_dict(),
         "final_generation": state.generation,
         "island_candidate_counts": {

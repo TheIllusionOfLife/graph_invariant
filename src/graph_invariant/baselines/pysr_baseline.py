@@ -14,6 +14,6 @@ def run_pysr_baseline(
     del train_graphs, val_graphs, test_graphs, y_train, y_val, y_test
     try:
         import pysr  # noqa: F401
-    except Exception:
+    except ImportError:
         return {"status": "skipped", "reason": "pysr not installed"}
     return {"status": "skipped", "reason": "pysr baseline not yet configured"}

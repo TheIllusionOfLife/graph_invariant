@@ -72,7 +72,7 @@ def _run_random_forest_optional(
 ) -> dict[str, object]:
     try:
         from sklearn.ensemble import RandomForestRegressor
-    except Exception:
+    except ImportError:
         return {"status": "skipped", "reason": "scikit-learn not installed"}
 
     model = RandomForestRegressor(n_estimators=128, random_state=42)

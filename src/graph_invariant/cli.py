@@ -289,6 +289,81 @@ def _run_one_generation(
     def _count_failure(reason: str) -> None:
         failure_categories[reason] = int(failure_categories.get(reason, 0)) + 1
 
+    def _handle_rejection(
+        *,
+        island_id: int,
+        pop_idx: int,
+        attempt_idx: int,
+        rejection_reason: str,
+        failure_feedback: str | None,
+        base_prompt: str,
+        code: str,
+        max_attempts: int,
+        repairable: bool,
+        train_signal: float | None = None,
+    ) -> tuple[bool, str | None]:
+        _count_failure(rejection_reason)
+        _record_recent_failure(
+            state,
+            island_id=island_id,
+            failure_text=f"{rejection_reason}: {failure_feedback}",
+            max_items=cfg.self_correction_feedback_window,
+        )
+        rejected_payload: dict[str, Any] = {
+            "generation": state.generation,
+            "island_id": island_id,
+            "population_idx": pop_idx,
+            "attempt_index": attempt_idx,
+            "reason": rejection_reason,
+            "failure_feedback": failure_feedback,
+            "model_name": cfg.model_name,
+        }
+        if train_signal is not None:
+            rejected_payload["train_signal"] = train_signal
+        append_jsonl("candidate_rejected", rejected_payload, log_path)
+
+        if repairable and attempt_idx + 1 < max_attempts:
+            self_correction_stats["attempted_repairs"] = (
+                int(self_correction_stats.get("attempted_repairs", 0)) + 1
+            )
+            append_jsonl(
+                "candidate_repair_attempted",
+                {
+                    "generation": state.generation,
+                    "island_id": island_id,
+                    "population_idx": pop_idx,
+                    "attempt_index": attempt_idx,
+                    "reason": rejection_reason,
+                    "failure_feedback": failure_feedback,
+                    "model_name": cfg.model_name,
+                },
+                log_path,
+            )
+            next_prompt = _build_repair_prompt(
+                original_prompt=base_prompt,
+                candidate_code=code,
+                failure_feedback=failure_feedback or rejection_reason,
+            )
+            return True, next_prompt
+
+        if attempt_idx > 0:
+            self_correction_stats["failed_repairs"] = (
+                int(self_correction_stats.get("failed_repairs", 0)) + 1
+            )
+            append_jsonl(
+                "candidate_repair_result",
+                {
+                    "generation": state.generation,
+                    "island_id": island_id,
+                    "population_idx": pop_idx,
+                    "status": "failed",
+                    "reason": rejection_reason,
+                    "model_name": cfg.model_name,
+                },
+                log_path,
+            )
+        return False, None
+
     island_ids = sorted(state.islands.keys())
     for island_id in island_ids:
         new_candidates: list[Candidate] = []
@@ -328,69 +403,21 @@ def _run_one_generation(
                         failure_feedback = f"train_signal={train_signal:.6f}"
 
                 if rejection_reason is not None:
-                    _count_failure(rejection_reason)
-                    _record_recent_failure(
-                        state,
+                    should_retry, next_prompt = _handle_rejection(
                         island_id=island_id,
-                        failure_text=f"{rejection_reason}: {failure_feedback}",
-                        max_items=cfg.self_correction_feedback_window,
+                        pop_idx=pop_idx,
+                        attempt_idx=attempt_idx,
+                        rejection_reason=rejection_reason,
+                        failure_feedback=failure_feedback,
+                        base_prompt=base_prompt,
+                        code=code,
+                        max_attempts=max_attempts,
+                        repairable=rejection_reason == "no_valid_train_predictions",
+                        train_signal=train_signal,
                     )
-                    append_jsonl(
-                        "candidate_rejected",
-                        {
-                            "generation": state.generation,
-                            "island_id": island_id,
-                            "population_idx": pop_idx,
-                            "attempt_index": attempt_idx,
-                            "reason": rejection_reason,
-                            "failure_feedback": failure_feedback,
-                            "train_signal": train_signal,
-                            "model_name": cfg.model_name,
-                        },
-                        log_path,
-                    )
-
-                    repairable = rejection_reason == "no_valid_train_predictions"
-                    if repairable and attempt_idx + 1 < max_attempts:
-                        self_correction_stats["attempted_repairs"] = (
-                            int(self_correction_stats.get("attempted_repairs", 0)) + 1
-                        )
-                        append_jsonl(
-                            "candidate_repair_attempted",
-                            {
-                                "generation": state.generation,
-                                "island_id": island_id,
-                                "population_idx": pop_idx,
-                                "attempt_index": attempt_idx,
-                                "reason": rejection_reason,
-                                "failure_feedback": failure_feedback,
-                                "model_name": cfg.model_name,
-                            },
-                            log_path,
-                        )
-                        current_prompt = _build_repair_prompt(
-                            original_prompt=base_prompt,
-                            candidate_code=code,
-                            failure_feedback=failure_feedback or rejection_reason,
-                        )
+                    if should_retry and next_prompt is not None:
+                        current_prompt = next_prompt
                         continue
-
-                    if attempt_idx > 0:
-                        self_correction_stats["failed_repairs"] = (
-                            int(self_correction_stats.get("failed_repairs", 0)) + 1
-                        )
-                        append_jsonl(
-                            "candidate_repair_result",
-                            {
-                                "generation": state.generation,
-                                "island_id": island_id,
-                                "population_idx": pop_idx,
-                                "status": "failed",
-                                "reason": rejection_reason,
-                                "model_name": cfg.model_name,
-                            },
-                            log_path,
-                        )
                     break
 
                 had_valid_train_candidate = True
@@ -404,65 +431,20 @@ def _run_one_generation(
                 if not val_pairs:
                     rejection_reason = "no_valid_val_predictions"
                     failure_feedback = _summarize_error_details(val_details)
-                    _count_failure(rejection_reason)
-                    _record_recent_failure(
-                        state,
+                    should_retry, next_prompt = _handle_rejection(
                         island_id=island_id,
-                        failure_text=f"{rejection_reason}: {failure_feedback}",
-                        max_items=cfg.self_correction_feedback_window,
+                        pop_idx=pop_idx,
+                        attempt_idx=attempt_idx,
+                        rejection_reason=rejection_reason,
+                        failure_feedback=failure_feedback,
+                        base_prompt=base_prompt,
+                        code=code,
+                        max_attempts=max_attempts,
+                        repairable=True,
                     )
-                    append_jsonl(
-                        "candidate_rejected",
-                        {
-                            "generation": state.generation,
-                            "island_id": island_id,
-                            "population_idx": pop_idx,
-                            "attempt_index": attempt_idx,
-                            "reason": rejection_reason,
-                            "failure_feedback": failure_feedback,
-                            "model_name": cfg.model_name,
-                        },
-                        log_path,
-                    )
-                    if attempt_idx + 1 < max_attempts:
-                        self_correction_stats["attempted_repairs"] = (
-                            int(self_correction_stats.get("attempted_repairs", 0)) + 1
-                        )
-                        append_jsonl(
-                            "candidate_repair_attempted",
-                            {
-                                "generation": state.generation,
-                                "island_id": island_id,
-                                "population_idx": pop_idx,
-                                "attempt_index": attempt_idx,
-                                "reason": rejection_reason,
-                                "failure_feedback": failure_feedback,
-                                "model_name": cfg.model_name,
-                            },
-                            log_path,
-                        )
-                        current_prompt = _build_repair_prompt(
-                            original_prompt=base_prompt,
-                            candidate_code=code,
-                            failure_feedback=failure_feedback or rejection_reason,
-                        )
+                    if should_retry and next_prompt is not None:
+                        current_prompt = next_prompt
                         continue
-                    if attempt_idx > 0:
-                        self_correction_stats["failed_repairs"] = (
-                            int(self_correction_stats.get("failed_repairs", 0)) + 1
-                        )
-                        append_jsonl(
-                            "candidate_repair_result",
-                            {
-                                "generation": state.generation,
-                                "island_id": island_id,
-                                "population_idx": pop_idx,
-                                "status": "failed",
-                                "reason": rejection_reason,
-                                "model_name": cfg.model_name,
-                            },
-                            log_path,
-                        )
                     break
 
                 valid_indices, y_t_val, y_p_val = zip(*val_pairs, strict=True)

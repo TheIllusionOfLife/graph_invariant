@@ -26,10 +26,10 @@ def _connected_subgraph(graph: nx.Graph) -> nx.Graph:
 def _generate_graph(rng: np.random.Generator, n: int) -> nx.Graph:
     kind = rng.choice(["ER", "BA", "WS", "RGG", "SBM"])
     if kind == "ER":
-        g = nx.erdos_renyi_graph(n, float(rng.uniform(0.05, 0.3)), seed=int(rng.integers(1e9)))
+        g = nx.erdos_renyi_graph(n, float(rng.uniform(0.05, 0.3)), seed=rng)
     elif kind == "BA":
         m = int(rng.integers(1, min(4, n - 1) + 1))
-        g = nx.barabasi_albert_graph(n, m, seed=int(rng.integers(1e9)))
+        g = nx.barabasi_albert_graph(n, m, seed=rng)
     elif kind == "WS":
         k = int(rng.integers(4, 9))
         if k >= n:
@@ -38,13 +38,13 @@ def _generate_graph(rng: np.random.Generator, n: int) -> nx.Graph:
             k = 2
         if k % 2 == 1:
             k += 1
-        g = nx.watts_strogatz_graph(n, k, float(rng.uniform(0.1, 0.5)), seed=int(rng.integers(1e9)))
+        g = nx.watts_strogatz_graph(n, k, float(rng.uniform(0.1, 0.5)), seed=rng)
     elif kind == "RGG":
-        g = nx.random_geometric_graph(n, float(rng.uniform(0.1, 0.4)), seed=int(rng.integers(1e9)))
+        g = nx.random_geometric_graph(n, float(rng.uniform(0.1, 0.4)), seed=rng)
     else:
         sizes = [n // 3, n // 3, n - 2 * (n // 3)]
         probs = [[0.25, 0.05, 0.02], [0.05, 0.25, 0.05], [0.02, 0.05, 0.25]]
-        g = nx.stochastic_block_model(sizes, probs, seed=int(rng.integers(1e9)))
+        g = nx.stochastic_block_model(sizes, probs, seed=rng)
     return _connected_subgraph(g)
 
 

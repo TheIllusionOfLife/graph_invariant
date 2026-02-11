@@ -1,3 +1,4 @@
+import ast
 import math
 import multiprocessing as mp
 from queue import Empty
@@ -19,14 +20,28 @@ FORBIDDEN_PATTERNS = [
     "__subclasses__",
     "__globals__",
 ]
+FORBIDDEN_CALLS = {"getattr", "setattr", "delattr", "globals", "locals", "vars"}
 
 
 def validate_code_static(code: str) -> tuple[bool, str | None]:
+    # Best-effort defense for research use only.
+    # Running fully untrusted code safely requires stronger isolation (e.g., containers/jails).
     for token in FORBIDDEN_PATTERNS:
         if token in code:
             return False, f"forbidden token detected: {token}"
     if "def new_invariant(" not in code:
         return False, "missing `new_invariant` function"
+    try:
+        tree = ast.parse(code)
+    except SyntaxError as exc:
+        return False, f"invalid syntax: {exc.msg}"
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            if node.func.id in FORBIDDEN_CALLS:
+                return False, f"forbidden call detected: {node.func.id}"
+        if isinstance(node, ast.Attribute) and node.attr.startswith("__"):
+            return False, f"forbidden attribute detected: {node.attr}"
     return True, None
 
 
@@ -73,7 +88,7 @@ def evaluate_candidate_on_graphs(
     if not ok:
         return [None for _ in graphs]
 
-    context = mp.get_context("fork")
+    context = mp.get_context()
     results: list[float | None] = []
     for graph in graphs:
         queue: mp.Queue = context.Queue(maxsize=1)

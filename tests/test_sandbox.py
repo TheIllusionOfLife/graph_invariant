@@ -13,6 +13,13 @@ def test_validate_code_static_allows_simple_function():
     assert reason is None
 
 
+def test_validate_code_static_rejects_getattr_bypass():
+    code = "def new_invariant(G):\n    return getattr(G, 'number_of_nodes')()"
+    ok, reason = validate_code_static(code)
+    assert not ok
+    assert reason is not None
+
+
 def test_evaluate_candidate_on_graphs_times_out_and_returns_none():
     import networkx as nx
 

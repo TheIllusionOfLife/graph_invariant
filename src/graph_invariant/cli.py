@@ -10,13 +10,17 @@ from .sandbox import evaluate_candidate_on_graphs
 from .scoring import compute_metrics, compute_simplicity_score, compute_total_score
 from .types import Candidate, CheckpointState
 
+TARGET_FUNCTIONS = {
+    "average_shortest_path_length": nx.average_shortest_path_length,
+    "diameter": lambda graph: float(nx.diameter(graph)),
+}
+
 
 def _target_values(graphs: list[nx.Graph], target_name: str) -> list[float]:
-    if target_name == "average_shortest_path_length":
-        return [nx.average_shortest_path_length(g) for g in graphs]
-    if target_name == "diameter":
-        return [float(nx.diameter(g)) for g in graphs]
-    raise ValueError(f"unsupported target: {target_name}")
+    target_fn = TARGET_FUNCTIONS.get(target_name)
+    if target_fn is None:
+        raise ValueError(f"unsupported target: {target_name}")
+    return [target_fn(graph) for graph in graphs]
 
 
 def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
@@ -40,10 +44,10 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
     y_pred_raw = evaluate_candidate_on_graphs(
         candidate_code, datasets.val, timeout_sec=cfg.timeout_sec, memory_mb=cfg.memory_mb
     )
-    pairs = [(yt, yp) for yt, yp in zip(y_true, y_pred_raw, strict=False) if yp is not None]
+    pairs = [(yt, yp) for yt, yp in zip(y_true, y_pred_raw, strict=True) if yp is not None]
     if not pairs:
         raise RuntimeError("candidate produced no valid values")
-    y_t, y_p = zip(*pairs, strict=False)
+    y_t, y_p = zip(*pairs, strict=True)
     metrics = compute_metrics(list(y_t), list(y_p))
     simplicity = compute_simplicity_score(candidate_code)
     total = compute_total_score(abs(metrics.rho_spearman), simplicity, novelty_bonus=1.0)

@@ -339,7 +339,7 @@ def test_run_phase1_writes_baseline_summary(monkeypatch, tmp_path):
     assert "pysr_baseline" in payload
 
 
-def test_main_report_command_writes_markdown(monkeypatch, tmp_path):
+def test_main_report_command_writes_markdown(monkeypatch, tmp_path, capsys):
     artifacts_dir = tmp_path / "artifacts"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     (artifacts_dir / "phase1_summary.json").write_text(
@@ -357,6 +357,7 @@ def test_main_report_command_writes_markdown(monkeypatch, tmp_path):
     from graph_invariant import cli
 
     assert cli.main() == 0
+    assert "Report written to" in capsys.readouterr().out
     assert (artifacts_dir / "report.md").exists()
 
 
@@ -375,7 +376,7 @@ def test_main_report_command_tolerates_malformed_json(monkeypatch, tmp_path):
     assert "Phase 1 Report" in report
 
 
-def test_constrained_mode_respects_recovery_window():
+def test_constrained_mode_allows_late_recovery_by_default():
     from graph_invariant.cli import _update_prompt_mode_after_generation
     from graph_invariant.types import CheckpointState
 
@@ -393,4 +394,83 @@ def test_constrained_mode_respects_recovery_window():
     )
 
     _update_prompt_mode_after_generation(cfg, state, island_id=0, had_valid_train_candidate=True)
+    assert state.island_prompt_mode[0] == "free"
+
+
+def test_constrained_mode_can_forbid_late_recovery():
+    from graph_invariant.cli import _update_prompt_mode_after_generation
+    from graph_invariant.types import CheckpointState
+
+    cfg = Phase1Config(
+        constrained_recovery_generations=2,
+        allow_late_constrained_recovery=False,
+        run_baselines=False,
+    )
+    state = CheckpointState(
+        experiment_id="exp",
+        generation=0,
+        islands={0: []},
+        island_prompt_mode={0: "constrained"},
+        island_constrained_generations={0: 3},
+        island_stagnation={0: 3},
+    )
+
+    _update_prompt_mode_after_generation(cfg, state, island_id=0, had_valid_train_candidate=True)
     assert state.island_prompt_mode[0] == "constrained"
+
+
+def test_target_values_handles_disconnected_graph():
+    import networkx as nx
+
+    from graph_invariant.cli import _target_values
+
+    g = nx.Graph()
+    g.add_nodes_from([0, 1, 2])
+    g.add_edge(0, 1)
+
+    assert _target_values([g], "average_shortest_path_length") == [0.0]
+    assert _target_values([g], "diameter") == [0.0]
+
+
+def test_run_phase1_success_threshold_is_configurable(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        success_spearman_threshold=0.95,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.evaluate_candidate_on_graphs",
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+
+    assert run_phase1(cfg) == 0
+    summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
+    assert summary["success"] is False

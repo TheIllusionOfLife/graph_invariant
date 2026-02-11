@@ -30,9 +30,28 @@ from .scoring import (
 )
 from .types import Candidate, CheckpointState
 
+
+def _safe_average_shortest_path_length(graph: nx.Graph) -> float:
+    if len(graph) == 0 or not nx.is_connected(graph):
+        return 0.0
+    try:
+        return float(nx.average_shortest_path_length(graph))
+    except nx.NetworkXError:
+        return 0.0
+
+
+def _safe_diameter(graph: nx.Graph) -> float:
+    if len(graph) == 0 or not nx.is_connected(graph):
+        return 0.0
+    try:
+        return float(nx.diameter(graph))
+    except nx.NetworkXError:
+        return 0.0
+
+
 TARGET_FUNCTIONS = {
-    "average_shortest_path_length": nx.average_shortest_path_length,
-    "diameter": lambda graph: float(nx.diameter(graph)),
+    "average_shortest_path_length": _safe_average_shortest_path_length,
+    "diameter": _safe_diameter,
 }
 
 _CONSTRAINED_SUFFIX = (
@@ -148,7 +167,10 @@ def _update_prompt_mode_after_generation(
         state.island_stagnation[island_id] = 0
         if mode == "constrained":
             constrained_span = state.island_constrained_generations.get(island_id, 0)
-            if constrained_span <= cfg.constrained_recovery_generations:
+            if (
+                constrained_span <= cfg.constrained_recovery_generations
+                or cfg.allow_late_constrained_recovery
+            ):
                 state.island_prompt_mode[island_id] = "free"
                 state.island_constrained_generations[island_id] = 0
         return
@@ -418,7 +440,7 @@ def _write_phase1_summary(
         "best_candidate_code_sha256": sha256(best.code.encode("utf-8")).hexdigest(),
         "best_val_score": state.best_val_score,
         "stop_reason": stop_reason,
-        "success": abs(float(val_metrics["spearman"])) >= 0.85,
+        "success": abs(float(val_metrics["spearman"])) >= cfg.success_spearman_threshold,
         "train_metrics": train_metrics,
         "val_metrics": val_metrics,
         "test_metrics": test_metrics,
@@ -653,7 +675,8 @@ def main() -> int:
         cfg = Phase1Config.from_json(args.config) if args.config else Phase1Config()
         return run_phase1(cfg, resume=args.resume)
     if args.command == "report":
-        write_report(args.artifacts)
+        report_path = write_report(args.artifacts)
+        print(f"Report written to {report_path}")
         return 0
     return 1
 

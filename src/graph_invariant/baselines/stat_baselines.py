@@ -44,12 +44,16 @@ def _run_linear_regression(
     x_test: np.ndarray,
     y_test: np.ndarray,
 ) -> dict[str, object]:
-    x_aug = np.c_[np.ones(len(x_train)), x_train]
-    coef, *_ = np.linalg.lstsq(x_aug, y_train, rcond=None)
+    # Fit intercept without building augmented matrices on every predict call.
+    x_mean = np.mean(x_train, axis=0)
+    y_mean = float(np.mean(y_train))
+    x_centered = x_train - x_mean
+    y_centered = y_train - y_mean
+    coef, *_ = np.linalg.lstsq(x_centered, y_centered, rcond=None)
+    intercept = y_mean - float(np.dot(x_mean, coef))
 
     def predict(x: np.ndarray) -> np.ndarray:
-        x_eval = np.c_[np.ones(len(x)), x]
-        return x_eval @ coef
+        return (x @ coef) + intercept
 
     return {
         "status": "ok",

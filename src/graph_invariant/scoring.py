@@ -20,6 +20,16 @@ def compute_metrics(y_true: list[float], y_pred: list[float]) -> EvaluationResul
     if true_arr.shape != pred_arr.shape:
         raise ValueError("y_true and y_pred must have the same shape")
 
+    if len(true_arr) == 0:
+        return EvaluationResult(
+            rho_spearman=0.0,
+            r_pearson=0.0,
+            rmse=0.0,
+            mae=0.0,
+            valid_count=0,
+            error_count=0,
+        )
+
     if len(true_arr) < 2:
         rho = 0.0
         pearson = 0.0

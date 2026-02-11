@@ -31,8 +31,10 @@ class Phase1Config:
     enable_constrained_fallback: bool = True
     stagnation_trigger_generations: int = 5
     constrained_recovery_generations: int = 3
+    allow_late_constrained_recovery: bool = True
     run_baselines: bool = False
     persist_candidate_code_in_summary: bool = False
+    success_spearman_threshold: float = 0.85
 
     def __post_init__(self) -> None:
         self.island_temperatures = tuple(float(x) for x in self.island_temperatures)

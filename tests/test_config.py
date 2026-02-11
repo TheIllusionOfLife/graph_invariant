@@ -15,8 +15,10 @@ def test_phase1_config_defaults_are_valid():
     assert cfg.enable_constrained_fallback is True
     assert cfg.stagnation_trigger_generations == 5
     assert cfg.constrained_recovery_generations == 3
+    assert cfg.allow_late_constrained_recovery is True
     assert cfg.run_baselines is False
     assert cfg.persist_candidate_code_in_summary is False
+    assert cfg.success_spearman_threshold == 0.85
 
 
 def test_phase1_config_from_dict_overrides_values():

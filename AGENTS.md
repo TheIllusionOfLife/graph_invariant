@@ -1,46 +1,90 @@
-# Repository Guidelines
+# AGENTS.md
 
-## Project Structure & Module Organization
-This repository is currently research-document driven. Keep core documents at the root:
-- `SPEC.md`: authoritative implementation specification.
-- `REVIEW.md`: consolidated technical review and resolved issues.
-- `Research_Plan_Graph_Invariant_Discovery.md`: initial proposal and context.
+Repository-specific instructions for coding agents and contributors.
 
-When adding executable code, use a clean split:
-- `src/` for implementation modules.
-- `tests/` for automated tests.
-- `artifacts/` for experiment outputs (logs, plots, checkpoints), with large/generated files excluded from Git.
+## Scope and Priority
 
-## Build, Test, and Development Commands
-The repository now includes a Python CI workflow; contributors should keep local checks aligned with CI.
-- `rg --files` lists tracked project files quickly.
-- `git log --oneline -n 10` checks recent change patterns before committing.
-- `uv run pytest` runs tests once Python modules are introduced.
-- `uv run ruff check . && uv run ruff format .` lints and formats Python code when code exists.
-- `uv run python -m graph_invariant.cli phase1 --config <config.json>` runs Phase 1.
-- `uv run python -m graph_invariant.cli report --artifacts <artifacts_dir>` renders a markdown report.
-- `uv run python -m graph_invariant.cli benchmark --config <config.json>` runs a deterministic multi-seed benchmark sweep.
+- This file defines repository conventions and operational details.
+- If this file conflicts with direct user instructions in a task, follow the user instruction for that task.
 
-If you add runnable scripts, document the exact command in `SPEC.md` and this file in the same PR.
+## Non-Obvious Commands
 
-## Coding Style & Naming Conventions
-- Python: 4-space indentation, type hints for public functions, `snake_case` for functions/variables, `PascalCase` for classes.
-- Keep modules focused and small; separate generation, evaluation, and logging concerns.
-- Markdown: concise sections, explicit headings, and consistent terminology with `SPEC.md` (e.g., “Phase 1”, “Island Model”, “novelty_bonus”).
+- Install dev dependencies: `uv sync --group dev`
+- Run CI-equivalent local checks:
+  - `uv run --group dev ruff check .`
+  - `uv run --group dev ruff format --check .`
+  - `uv run --group dev pytest -q`
+- Run Phase 1: `uv run python -m graph_invariant.cli phase1 --config <config.json>`
+- Resume Phase 1 from checkpoint:
+  - `uv run python -m graph_invariant.cli phase1 --config <config.json> --resume <checkpoint.json>`
+- Generate report: `uv run python -m graph_invariant.cli report --artifacts <artifacts_dir>`
+- Run benchmark: `uv run python -m graph_invariant.cli benchmark --config <config.json>`
 
-## Testing Guidelines
-- Follow TDD: write failing tests first, then implement minimal code to pass.
-- Use `pytest` with files named `tests/test_<module>.py` and test names `test_<behavior>()`.
-- For numerical metrics, include deterministic seeds and tolerance-based assertions.
-- Add regression tests for every bug fix, especially sandboxing and scoring logic.
+## Code Style and Architecture Rules
 
-## Commit & Pull Request Guidelines
-Recent history favors concise, imperative messages such as:
-- `Address SPEC.md review feedback (6 issues)`
-- `Add implementation spec and cross-reference all documents`
+- Python conventions:
+  - 4-space indentation
+  - type hints for public APIs
+  - `snake_case` for variables/functions
+  - `PascalCase` for classes
+- Keep high cohesion:
+  - orchestration in `cli.py`
+  - generation in `data.py`
+  - evaluation sandbox in `sandbox.py`
+  - metrics/scoring in `scoring.py`
+  - baseline methods under `baselines/`
+- Do not bypass `Phase1Config` for new runtime flags; add validated config fields there first.
+- Preserve compatibility for artifact schema readers when changing summary payloads.
 
-PRs should include:
-- Purpose and scope (what changed and why).
-- Linked issue/review comment (if applicable).
-- Validation performed (commands run and results).
-- Any spec/document sync required across `SPEC.md`, `REVIEW.md`, and this guide.
+## Testing Instructions
+
+- Preferred runner: `pytest` through `uv`.
+- Default command: `uv run --group dev pytest -q`
+- Bugfix workflow:
+  - add or update a failing test first
+  - implement minimal fix
+  - run full test suite
+- For stochastic or numeric behavior:
+  - use deterministic seeds
+  - use tolerance-based assertions
+- For CLI behavior, prefer tests in `tests/test_cli.py` rather than ad-hoc shell-only checks.
+
+## Branching, Commits, and PR Etiquette
+
+- Never work directly on `main`; create a branch first.
+- Branch naming:
+  - `feat/<short-description>`
+  - `fix/<short-description>`
+  - `chore/<short-description>`
+  - `docs/<short-description>`
+- Commit messages should be imperative and specific.
+- Push with explicit branch names:
+  - `git push origin <branch-name>`
+- PRs should include:
+  - purpose/scope
+  - validation commands and outcomes
+  - spec/doc updates when behavior or interfaces changed
+
+## Environment and Tooling Quirks
+
+- Use `uv` for Python dependency and command execution.
+- Ollama is local-first:
+  - default endpoint: `http://localhost:11434/api/generate`
+  - remote endpoints are blocked unless `allow_remote_ollama=true`
+- Optional baselines:
+  - random forest baseline requires `scikit-learn`
+  - PySR baseline requires `pysr` and Julia runtime
+
+## Common Gotchas
+
+- Sandbox security is best-effort research isolation, not a hard production boundary.
+- `persist_prompt_and_response_logs=true` stores raw model I/O in artifacts logs; avoid on sensitive prompts/data.
+- Artifact directories can become large; keep them untracked and under ignored paths.
+- Changing scoring weights (`alpha`, `beta`, `gamma`) triggers normalization if they do not sum to 1.0.
+
+## Document Sync Policy
+
+- Keep cross-document consistency when changing behavior:
+  - `README.md` (usage)
+  - `SPEC.md` (implementation spec)
+  - `TECH.md` / `STRUCTURE.md` (architecture and stack)

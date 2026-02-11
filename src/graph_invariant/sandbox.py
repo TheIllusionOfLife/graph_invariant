@@ -1,5 +1,5 @@
 import math
-from multiprocessing import Process, Queue
+import multiprocessing as mp
 from queue import Empty
 from typing import Any
 
@@ -61,7 +61,7 @@ def _run_candidate(code: str, graph: nx.Graph) -> float | None:
         return None
 
 
-def _run_candidate_with_queue(code: str, graph: nx.Graph, queue: Queue) -> None:
+def _run_candidate_with_queue(code: str, graph: nx.Graph, queue: Any) -> None:
     queue.put(_run_candidate(code, graph))
 
 
@@ -73,10 +73,11 @@ def evaluate_candidate_on_graphs(
     if not ok:
         return [None for _ in graphs]
 
+    context = mp.get_context("fork")
     results: list[float | None] = []
     for graph in graphs:
-        queue: Queue = Queue(maxsize=1)
-        process = Process(target=_run_candidate_with_queue, args=(code, graph, queue))
+        queue: mp.Queue = context.Queue(maxsize=1)
+        process = context.Process(target=_run_candidate_with_queue, args=(code, graph, queue))
         process.start()
         process.join(timeout=timeout_sec)
         if process.is_alive():

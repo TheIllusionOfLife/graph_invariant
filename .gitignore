@@ -2,4 +2,5 @@
 __pycache__/
 *.pyc
 artifacts/
+artifacts_*/
 pytest_cache/

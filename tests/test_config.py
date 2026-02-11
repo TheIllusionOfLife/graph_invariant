@@ -9,6 +9,7 @@ def test_phase1_config_defaults_are_valid():
     assert cfg.max_generations == 20
     assert cfg.population_size == 5
     assert cfg.migration_interval == 10
+    assert cfg.model_name == "gpt-oss:20b"
 
 
 def test_phase1_config_from_dict_overrides_values():
@@ -16,3 +17,8 @@ def test_phase1_config_from_dict_overrides_values():
     assert cfg.seed == 7
     assert cfg.num_train_graphs == 8
     assert cfg.target_name == "diameter"
+
+
+def test_phase1_config_from_dict_converts_island_temperatures_to_tuple():
+    cfg = Phase1Config.from_dict({"island_temperatures": [0.1, 0.2, 0.3, 0.4]})
+    assert cfg.island_temperatures == (0.1, 0.2, 0.3, 0.4)

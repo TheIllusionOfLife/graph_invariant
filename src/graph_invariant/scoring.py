@@ -8,6 +8,27 @@ import sympy
 
 from .types import EvaluationResult
 
+_ALLOWED_SYMPY_FUNCS = {
+    "abs",
+    "acos",
+    "asin",
+    "atan",
+    "cos",
+    "cosh",
+    "exp",
+    "floor",
+    "log",
+    "max",
+    "min",
+    "pow",
+    "sign",
+    "sin",
+    "sinh",
+    "sqrt",
+    "tan",
+    "tanh",
+}
+
 
 def _nan_to_zero(value: float) -> float:
     if math.isnan(value):
@@ -60,13 +81,49 @@ def _extract_return_expression(code: str) -> str:
     return code
 
 
+def _is_sympy_safe_expression(node: ast.AST) -> bool:
+    if isinstance(node, ast.Expression):
+        return _is_sympy_safe_expression(node.body)
+    if isinstance(node, ast.Constant):
+        return isinstance(node.value, (bool, float, int))
+    if isinstance(node, ast.Name):
+        return True
+    if isinstance(node, ast.UnaryOp):
+        return isinstance(node.op, (ast.UAdd, ast.USub)) and _is_sympy_safe_expression(node.operand)
+    if isinstance(node, ast.BinOp):
+        if not isinstance(
+            node.op,
+            (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow),
+        ):
+            return False
+        return _is_sympy_safe_expression(node.left) and _is_sympy_safe_expression(node.right)
+    if isinstance(node, ast.Call):
+        if not isinstance(node.func, ast.Name) or node.func.id not in _ALLOWED_SYMPY_FUNCS:
+            return False
+        if node.keywords:
+            return False
+        return all(_is_sympy_safe_expression(arg) for arg in node.args)
+    return False
+
+
+def _can_safely_simplify_expression(expr: str) -> bool:
+    try:
+        parsed = ast.parse(expr, mode="eval")
+    except SyntaxError:
+        return False
+    return _is_sympy_safe_expression(parsed)
+
+
 def compute_simplicity_score(code: str, w1: float = 0.5, w2: float = 0.5) -> float:
     ast_nodes = max(1, len(list(ast.walk(ast.parse(code)))))
     expr = _extract_return_expression(code)
-    try:
-        simplified = sympy.simplify(expr)
-        expr_len = max(1, len(str(simplified)))
-    except Exception:
+    if _can_safely_simplify_expression(expr):
+        try:
+            simplified = sympy.simplify(expr)
+            expr_len = max(1, len(str(simplified)))
+        except Exception:
+            expr_len = max(1, len(expr))
+    else:
         expr_len = max(1, len(expr))
 
     ast_term = 1.0 / (1.0 + math.log2(ast_nodes))

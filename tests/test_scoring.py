@@ -47,6 +47,19 @@ def test_compute_simplicity_score_prefers_shorter_code():
     assert compute_simplicity_score(short_code) > compute_simplicity_score(long_code)
 
 
+def test_compute_simplicity_score_skips_sympy_for_unsafe_expression(monkeypatch):
+    calls = {"count": 0}
+
+    def _tracking_simplify(_expr):
+        calls["count"] += 1
+        return 1
+
+    monkeypatch.setattr("graph_invariant.scoring.sympy.simplify", _tracking_simplify)
+    code = "def new_invariant(G):\n    return __import__('os').system('echo unsafe')"
+    compute_simplicity_score(code)
+    assert calls["count"] == 0
+
+
 def test_compute_novelty_bonus_and_total_score():
     bonus = compute_novelty_bonus([1, 2, 3], {"known": [1, 2, 4]})
     assert 0.0 <= bonus <= 1.0

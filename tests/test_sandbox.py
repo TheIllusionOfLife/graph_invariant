@@ -27,6 +27,13 @@ def test_validate_code_static_rejects_non_whitelisted_call():
     assert reason is not None
 
 
+def test_validate_code_static_rejects_networkx_module_calls():
+    code = "def new_invariant(G):\n    return nx.number_of_nodes(G)"
+    ok, reason = validate_code_static(code)
+    assert not ok
+    assert reason is not None
+
+
 def test_evaluate_candidate_on_graphs_times_out_and_returns_none():
     import networkx as nx
 

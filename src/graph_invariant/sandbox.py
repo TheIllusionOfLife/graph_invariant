@@ -7,7 +7,6 @@ import signal
 from typing import Any
 
 import networkx as nx
-import numpy as np
 
 try:
     import resource
@@ -29,7 +28,7 @@ FORBIDDEN_PATTERNS = [
 ]
 FORBIDDEN_CALLS = {"getattr", "setattr", "delattr", "globals", "locals", "vars"}
 ALLOWED_CALLS = {"abs", "min", "max", "sum", "len", "sorted", "range", "enumerate", "float", "int"}
-ALLOWED_ATTR_BASES = {"G", "np", "nx", "math"}
+ALLOWED_ATTR_BASES = {"G", "math"}
 ALLOWED_AST_NODES: tuple[type[ast.AST], ...] = (
     ast.Module,
     ast.FunctionDef,
@@ -158,8 +157,6 @@ def _run_candidate(code: str, graph: nx.Graph) -> float | None:
     }
     safe_globals: dict[str, Any] = {
         "__builtins__": safe_builtins,
-        "np": np,
-        "nx": nx,
         "math": math,
     }
     safe_locals: dict[str, Any] = {}

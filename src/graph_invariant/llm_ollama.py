@@ -1,4 +1,6 @@
+import ipaddress
 import re
+from urllib.parse import urlparse
 
 import requests
 
@@ -27,15 +29,70 @@ def _extract_code_block(text: str) -> str:
     return text.strip()
 
 
-def generate_candidate_code(prompt: str, model: str, temperature: float, url: str) -> str:
+def generate_candidate_code(
+    prompt: str, model: str, temperature: float, url: str, allow_remote: bool = False
+) -> str:
+    validate_ollama_url(url, allow_remote=allow_remote)
     payload = {
         "model": model,
         "prompt": prompt,
         "stream": False,
         "options": {"temperature": temperature},
     }
-    response = requests.post(url, json=payload, timeout=60)
+    response = requests.post(url, json=payload, timeout=60, allow_redirects=False)
     response.raise_for_status()
     body = response.json()
     text = str(body.get("response", "")).strip()
     return _extract_code_block(text)
+
+
+def _tags_endpoint(generate_url: str) -> str:
+    parsed = urlparse(generate_url)
+    path = parsed.path.rstrip("/")
+    if path.endswith("/generate"):
+        path = path[: -len("/generate")] + "/tags"
+    elif path:
+        path = f"{path}/tags"
+    else:
+        path = "/api/tags"
+    return f"{parsed.scheme}://{parsed.netloc}{path}"
+
+
+def validate_ollama_url(generate_url: str, allow_remote: bool) -> None:
+    parsed = urlparse(generate_url)
+    if parsed.scheme not in {"http", "https"}:
+        raise ValueError("ollama_url must use http or https")
+    if not parsed.netloc:
+        raise ValueError("ollama_url must include a host")
+    if allow_remote:
+        return
+
+    host = parsed.hostname
+    if host is None:
+        raise ValueError("ollama_url must include a valid hostname")
+    if host in {"localhost", "127.0.0.1", "::1"}:
+        return
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        raise ValueError(
+            "ollama_url must target localhost unless allow_remote_ollama is true"
+        ) from None
+    if ip.is_loopback:
+        return
+    raise ValueError("ollama_url must target localhost unless allow_remote_ollama is true")
+
+
+def list_available_models(generate_url: str, allow_remote: bool = False) -> list[str]:
+    validate_ollama_url(generate_url, allow_remote=allow_remote)
+    response = requests.get(_tags_endpoint(generate_url), timeout=30, allow_redirects=False)
+    response.raise_for_status()
+    body = response.json()
+    models = body.get("models", [])
+    if not isinstance(models, list):
+        return []
+    return [
+        entry.get("name")
+        for entry in models
+        if isinstance(entry, dict) and isinstance(entry.get("name"), str)
+    ]

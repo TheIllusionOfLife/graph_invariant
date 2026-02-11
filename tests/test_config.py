@@ -24,6 +24,9 @@ def test_phase1_config_defaults_are_valid():
     assert cfg.enforce_pysr_parity_for_success is True
     assert cfg.require_baselines_for_success is True
     assert cfg.persist_prompt_and_response_logs is False
+    assert cfg.novelty_threshold == 0.7
+    assert cfg.pysr_parity_epsilon == 0.0
+    assert cfg.llm_timeout_sec == 60.0
 
 
 def test_phase1_config_from_dict_overrides_values():
@@ -85,3 +88,11 @@ def test_phase1_config_validates_benchmark_and_novelty_settings():
         Phase1Config(benchmark_seeds=())
     with pytest.raises(ValueError, match="novelty_bootstrap_samples"):
         Phase1Config(novelty_bootstrap_samples=0)
+    with pytest.raises(ValueError, match="novelty_threshold"):
+        Phase1Config(novelty_threshold=-0.1)
+    with pytest.raises(ValueError, match="novelty_threshold"):
+        Phase1Config(novelty_threshold=1.1)
+    with pytest.raises(ValueError, match="pysr_parity_epsilon"):
+        Phase1Config(pysr_parity_epsilon=-1e-3)
+    with pytest.raises(ValueError, match="llm_timeout_sec"):
+        Phase1Config(llm_timeout_sec=0.0)

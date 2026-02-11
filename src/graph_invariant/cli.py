@@ -219,6 +219,7 @@ def _run_one_generation(
                     temperature=cfg.island_temperatures[island_id],
                     url=cfg.ollama_url,
                     allow_remote=cfg.allow_remote_ollama,
+                    timeout_sec=cfg.llm_timeout_sec,
                 )
                 code = payload["code"]
                 llm_response = payload["response"]
@@ -229,6 +230,7 @@ def _run_one_generation(
                     temperature=cfg.island_temperatures[island_id],
                     url=cfg.ollama_url,
                     allow_remote=cfg.allow_remote_ollama,
+                    timeout_sec=cfg.llm_timeout_sec,
                 )
             y_pred_train_raw = evaluator.evaluate(code, datasets_train)
             train_pairs = [
@@ -466,7 +468,7 @@ def _write_phase1_summary(
             return {
                 "max_ci_upper_abs_rho": 0.0,
                 "novelty_passed": False,
-                "threshold": 0.7,
+                "threshold": cfg.novelty_threshold,
                 "per_invariant": {},
             }
         valid_indices, y_pred_valid = zip(*valid_pairs, strict=True)
@@ -478,7 +480,7 @@ def _write_phase1_summary(
             known_invariants=known_subset,
             n_bootstrap=cfg.novelty_bootstrap_samples,
             seed=cfg.seed + seed_offset,
-            novelty_threshold=0.7,
+            novelty_threshold=cfg.novelty_threshold,
         )
 
     novelty_ci = {
@@ -515,7 +517,9 @@ def _write_phase1_summary(
             pysr_parity_passed = False
             pysr_parity_reason = "pysr_missing_or_unavailable"
         else:
-            pysr_parity_passed = candidate_val_spearman >= pysr_val_spearman
+            pysr_parity_passed = (
+                candidate_val_spearman + cfg.pysr_parity_epsilon >= pysr_val_spearman
+            )
             pysr_parity_reason = "ok"
 
     success_criteria = {
@@ -525,6 +529,7 @@ def _write_phase1_summary(
         "baselines_available": baselines_available,
         "baselines_passed": baselines_passed,
         "enforce_pysr_parity_for_success": cfg.enforce_pysr_parity_for_success,
+        "pysr_parity_epsilon": cfg.pysr_parity_epsilon,
         "pysr_status": pysr_status,
         "candidate_val_spearman": candidate_val_spearman,
         "pysr_val_spearman": pysr_val_spearman,

@@ -35,7 +35,7 @@ def run_benchmark(cfg: Phase1Config) -> int:
         )
         status = run_phase1(run_cfg)
         summary = _load_json_or_default(run_root / "phase1_summary.json")
-        baselines = _load_json_or_default(run_root / "baselines_summary.json")
+        has_baselines = (run_root / "baselines_summary.json").exists()
         run_success = bool(summary.get("success", False))
         if run_success:
             success_count += 1
@@ -47,7 +47,7 @@ def run_benchmark(cfg: Phase1Config) -> int:
                 "artifacts_dir": str(run_root),
                 "val_spearman": summary.get("val_metrics", {}).get("spearman"),
                 "test_spearman": summary.get("test_metrics", {}).get("spearman"),
-                "has_baselines": bool(baselines),
+                "has_baselines": has_baselines,
             }
         )
 
@@ -56,7 +56,7 @@ def run_benchmark(cfg: Phase1Config) -> int:
         "benchmark_id": root.name,
         "total_runs": len(runs),
         "success_count": success_count,
-        "success_rate": (success_count / len(runs)) if runs else 0.0,
+        "success_rate": float(success_count) / len(runs) if runs else 0.0,
         "runs": runs,
     }
     write_json(payload, root / "benchmark_summary.json")

@@ -1,5 +1,6 @@
 import ast
 import math
+import warnings
 
 import numpy as np
 import scipy.stats
@@ -109,15 +110,19 @@ def _bootstrap_abs_spearman_ci_upper(
     if candidate_values.size < 2:
         return 0.0, 0.0
 
-    point_rho, _ = scipy.stats.spearmanr(candidate_values, known_values)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=scipy.stats.ConstantInputWarning)
+        point_rho, _ = scipy.stats.spearmanr(candidate_values, known_values)
     point_abs_rho = abs(_nan_to_zero(float(point_rho)))
     sample_size = candidate_values.size
     bootstrap_abs_rhos: list[float] = []
-    for _ in range(n_bootstrap):
-        sample_idx = rng.integers(0, sample_size, size=sample_size)
+    all_indices = rng.integers(0, sample_size, size=(n_bootstrap, sample_size))
+    for sample_idx in all_indices:
         sampled_candidate = candidate_values[sample_idx]
         sampled_known = known_values[sample_idx]
-        sampled_rho, _ = scipy.stats.spearmanr(sampled_candidate, sampled_known)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=scipy.stats.ConstantInputWarning)
+            sampled_rho, _ = scipy.stats.spearmanr(sampled_candidate, sampled_known)
         bootstrap_abs_rhos.append(abs(_nan_to_zero(float(sampled_rho))))
     upper = float(np.quantile(np.asarray(bootstrap_abs_rhos, dtype=float), 0.95))
     return point_abs_rho, upper

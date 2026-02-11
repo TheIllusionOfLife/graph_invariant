@@ -30,7 +30,12 @@ def _extract_code_block(text: str) -> str:
 
 
 def generate_candidate_code(
-    prompt: str, model: str, temperature: float, url: str, allow_remote: bool = False
+    prompt: str,
+    model: str,
+    temperature: float,
+    url: str,
+    allow_remote: bool = False,
+    timeout_sec: float = 60.0,
 ) -> str:
     payload = generate_candidate_payload(
         prompt=prompt,
@@ -38,12 +43,18 @@ def generate_candidate_code(
         temperature=temperature,
         url=url,
         allow_remote=allow_remote,
+        timeout_sec=timeout_sec,
     )
     return payload["code"]
 
 
 def generate_candidate_payload(
-    prompt: str, model: str, temperature: float, url: str, allow_remote: bool = False
+    prompt: str,
+    model: str,
+    temperature: float,
+    url: str,
+    allow_remote: bool = False,
+    timeout_sec: float = 60.0,
 ) -> dict[str, str]:
     validate_ollama_url(url, allow_remote=allow_remote)
     payload = {
@@ -52,7 +63,7 @@ def generate_candidate_payload(
         "stream": False,
         "options": {"temperature": temperature},
     }
-    response = requests.post(url, json=payload, timeout=60, allow_redirects=False)
+    response = requests.post(url, json=payload, timeout=timeout_sec, allow_redirects=False)
     response.raise_for_status()
     body = response.json()
     text = str(body.get("response", "")).strip()

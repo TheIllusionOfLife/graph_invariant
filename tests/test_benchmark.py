@@ -40,3 +40,23 @@ def test_run_benchmark_aggregates_seed_runs(monkeypatch, tmp_path):
     payload = json.loads((benchmark_roots[0] / "benchmark_summary.json").read_text("utf-8"))
     assert payload["total_runs"] == 3
     assert payload["success_count"] == 1
+
+
+def test_run_benchmark_returns_failure_when_any_seed_run_fails(monkeypatch, tmp_path):
+    def fake_run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
+        del cfg, resume
+        return 1
+
+    monkeypatch.setattr("graph_invariant.benchmark.run_phase1", fake_run_phase1)
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        benchmark_seeds=(11, 22),
+        run_baselines=False,
+        max_generations=0,
+    )
+    status = run_benchmark(cfg)
+    assert status == 1
+
+    benchmark_roots = sorted((tmp_path / "artifacts").glob("benchmark_*"))
+    payload = json.loads((benchmark_roots[0] / "benchmark_summary.json").read_text("utf-8"))
+    assert payload["failed_runs"] == 2

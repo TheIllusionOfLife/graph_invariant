@@ -435,6 +435,41 @@ def _write_phase1_summary(
     y_true_test: list[float],
     baseline_results: dict[str, object] | None,
 ) -> None:
+    def _extract_spearman(metrics: dict[str, object] | None) -> float | None:
+        if not isinstance(metrics, dict):
+            return None
+        value = metrics.get("spearman")
+        if isinstance(value, (int, float)):
+            return float(value)
+        return None
+
+    def _baseline_health(
+        baseline_payload: dict[str, object] | None,
+    ) -> tuple[bool, bool, str, float | None, float | None]:
+        if not isinstance(baseline_payload, dict):
+            return False, False, "missing", None, None
+        pysr_payload = baseline_payload.get("pysr_baseline")
+        stat_payload = baseline_payload.get("stat_baselines")
+
+        if isinstance(pysr_payload, dict):
+            pysr_status = str(pysr_payload.get("status", "missing"))
+            pysr_val_spearman = _extract_spearman(pysr_payload.get("val_metrics"))
+            pysr_test_spearman = _extract_spearman(pysr_payload.get("test_metrics"))
+        else:
+            pysr_status = "missing"
+            pysr_val_spearman = None
+            pysr_test_spearman = None
+
+        stat_ok = False
+        if isinstance(stat_payload, dict):
+            stat_ok = any(
+                isinstance(result, dict) and str(result.get("status")) == "ok"
+                for result in stat_payload.values()
+            )
+
+        pysr_ok = pysr_status == "ok"
+        return stat_ok, pysr_ok, pysr_status, pysr_val_spearman, pysr_test_spearman
+
     best = _best_candidate(state)
     summary_path = artifacts_dir / "phase1_summary.json"
     if best is None:
@@ -488,28 +523,18 @@ def _write_phase1_summary(
         "test": _novelty_ci_for_split(datasets_test, known_test, seed_offset=29),
     }
 
-    pysr_payload = (
-        baseline_results.get("pysr_baseline") if isinstance(baseline_results, dict) else None
-    )
-    pysr_status = (
-        str(pysr_payload.get("status", "missing")) if isinstance(pysr_payload, dict) else "missing"
+    stat_ok, pysr_ok, pysr_status, pysr_val_spearman, pysr_test_spearman = _baseline_health(
+        baseline_results
     )
     candidate_val_spearman = float(val_metrics.get("spearman", 0.0))
     candidate_test_spearman = float(test_metrics.get("spearman", 0.0))
-    pysr_val_spearman = None
-    pysr_test_spearman = None
-    if isinstance(pysr_payload, dict) and isinstance(pysr_payload.get("val_metrics"), dict):
-        value = pysr_payload["val_metrics"].get("spearman")
-        if isinstance(value, (int, float)):
-            pysr_val_spearman = float(value)
-    if isinstance(pysr_payload, dict) and isinstance(pysr_payload.get("test_metrics"), dict):
-        value = pysr_payload["test_metrics"].get("spearman")
-        if isinstance(value, (int, float)):
-            pysr_test_spearman = float(value)
 
     threshold_passed = abs(candidate_val_spearman) >= cfg.success_spearman_threshold
     baselines_available = baseline_results is not None
-    baselines_passed = (not cfg.require_baselines_for_success) or baselines_available
+    baselines_healthy = stat_ok or pysr_ok
+    baselines_passed = (not cfg.require_baselines_for_success) or (
+        baselines_available and baselines_healthy
+    )
     pysr_parity_passed = True
     pysr_parity_reason = "disabled"
     if cfg.enforce_pysr_parity_for_success:
@@ -527,6 +552,9 @@ def _write_phase1_summary(
         "threshold_passed": threshold_passed,
         "require_baselines_for_success": cfg.require_baselines_for_success,
         "baselines_available": baselines_available,
+        "baselines_healthy": baselines_healthy,
+        "stat_baseline_ok": stat_ok,
+        "pysr_ok": pysr_ok,
         "baselines_passed": baselines_passed,
         "enforce_pysr_parity_for_success": cfg.enforce_pysr_parity_for_success,
         "pysr_parity_epsilon": cfg.pysr_parity_epsilon,

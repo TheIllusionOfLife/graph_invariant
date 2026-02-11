@@ -234,6 +234,8 @@ multiprocessing.Pool(initializer=worker_init)  # ワーカーを事前起動
 }
 ```
 
+`phase1_summary.json` は `schema_version=3` を採用する。`report` コマンドは旧スキーマ入力にも耐性を持つ。
+
 ### グラフ生成シード
 
 - データセット生成時のマスターシードを記録

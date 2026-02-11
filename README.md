@@ -34,6 +34,8 @@ Additional summary artifacts:
 - `artifacts*/phase1_summary.json`
 - `artifacts*/baselines_summary.json` (only when `run_baselines=true`)
 
+`phase1_summary.json` now uses `schema_version=3`. The report command remains tolerant of older payloads.
+
 4. Generate a markdown report from artifacts:
 
 ```bash
@@ -66,3 +68,5 @@ This writes one benchmark directory under `artifacts_benchmark/benchmark_*` with
 ## Security Note
 
 `src/graph_invariant/sandbox.py` is a best-effort research sandbox. It uses static AST checks plus constrained execution with resource and timeout limits, but it is not a full security boundary. For production-grade untrusted execution, run candidates inside stronger OS/container isolation.
+
+If `persist_prompt_and_response_logs=true`, raw prompts and model responses are written to artifacts logs. Treat those logs as potentially sensitive data.

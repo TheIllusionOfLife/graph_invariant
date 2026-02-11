@@ -57,6 +57,7 @@ def run_benchmark(cfg: Phase1Config) -> int:
         "total_runs": len(runs),
         "success_count": success_count,
         "success_rate": float(success_count) / len(runs) if runs else 0.0,
+        "failed_runs": sum(1 for run in runs if int(run["status"]) != 0),
         "runs": runs,
     }
     write_json(payload, root / "benchmark_summary.json")
@@ -82,4 +83,4 @@ def run_benchmark(cfg: Phase1Config) -> int:
             )
         )
     (root / "benchmark_report.md").write_text("\n".join(report_lines) + "\n", encoding="utf-8")
-    return 0
+    return 1 if payload["failed_runs"] > 0 else 0

@@ -10,12 +10,12 @@
 | サンドボックス | `multiprocessing.Pool` による事前起動ワーカー + 制限付き `exec` |
 | ベースライン | PySR + 軽量統計ベースライン（RandomForest, 線形回帰） |
 | LLMモデル | ローカル8B (Ollama) をメイン。必要になった場合のみ Gemini API ($10/month上限) |
-| 探索戦略 | 完全自由生成（現状維持）。関数シグネチャのみ固定 |
+| 探索戦略 | 完全自由生成（現状維持）。関数シグネチャのみ固定。停滞時は制約付き生成にフォールバック |
 | 淘汰戦略 | 島モデル（Island Model） |
 | グラフ規模 | 段階的拡大: Phase 1は N=30〜100、Phase 2で N=30〜1000 |
 | 簡潔性スコア | ASTノード数（対数スケール）+ SymPy簡約後の文字数（対数スケール）を重み付け平均 |
 | Phase 1 成功基準 | Valセットでスピアマン相関 ≥ 0.85 |
-| 再現性 | 全ログ保存（LLM入出力・シード・評価結果をJSON） |
+| 再現性 | 全ログ保存（LLM入出力・シード・評価結果をJSON）。世代ごとのチェックポイント |
 | OODデータセット | Phase 1の結果を見て後で決定 |
 | 成果物 | 論文（arXiv投稿）+ OSSツール公開 |
 | コード構成 | モジュール分割 |
@@ -35,7 +35,7 @@
 
 ### 2.2 移住（Migration）
 
-- **頻度**: 10世代ごと
+- **頻度**: 10世代ごと（Phase 1では最大20世代のため移住は1〜2回のみ。Phase 2で世代数を増やす際に効果を発揮する設計）
 - **トポロジ**: リング型（Island 0→1→2→3→0）。各島は隣接1島にのみ送出する
 - **方法**: 各島のトップ1候補を右隣の島に送出（1対1）
 - **移住時の処理**: 受け入れ島の最下位候補と置換（移住候補のスコアが上回る場合のみ）
@@ -47,7 +47,21 @@
 - **目的**: ローカルモデルの能力限界で探索が停滞した際に、高品質な多様性を注入する
 - **コスト管理**: $10/month上限は変更しない。フォールバック発動は1実験あたり最大3回に制限
 
-### 2.4 淘汰
+### 2.4 生成フォールバック（制約付き生成）
+
+自由生成は8Bモデルの能力限界で停滞するリスクが最も高い。以下のフォールバックプロトコルを設ける:
+
+- **発動条件**: いずれかの島で**5世代連続**、有効な候補（Train スコア > 0.3）を1つも生成できなかった場合
+- **動作**: 該当島のプロンプトを**制約付き生成**に切り替える
+  - **演算子プール**: `+, -, *, /, log, sqrt, **, sum, mean, max, min`
+  - **テンプレート骨格**: `def new_invariant(G): n = G.number_of_nodes(); m = G.number_of_edges(); degrees = [d for _, d in G.degree()]; return f(n, m, degrees)`
+  - プロンプトに「上記の演算子とテンプレートを使って新しい不変量を構成せよ」と明示指示
+- **解除条件**: 制約付き生成で3世代以内にスコア > 0.3の候補が出た場合、自由生成に復帰
+- **Gemini APIフォールバックとの関係**: 制約付き生成を先に試行し、それでも停滞する場合にGemini APIフォールバック（§2.3）を発動する（Island 3のみ）
+
+> **設計意図**: FunSearchはPaLM2規模のモデルを使用しており、8B量子化モデルでの数学的関数の自由生成は未実証。制約付き生成は探索空間を限定するが、8Bモデルでも組合せ的な探索が可能になる。
+
+### 2.5 淘汰
 
 - 各島で独立にknowledge_baseを管理
 - 各島で上位5〜10個を保持（島ごとの多様性は4島の差別化で確保）
@@ -112,7 +126,17 @@ simplicity_score = w1 * (1 / (1 + log2(max(ast_node_count, 1)))) + w2 * (1 / (1 
 
 ### 4.3 新規性
 
-- 発見された式と既存不変量（density, clustering_coefficient, degree_assortativity, transitivity）との相関行列を算出
+- 発見された式と既存不変量との相関行列を算出
+- **参照不変量セット（9種）**:
+  - `density` — グラフ密度
+  - `clustering_coefficient` — 平均クラスタ係数
+  - `degree_assortativity` — 次数相関
+  - `transitivity` — 推移性
+  - `average_degree` — 平均次数（`2m/n`）
+  - `max_degree` — 最大次数
+  - `spectral_radius` — 隣接行列の最大固有値（`max(eigenvalues(A))`）
+  - `diameter` — グラフ直径（連結成分の最長最短距離）
+  - `algebraic_connectivity` — ラプラシアンの第2最小固有値（Fiedler値）
 - 各既存指標との相関について、ブートストラップ法（1000回リサンプリング）で95%信頼区間を算出
 - 全既存指標との相関の95%信頼区間上限が $|\rho| < 0.7$ を満たす場合に「新規」と判定
 
@@ -214,6 +238,16 @@ multiprocessing.Pool(initializer=worker_init)  # ワーカーを事前起動
 - データセット生成時のマスターシードを記録
 - 各グラフの個別シードもログに含める
 
+### チェックポイント / レジューム
+
+世代ごとに島の状態をJSON形式で永続化し、クラッシュ・OOM等からの復旧を可能にする:
+
+- **保存タイミング**: 各世代の評価完了後
+- **保存内容**: 各島のknowledge_base（候補リスト・スコア）、現在の世代番号、早期停止カウンタ、乱数状態
+- **保存先**: `checkpoints/{experiment_id}/gen_{N}.json`
+- **レジューム**: `main.py --resume checkpoints/{experiment_id}/gen_{N}.json` で指定世代から再開
+- **ローテーション**: 直近3世代分のチェックポイントを保持し、古いものは自動削除
+
 ---
 
 ## 8. モジュール構成
@@ -223,7 +257,7 @@ graph_invariant/
 ├── REVIEW.md
 ├── SPEC.md
 ├── Research_Plan_Graph_Invariant_Discovery.md
-├── pyproject.toml
+├── pyproject.toml          # uv管理。PySR依存のためJuliaランタイムが必要（setup手順は下記参照）
 ├── src/
 │   ├── __init__.py
 │   ├── config.py          # 全設定値（データサイズ、世代数、温度等）
@@ -233,7 +267,8 @@ graph_invariant/
 │   ├── evaluator.py       # 仮説評価（相関計算・簡潔性スコア）
 │   ├── knowledge_base.py  # 島モデル・淘汰・移住ロジック
 │   ├── logger.py          # JSONL ログ管理
-│   └── main.py            # メインループ（進化ループ制御）
+│   ├── checkpoint.py      # チェックポイント保存・レジューム・ローテーション
+│   └── main.py            # メインループ（進化ループ制御、--resume対応）
 ├── baselines/
 │   ├── pysr_baseline.py   # PySRベースライン比較（シンボリック回帰）
 │   └── stat_baselines.py  # 統計ベースライン（RandomForest, 線形回帰）
@@ -242,6 +277,18 @@ graph_invariant/
     ├── test_sandbox.py
     ├── test_evaluator.py
     └── test_knowledge_base.py
+```
+
+### 8.1 環境セットアップ
+
+```bash
+# Python環境（uv管理）
+uv sync
+
+# PySRベースラインにはJuliaランタイムが必要
+# juliaup (推奨) または公式インストーラで Julia 1.10+ をインストール
+curl -fsSL https://install.julialang.org | sh
+# PySR初回実行時にJuliaパッケージが自動インストールされる（数分かかる）
 ```
 
 ---

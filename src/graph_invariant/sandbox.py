@@ -4,6 +4,7 @@ import math
 import multiprocessing as mp
 import os
 import signal
+import types
 from multiprocessing.pool import Pool
 from typing import Any
 
@@ -109,6 +110,168 @@ ALLOWED_AST_NODES: tuple[type[ast.AST], ...] = (
     ast.Pass,
 )
 
+_SAFE_NP_ATTRS: set[str] = {
+    # Array creation
+    "array",
+    "zeros",
+    "ones",
+    "full",
+    "empty",
+    "arange",
+    "linspace",
+    "zeros_like",
+    "ones_like",
+    "full_like",
+    "empty_like",
+    "eye",
+    "identity",
+    "diag",
+    # Element-wise math
+    "abs",
+    "absolute",
+    "sqrt",
+    "cbrt",
+    "square",
+    "log",
+    "log2",
+    "log10",
+    "log1p",
+    "exp",
+    "exp2",
+    "expm1",
+    "power",
+    "float_power",
+    "floor",
+    "ceil",
+    "trunc",
+    "rint",
+    "round",
+    "around",
+    "sign",
+    "clip",
+    "mod",
+    "remainder",
+    "maximum",
+    "minimum",
+    "fmax",
+    "fmin",
+    "negative",
+    "positive",
+    "reciprocal",
+    # Trigonometric
+    "sin",
+    "cos",
+    "tan",
+    "arcsin",
+    "arccos",
+    "arctan",
+    "arctan2",
+    "sinh",
+    "cosh",
+    "tanh",
+    "arcsinh",
+    "arccosh",
+    "arctanh",
+    "degrees",
+    "radians",
+    "hypot",
+    # Aggregation / reduction
+    "sum",
+    "prod",
+    "mean",
+    "std",
+    "var",
+    "median",
+    "average",
+    "min",
+    "max",
+    "argmin",
+    "argmax",
+    "nansum",
+    "nanprod",
+    "nanmean",
+    "nanstd",
+    "nanvar",
+    "nanmedian",
+    "nanmin",
+    "nanmax",
+    "percentile",
+    "quantile",
+    "count_nonzero",
+    # Sorting / searching
+    "sort",
+    "argsort",
+    "searchsorted",
+    "where",
+    "nonzero",
+    "unique",
+    # Shape manipulation
+    "reshape",
+    "ravel",
+    "transpose",
+    "concatenate",
+    "stack",
+    "vstack",
+    "hstack",
+    "squeeze",
+    "expand_dims",
+    "tile",
+    "repeat",
+    "flip",
+    "fliplr",
+    "flipud",
+    # Differences / cumulative
+    "diff",
+    "cumsum",
+    "cumprod",
+    "gradient",
+    # Linear algebra basics
+    "dot",
+    "inner",
+    "outer",
+    "matmul",
+    "cross",
+    "trace",
+    # Statistics
+    "corrcoef",
+    "cov",
+    "histogram",
+    "bincount",
+    # Logic / comparison
+    "isnan",
+    "isinf",
+    "isfinite",
+    "all",
+    "any",
+    "allclose",
+    "isclose",
+    "logical_and",
+    "logical_or",
+    "logical_not",
+    # Constants
+    "pi",
+    "e",
+    "inf",
+    "nan",
+    "newaxis",
+    # Types
+    "float64",
+    "float32",
+    "int64",
+    "int32",
+    "uint8",
+    "bool_",
+    "dtype",
+    # Utility
+    "asarray",
+    "copy",
+    "convolve",
+    "correlate",
+    "interp",
+    "polyfit",
+    "polyval",
+}
+
 LOGGER = logging.getLogger(__name__)
 _TASK_TIMEOUT_SEC = 0.0
 _COMPILED_CODE_CACHE: dict[str, Any] = {}
@@ -195,6 +358,16 @@ def _compiled_candidate_code(code: str) -> Any:
     return compiled
 
 
+def _safe_numpy() -> types.SimpleNamespace:
+    """Return a restricted numpy namespace exposing only safe numerical functions."""
+    attrs = {}
+    for name in _SAFE_NP_ATTRS:
+        val = getattr(np, name, None)
+        if val is not None:
+            attrs[name] = val
+    return types.SimpleNamespace(**attrs)
+
+
 def _safe_globals() -> dict[str, Any]:
     safe_builtins = {
         "abs": abs,
@@ -224,7 +397,7 @@ def _safe_globals() -> dict[str, Any]:
     return {
         "__builtins__": safe_builtins,
         "math": math,
-        "np": np,
+        "np": _safe_numpy(),
     }
 
 

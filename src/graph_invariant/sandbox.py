@@ -163,12 +163,44 @@ def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
     return True, None
 
 
-def validate_code_static(code: str) -> tuple[bool, str | None]:
+# Functions that trivially compute or shortcut common targets.
+_TARGET_RELATED_FUNCTIONS: dict[str, list[str]] = {
+    "average_shortest_path_length": [
+        "average_shortest_path_length",
+        "shortest_path_length",
+        "shortest_path",
+        "all_pairs_shortest_path",
+        "all_pairs_shortest_path_length",
+        "floyd_warshall",
+    ],
+    "diameter": [
+        "diameter",
+        "eccentricity",
+        "periphery",
+        "all_pairs_shortest_path_length",
+        "floyd_warshall",
+    ],
+    "algebraic_connectivity": [
+        "algebraic_connectivity",
+        "fiedler_vector",
+        "laplacian_spectrum",
+        "laplacian_matrix",
+        "normalized_laplacian_matrix",
+    ],
+}
+
+
+def validate_code_static(code: str, target_name: str | None = None) -> tuple[bool, str | None]:
     # Best-effort defense for research use only.
     # Running fully untrusted code safely requires stronger isolation (e.g., containers/jails).
     for token in FORBIDDEN_PATTERNS:
         if token in code:
             return False, f"forbidden token detected: {token}"
+    if target_name:
+        blocked = _TARGET_RELATED_FUNCTIONS.get(target_name, [target_name])
+        for fn_name in blocked:
+            if fn_name in code:
+                return False, f"target-related function forbidden: {fn_name}"
     if "def new_invariant(" not in code:
         return False, "missing `new_invariant` function"
     try:
@@ -273,9 +305,16 @@ def _run_candidate_with_queue_result_detailed(code: str, graph: nx.Graph) -> dic
 class SandboxEvaluator:
     """Reusable evaluator that keeps a worker pool alive across calls."""
 
-    def __init__(self, timeout_sec: float, memory_mb: int, max_workers: int | None = None):
+    def __init__(
+        self,
+        timeout_sec: float,
+        memory_mb: int,
+        max_workers: int | None = None,
+        target_name: str | None = None,
+    ):
         self.timeout_sec = timeout_sec
         self.memory_mb = memory_mb
+        self.target_name = target_name
         self._pool: Pool | None = None
         cpu_workers = max(1, os.cpu_count() or 1)
         if max_workers is None:
@@ -323,7 +362,7 @@ class SandboxEvaluator:
         return self._pool.starmap(_run_candidate_with_queue_result_detailed, tasks, chunksize=1)
 
     def evaluate(self, code: str, graphs: list[nx.Graph]) -> list[float | None]:
-        ok, _ = validate_code_static(code)
+        ok, _ = validate_code_static(code, target_name=self.target_name)
         if not ok:
             return [None for _ in graphs]
         if not graphs:
@@ -339,7 +378,7 @@ class SandboxEvaluator:
             return self._evaluate_once(code, graphs)
 
     def evaluate_detailed(self, code: str, graphs: list[nx.Graph]) -> list[dict[str, Any]]:
-        ok, reason = validate_code_static(code)
+        ok, reason = validate_code_static(code, target_name=self.target_name)
         if not ok:
             return [
                 {"value": None, "error_type": "static_invalid", "error_detail": reason}

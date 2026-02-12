@@ -126,6 +126,27 @@ def test_validate_code_static_still_rejects_forbidden_modules():
     assert reason is not None
 
 
+def test_validate_code_static_rejects_target_function():
+    code = "def new_invariant(G):\n    return nx.average_shortest_path_length(G)"
+    ok, reason = validate_code_static(code, target_name="average_shortest_path_length")
+    assert not ok
+    assert "target" in reason.lower()
+
+
+def test_validate_code_static_rejects_related_shortcut_functions():
+    code = "def new_invariant(G):\n    return nx.shortest_path_length(G, 0, 1)"
+    ok, reason = validate_code_static(code, target_name="average_shortest_path_length")
+    assert not ok
+    assert reason is not None
+
+
+def test_validate_code_static_allows_unrelated_nx_calls_with_target():
+    code = "def new_invariant(G):\n    return nx.density(G)"
+    ok, reason = validate_code_static(code, target_name="average_shortest_path_length")
+    assert ok
+    assert reason is None
+
+
 def test_evaluate_for_loop_computes_correctly():
     import networkx as nx
 

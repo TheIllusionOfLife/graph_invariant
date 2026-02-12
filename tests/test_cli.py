@@ -17,9 +17,11 @@ def _patch_sandbox_evaluator(monkeypatch, evaluate_fn):  # noqa: ANN001
             timeout_sec: float,
             memory_mb: int,
             max_workers: int | None = None,
+            target_name: str | None = None,
         ):
             self.timeout_sec = timeout_sec
             self.memory_mb = memory_mb
+            self.target_name = target_name
             self.max_workers = max_workers
 
         def __enter__(self):

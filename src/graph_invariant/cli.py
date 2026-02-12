@@ -910,6 +910,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         timeout_sec=cfg.timeout_sec,
         memory_mb=cfg.memory_mb,
         max_workers=cfg.sandbox_max_workers,
+        target_name=cfg.target_name,
     ) as evaluator:
         for _ in range(state.generation, cfg.max_generations):
             _run_one_generation(

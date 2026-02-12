@@ -31,8 +31,8 @@ def test_validate_code_static_rejects_non_whitelisted_call():
     assert reason is not None
 
 
-def test_validate_code_static_rejects_disallowed_module_calls():
-    code = "def new_invariant(G):\n    return json.dumps({})"
+def test_validate_code_static_rejects_forbidden_module_calls():
+    code = "def new_invariant(G):\n    return shutil.rmtree('/')"
     ok, reason = validate_code_static(code)
     assert not ok
     assert reason is not None
@@ -105,6 +105,25 @@ def test_validate_code_static_allows_round_and_list_builtins():
     ok, reason = validate_code_static(code)
     assert ok
     assert reason is None
+
+
+def test_validate_code_static_allows_local_variable_method_calls():
+    code = (
+        "def new_invariant(G):\n"
+        "    degrees = list(G.degree())\n"
+        "    degrees.sort()\n"
+        "    return float(len(degrees))"
+    )
+    ok, reason = validate_code_static(code)
+    assert ok
+    assert reason is None
+
+
+def test_validate_code_static_still_rejects_forbidden_modules():
+    code = "def new_invariant(G):\n    return os.getcwd()"
+    ok, reason = validate_code_static(code)
+    assert not ok
+    assert reason is not None
 
 
 def test_evaluate_for_loop_computes_correctly():

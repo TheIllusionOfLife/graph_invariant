@@ -55,6 +55,7 @@ ALLOWED_CALLS = {
     "reversed",
 }
 ALLOWED_ATTR_BASES = {"G", "math", "np", "nx"}
+FORBIDDEN_ATTR_BASES = {"os", "sys", "subprocess", "shutil", "socket", "http", "urllib"}
 ALLOWED_AST_NODES: tuple[type[ast.AST], ...] = (
     ast.Module,
     ast.FunctionDef,
@@ -154,10 +155,9 @@ def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
                 if node.func.id not in ALLOWED_CALLS:
                     return False, f"non-whitelisted call detected: {node.func.id}"
             elif isinstance(node.func, ast.Attribute):
-                if not isinstance(node.func.value, ast.Name):
-                    return False, "disallowed attribute call target"
-                if node.func.value.id not in ALLOWED_ATTR_BASES:
-                    return False, f"disallowed call base: {node.func.value.id}"
+                if isinstance(node.func.value, ast.Name):
+                    if node.func.value.id in FORBIDDEN_ATTR_BASES:
+                        return False, f"forbidden call base: {node.func.value.id}"
             else:
                 return False, "disallowed call expression"
     return True, None
@@ -199,6 +199,19 @@ def _safe_globals() -> dict[str, Any]:
         "enumerate": enumerate,
         "float": float,
         "int": int,
+        "list": list,
+        "tuple": tuple,
+        "dict": dict,
+        "set": set,
+        "zip": zip,
+        "map": map,
+        "round": round,
+        "bool": bool,
+        "str": str,
+        "pow": pow,
+        "any": any,
+        "all": all,
+        "reversed": reversed,
     }
     return {
         "__builtins__": safe_builtins,

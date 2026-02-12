@@ -64,8 +64,8 @@ TARGET_FUNCTIONS = {
 _CONSTRAINED_SUFFIX = (
     "\nConstrained mode is active. Use only these operators: +, -, *, /, log, sqrt, **, "
     "sum, mean, max, min. Follow this template: "
-    "def new_invariant(G): n = G.number_of_nodes(); m = G.number_of_edges(); "
-    "degrees = [d for _, d in G.degree()]; return <expression using n,m,degrees>."
+    "def new_invariant(s): n = s['n']; m = s['m']; "
+    "degrees = s['degrees']; return <expression using n,m,degrees>."
 )
 
 
@@ -190,7 +190,7 @@ def _build_repair_prompt(
         f"Failure: {failure_feedback}\n"
         "Previous candidate code:\n"
         f"```python\n{candidate_code}\n```\n"
-        "Return only corrected python code defining `def new_invariant(G):`."
+        "Return only corrected python code defining `def new_invariant(s):`."
     )
 
 

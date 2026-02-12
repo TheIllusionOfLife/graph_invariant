@@ -5,6 +5,13 @@ from urllib.parse import urlparse
 import requests
 
 
+_FEATURE_KEYS_DOC = (
+    "Available keys in s: n (node count), m (edge count), density, avg_degree, "
+    "max_degree, min_degree, std_degree, avg_clustering, transitivity, "
+    "degree_assortativity, num_triangles, degrees (sorted degree list)."
+)
+
+
 def build_prompt(
     island_mode: str,
     top_candidates: list[str],
@@ -18,7 +25,9 @@ def build_prompt(
         f"Island mode: {island_mode}\n"
         f"Best formulas:\n{top_block}\n"
         f"Recent failures:\n{fail_block}\n"
-        "Return only python code defining `def new_invariant(G):`."
+        "Return only python code defining `def new_invariant(s):` "
+        "where s is a dict of pre-computed graph features.\n"
+        f"{_FEATURE_KEYS_DOC}"
     )
 
 

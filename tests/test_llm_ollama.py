@@ -17,11 +17,23 @@ def test_extract_code_block_prefers_python_fence():
 
 def test_build_prompt_contains_key_sections():
     prompt = build_prompt(
-        "refine", ["def new_invariant(G):\n    return 1"], ["syntax error"], "diameter"
+        "refine", ["def new_invariant(s):\n    return s['n']"], ["syntax error"], "diameter"
     )
     assert "Island mode: refine" in prompt
     assert "diameter" in prompt
     assert "Recent failures" in prompt
+
+
+def test_build_prompt_uses_feature_dict_signature():
+    prompt = build_prompt("free", [], [], "average_shortest_path_length")
+    assert "new_invariant(s)" in prompt
+    assert "new_invariant(G)" not in prompt
+
+
+def test_build_prompt_lists_available_features():
+    prompt = build_prompt("free", [], [], "diameter")
+    for key in ("n", "m", "density", "degrees", "avg_degree", "avg_clustering"):
+        assert key in prompt
 
 
 def test_generate_candidate_code_parses_response(monkeypatch):

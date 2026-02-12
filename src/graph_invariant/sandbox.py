@@ -7,7 +7,6 @@ import signal
 from multiprocessing.pool import Pool
 from typing import Any
 
-import networkx as nx
 import numpy as np
 
 try:
@@ -54,8 +53,18 @@ ALLOWED_CALLS = {
     "all",
     "reversed",
 }
-ALLOWED_ATTR_BASES = {"G", "math", "np", "nx"}
-FORBIDDEN_ATTR_BASES = {"os", "sys", "subprocess", "shutil", "socket", "http", "urllib"}
+ALLOWED_ATTR_BASES = {"s", "math", "np"}
+FORBIDDEN_ATTR_BASES = {
+    "os",
+    "sys",
+    "subprocess",
+    "shutil",
+    "socket",
+    "http",
+    "urllib",
+    "nx",
+    "G",
+}
 ALLOWED_AST_NODES: tuple[type[ast.AST], ...] = (
     ast.Module,
     ast.FunctionDef,
@@ -163,52 +172,12 @@ def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
     return True, None
 
 
-# Functions that trivially compute or shortcut common targets.
-_TARGET_RELATED_FUNCTIONS: dict[str, list[str]] = {
-    "average_shortest_path_length": [
-        "average_shortest_path_length",
-        "shortest_path_length",
-        "shortest_path",
-        "all_pairs_shortest_path",
-        "all_pairs_shortest_path_length",
-        "floyd_warshall",
-        "dijkstra",
-        "bellman_ford",
-        "single_source",
-        "bfs_tree",
-        "bfs_edges",
-        "bfs_layers",
-        "bfs_predecessors",
-        "bfs_successors",
-    ],
-    "diameter": [
-        "diameter",
-        "eccentricity",
-        "periphery",
-        "all_pairs_shortest_path_length",
-        "floyd_warshall",
-    ],
-    "algebraic_connectivity": [
-        "algebraic_connectivity",
-        "fiedler_vector",
-        "laplacian_spectrum",
-        "laplacian_matrix",
-        "normalized_laplacian_matrix",
-    ],
-}
-
-
-def validate_code_static(code: str, target_name: str | None = None) -> tuple[bool, str | None]:
+def validate_code_static(code: str) -> tuple[bool, str | None]:
     # Best-effort defense for research use only.
     # Running fully untrusted code safely requires stronger isolation (e.g., containers/jails).
     for token in FORBIDDEN_PATTERNS:
         if token in code:
             return False, f"forbidden token detected: {token}"
-    if target_name:
-        blocked = _TARGET_RELATED_FUNCTIONS.get(target_name, [target_name])
-        for fn_name in blocked:
-            if fn_name in code:
-                return False, f"target-related function forbidden: {fn_name}"
     if "def new_invariant(" not in code:
         return False, "missing `new_invariant` function"
     try:
@@ -257,19 +226,18 @@ def _safe_globals() -> dict[str, Any]:
         "__builtins__": safe_builtins,
         "math": math,
         "np": np,
-        "nx": nx,
     }
 
 
-def _run_candidate(code: str, graph: nx.Graph) -> float | None:
-    return _run_candidate_detailed(code, graph).get("value")
+def _run_candidate(code: str, features: dict[str, Any]) -> float | None:
+    return _run_candidate_detailed(code, features).get("value")
 
 
-def _run_candidate_with_queue_result(code: str, graph: nx.Graph) -> float | None:
-    return _run_candidate(code, graph)
+def _run_candidate_with_queue_result(code: str, features: dict[str, Any]) -> float | None:
+    return _run_candidate(code, features)
 
 
-def _run_candidate_detailed(code: str, graph: nx.Graph) -> dict[str, Any]:
+def _run_candidate_detailed(code: str, features: dict[str, Any]) -> dict[str, Any]:
     safe_globals = _safe_globals()
     safe_locals: dict[str, Any] = {}
     try:
@@ -280,7 +248,7 @@ def _run_candidate_detailed(code: str, graph: nx.Graph) -> dict[str, Any]:
         fn = safe_locals.get("new_invariant")
         if fn is None:
             return {"value": None, "error_type": "runtime_exception", "error_detail": "missing_fn"}
-        value = fn(graph)
+        value = fn(features)
         if value is None:
             return {
                 "value": None,
@@ -306,8 +274,10 @@ def _run_candidate_detailed(code: str, graph: nx.Graph) -> dict[str, Any]:
             signal.setitimer(signal.ITIMER_REAL, 0.0)
 
 
-def _run_candidate_with_queue_result_detailed(code: str, graph: nx.Graph) -> dict[str, Any]:
-    return _run_candidate_detailed(code, graph)
+def _run_candidate_with_queue_result_detailed(
+    code: str, features: dict[str, Any]
+) -> dict[str, Any]:
+    return _run_candidate_detailed(code, features)
 
 
 class SandboxEvaluator:
@@ -318,11 +288,9 @@ class SandboxEvaluator:
         timeout_sec: float,
         memory_mb: int,
         max_workers: int | None = None,
-        target_name: str | None = None,
     ):
         self.timeout_sec = timeout_sec
         self.memory_mb = memory_mb
-        self.target_name = target_name
         self._pool: Pool | None = None
         cpu_workers = max(1, os.cpu_count() or 1)
         if max_workers is None:
@@ -356,58 +324,64 @@ class SandboxEvaluator:
             maxtasksperchild=100,
         )
 
-    def _evaluate_once(self, code: str, graphs: list[nx.Graph]) -> list[float | None]:
+    def _evaluate_once(
+        self, code: str, features_list: list[dict[str, Any]]
+    ) -> list[float | None]:
         if self._pool is None:
             raise RuntimeError("sandbox pool is not initialized")
-        tasks = [(code, graph) for graph in graphs]
+        tasks = [(code, features) for features in features_list]
         # Keep chunksize small for fairness; tune upward if IPC becomes dominant.
         return self._pool.starmap(_run_candidate_with_queue_result, tasks, chunksize=1)
 
-    def _evaluate_once_detailed(self, code: str, graphs: list[nx.Graph]) -> list[dict[str, Any]]:
+    def _evaluate_once_detailed(
+        self, code: str, features_list: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         if self._pool is None:
             raise RuntimeError("sandbox pool is not initialized")
-        tasks = [(code, graph) for graph in graphs]
+        tasks = [(code, features) for features in features_list]
         return self._pool.starmap(_run_candidate_with_queue_result_detailed, tasks, chunksize=1)
 
-    def evaluate(self, code: str, graphs: list[nx.Graph]) -> list[float | None]:
-        ok, _ = validate_code_static(code, target_name=self.target_name)
+    def evaluate(self, code: str, features_list: list[dict[str, Any]]) -> list[float | None]:
+        ok, _ = validate_code_static(code)
         if not ok:
-            return [None for _ in graphs]
-        if not graphs:
+            return [None for _ in features_list]
+        if not features_list:
             return []
 
         self._ensure_pool()
         try:
-            return self._evaluate_once(code, graphs)
+            return self._evaluate_once(code, features_list)
         except (BrokenPipeError, EOFError, OSError):
             LOGGER.debug("sandbox pool failed; rebuilding once", exc_info=True)
             self.close()
             self._ensure_pool()
-            return self._evaluate_once(code, graphs)
+            return self._evaluate_once(code, features_list)
 
-    def evaluate_detailed(self, code: str, graphs: list[nx.Graph]) -> list[dict[str, Any]]:
-        ok, reason = validate_code_static(code, target_name=self.target_name)
+    def evaluate_detailed(
+        self, code: str, features_list: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        ok, reason = validate_code_static(code)
         if not ok:
             return [
                 {"value": None, "error_type": "static_invalid", "error_detail": reason}
-                for _ in graphs
+                for _ in features_list
             ]
-        if not graphs:
+        if not features_list:
             return []
 
         self._ensure_pool()
         try:
-            return self._evaluate_once_detailed(code, graphs)
+            return self._evaluate_once_detailed(code, features_list)
         except (BrokenPipeError, EOFError, OSError):
             LOGGER.debug("sandbox pool failed; rebuilding once", exc_info=True)
             self.close()
             self._ensure_pool()
-            return self._evaluate_once_detailed(code, graphs)
+            return self._evaluate_once_detailed(code, features_list)
 
 
-def evaluate_candidate_on_graphs(
+def evaluate_candidate_on_features(
     code: str,
-    graphs: list[nx.Graph],
+    features_list: list[dict[str, Any]],
     timeout_sec: float,
     memory_mb: int,
     max_workers: int | None = None,
@@ -417,4 +391,4 @@ def evaluate_candidate_on_graphs(
         memory_mb=memory_mb,
         max_workers=max_workers,
     ) as evaluator:
-        return evaluator.evaluate(code, graphs)
+        return evaluator.evaluate(code, features_list)

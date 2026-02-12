@@ -8,6 +8,7 @@ from multiprocessing.pool import Pool
 from typing import Any
 
 import networkx as nx
+import numpy as np
 
 try:
     import resource
@@ -28,8 +29,32 @@ FORBIDDEN_PATTERNS = [
     "__globals__",
 ]
 FORBIDDEN_CALLS = {"getattr", "setattr", "delattr", "globals", "locals", "vars"}
-ALLOWED_CALLS = {"abs", "min", "max", "sum", "len", "sorted", "range", "enumerate", "float", "int"}
-ALLOWED_ATTR_BASES = {"G", "math"}
+ALLOWED_CALLS = {
+    "abs",
+    "min",
+    "max",
+    "sum",
+    "len",
+    "sorted",
+    "range",
+    "enumerate",
+    "float",
+    "int",
+    "list",
+    "tuple",
+    "dict",
+    "set",
+    "zip",
+    "map",
+    "round",
+    "bool",
+    "str",
+    "pow",
+    "any",
+    "all",
+    "reversed",
+}
+ALLOWED_ATTR_BASES = {"G", "math", "np", "nx"}
 ALLOWED_AST_NODES: tuple[type[ast.AST], ...] = (
     ast.Module,
     ast.FunctionDef,
@@ -68,6 +93,11 @@ ALLOWED_AST_NODES: tuple[type[ast.AST], ...] = (
     ast.unaryop,
     ast.boolop,
     ast.cmpop,
+    ast.For,
+    ast.While,
+    ast.Break,
+    ast.Continue,
+    ast.Pass,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -173,6 +203,8 @@ def _safe_globals() -> dict[str, Any]:
     return {
         "__builtins__": safe_builtins,
         "math": math,
+        "np": np,
+        "nx": nx,
     }
 
 

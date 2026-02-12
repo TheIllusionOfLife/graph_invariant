@@ -55,6 +55,7 @@ def generate_candidate_payload(
     url: str,
     allow_remote: bool = False,
     timeout_sec: float = 60.0,
+    max_retries: int = 3,
 ) -> dict[str, str]:
     validate_ollama_url(url, allow_remote=allow_remote)
     payload = {
@@ -63,11 +64,19 @@ def generate_candidate_payload(
         "stream": False,
         "options": {"temperature": temperature},
     }
-    response = requests.post(url, json=payload, timeout=timeout_sec, allow_redirects=False)
-    response.raise_for_status()
-    body = response.json()
-    text = str(body.get("response", "")).strip()
-    return {"response": text, "code": _extract_code_block(text)}
+    last_exc: requests.exceptions.ReadTimeout | None = None
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(url, json=payload, timeout=timeout_sec, allow_redirects=False)
+            response.raise_for_status()
+            body = response.json()
+            text = str(body.get("response", "")).strip()
+            return {"response": text, "code": _extract_code_block(text)}
+        except requests.exceptions.ReadTimeout as exc:
+            last_exc = exc
+            if attempt < max_retries - 1:
+                continue
+    raise last_exc  # type: ignore[misc]
 
 
 def _tags_endpoint(generate_url: str) -> str:

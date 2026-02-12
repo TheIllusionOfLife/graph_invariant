@@ -4,7 +4,6 @@ from urllib.parse import urlparse
 
 import requests
 
-
 _FEATURE_KEYS_DOC = (
     "Available keys in s: n (node count), m (edge count), density, avg_degree, "
     "max_degree, min_degree, std_degree, avg_clustering, transitivity, "

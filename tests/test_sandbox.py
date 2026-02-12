@@ -72,9 +72,7 @@ def test_validate_code_static_allows_np_calls():
 
 def test_evaluate_with_np_function_runtime():
     code = "def new_invariant(s):\n    return np.mean(s['degrees'])"
-    result = evaluate_candidate_on_features(
-        code, [_FEATURES_PATH5], timeout_sec=1.0, memory_mb=128
-    )
+    result = evaluate_candidate_on_features(code, [_FEATURES_PATH5], timeout_sec=1.0, memory_mb=128)
     assert result[0] is not None
     assert abs(result[0] - 1.6) < 0.01
 
@@ -136,22 +134,15 @@ def test_evaluate_for_loop_computes_correctly():
         "        total = total + d\n"
         "    return float(total)"
     )
-    result = evaluate_candidate_on_features(
-        code, [_FEATURES_PATH5], timeout_sec=1.0, memory_mb=128
-    )
+    result = evaluate_candidate_on_features(code, [_FEATURES_PATH5], timeout_sec=1.0, memory_mb=128)
     # path_graph(5): degrees [1,1,2,2,2], sum=8
     assert result[0] is not None
     assert abs(result[0] - 8.0) < 0.01
 
 
 def test_evaluate_degrees_list_operations():
-    code = (
-        "def new_invariant(s):\n"
-        "    return sum(d ** 2 for d in s['degrees']) / s['n']"
-    )
-    result = evaluate_candidate_on_features(
-        code, [_FEATURES_PATH5], timeout_sec=1.0, memory_mb=128
-    )
+    code = "def new_invariant(s):\n    return sum(d ** 2 for d in s['degrees']) / s['n']"
+    result = evaluate_candidate_on_features(code, [_FEATURES_PATH5], timeout_sec=1.0, memory_mb=128)
     # degrees=[1,1,2,2,2], sum of squares=1+1+4+4+4=14, /5=2.8
     assert result[0] is not None
     assert abs(result[0] - 2.8) < 0.01
@@ -159,17 +150,13 @@ def test_evaluate_degrees_list_operations():
 
 def test_evaluate_candidate_on_features_times_out_and_returns_none():
     code = "def new_invariant(s):\n    while True:\n        pass"
-    result = evaluate_candidate_on_features(
-        code, [_FEATURES_PATH5], timeout_sec=0.1, memory_mb=128
-    )
+    result = evaluate_candidate_on_features(code, [_FEATURES_PATH5], timeout_sec=0.1, memory_mb=128)
     assert result == [None]
 
 
 def test_evaluate_candidate_on_features_allows_float_and_int_builtins():
     code = "def new_invariant(s):\n    return float(int(s['n']))"
-    result = evaluate_candidate_on_features(
-        code, [_FEATURES_PATH5], timeout_sec=0.2, memory_mb=128
-    )
+    result = evaluate_candidate_on_features(code, [_FEATURES_PATH5], timeout_sec=0.2, memory_mb=128)
     assert result == [5.0]
 
 
@@ -226,12 +213,10 @@ def test_sandbox_evaluator_reuses_pool_within_context(monkeypatch):
     monkeypatch.setattr("graph_invariant.sandbox.mp.get_context", lambda: FakeContext())
 
     with SandboxEvaluator(timeout_sec=0.1, memory_mb=128) as evaluator:
-        assert evaluator.evaluate(
-            "def new_invariant(s):\n    return 1.0", [_FEATURES_PATH5]
-        ) == [1.0]
-        assert evaluator.evaluate(
-            "def new_invariant(s):\n    return 1.0", [{"n": 4}]
-        ) == [1.0]
+        assert evaluator.evaluate("def new_invariant(s):\n    return 1.0", [_FEATURES_PATH5]) == [
+            1.0
+        ]
+        assert evaluator.evaluate("def new_invariant(s):\n    return 1.0", [{"n": 4}]) == [1.0]
 
     assert created_pools == 1
     assert starmap_calls == 2
@@ -291,9 +276,7 @@ def test_sandbox_evaluator_rebuilds_pool_after_broken_pipe(monkeypatch):
     monkeypatch.setattr("graph_invariant.sandbox.mp.get_context", lambda: FakeContext())
 
     with SandboxEvaluator(timeout_sec=0.1, memory_mb=128) as evaluator:
-        result = evaluator.evaluate(
-            "def new_invariant(s):\n    return 1.0", [_FEATURES_PATH5]
-        )
+        result = evaluator.evaluate("def new_invariant(s):\n    return 1.0", [_FEATURES_PATH5])
 
     assert result == [2.0]
     assert created_pools == 2

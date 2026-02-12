@@ -53,7 +53,6 @@ ALLOWED_CALLS = {
     "all",
     "reversed",
 }
-ALLOWED_ATTR_BASES = {"s", "math", "np"}
 FORBIDDEN_ATTR_BASES = {
     "os",
     "sys",
@@ -324,9 +323,7 @@ class SandboxEvaluator:
             maxtasksperchild=100,
         )
 
-    def _evaluate_once(
-        self, code: str, features_list: list[dict[str, Any]]
-    ) -> list[float | None]:
+    def _evaluate_once(self, code: str, features_list: list[dict[str, Any]]) -> list[float | None]:
         if self._pool is None:
             raise RuntimeError("sandbox pool is not initialized")
         tasks = [(code, features) for features in features_list]

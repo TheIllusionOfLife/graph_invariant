@@ -987,6 +987,182 @@ def test_run_phase1_accepts_single_healthy_baseline_when_required(monkeypatch, t
     assert summary["success_criteria"]["baselines_passed"] is True
 
 
+def test_candidate_prompt_maps_island_0_to_refinement():
+    from graph_invariant.cli import _candidate_prompt
+    from graph_invariant.llm_ollama import IslandStrategy
+
+    state = CheckpointState(
+        experiment_id="exp",
+        generation=0,
+        islands={0: [], 1: [], 2: [], 3: []},
+    )
+    prompt = _candidate_prompt(state, island_id=0, target_name="diameter")
+    assert any(word in prompt.lower() for word in ("improve", "refine"))
+
+
+def test_candidate_prompt_maps_island_1_to_combination():
+    from graph_invariant.cli import _candidate_prompt
+    from graph_invariant.llm_ollama import IslandStrategy
+
+    state = CheckpointState(
+        experiment_id="exp",
+        generation=0,
+        islands={0: [], 1: [], 2: [], 3: []},
+    )
+    prompt = _candidate_prompt(state, island_id=1, target_name="diameter")
+    assert "combine" in prompt.lower()
+
+
+def test_candidate_prompt_maps_island_3_to_novel():
+    from graph_invariant.cli import _candidate_prompt
+    from graph_invariant.llm_ollama import IslandStrategy
+
+    state = CheckpointState(
+        experiment_id="exp",
+        generation=0,
+        islands={0: [], 1: [], 2: [], 3: []},
+    )
+    prompt = _candidate_prompt(state, island_id=3, target_name="diameter")
+    assert any(word in prompt.lower() for word in ("new", "novel"))
+
+
+def test_generation_rejects_candidate_below_novelty_gate(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        novelty_gate_threshold=0.15,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    # Return very low novelty — below the 0.15 gate
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.08)
+
+    assert run_phase1(cfg) == 0
+    summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
+    # All candidates should have been rejected by novelty gate → no candidates
+    assert summary.get("success") is False
+
+
+def test_generation_accepts_candidate_above_novelty_gate(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        novelty_gate_threshold=0.15,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    # Return novelty above the 0.15 gate
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+
+    assert run_phase1(cfg) == 0
+    summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
+    assert summary.get("best_candidate_id") is not None
+
+
+def test_novelty_gate_disabled_when_zero(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        novelty_gate_threshold=0.0,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    # Very low novelty, but gate is disabled (threshold=0.0)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.01)
+
+    assert run_phase1(cfg) == 0
+    summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
+    # Should still produce candidates since gate is disabled
+    assert summary.get("best_candidate_id") is not None
+
+
 def test_run_phase1_persists_prompt_and_response_when_enabled(monkeypatch, tmp_path):
     import networkx as nx
 

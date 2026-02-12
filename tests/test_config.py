@@ -101,6 +101,18 @@ def test_phase1_config_validates_benchmark_and_novelty_settings():
         Phase1Config(llm_timeout_sec=0.0)
 
 
+def test_novelty_gate_threshold_default():
+    cfg = Phase1Config()
+    assert cfg.novelty_gate_threshold == 0.15
+
+
+def test_novelty_gate_threshold_validates_range():
+    with pytest.raises(ValueError, match="novelty_gate_threshold"):
+        Phase1Config(novelty_gate_threshold=-0.1)
+    with pytest.raises(ValueError, match="novelty_gate_threshold"):
+        Phase1Config(novelty_gate_threshold=1.1)
+
+
 def test_phase1_config_validates_self_correction_fields():
     with pytest.raises(ValueError, match="self_correction_max_retries"):
         Phase1Config(self_correction_max_retries=-1)

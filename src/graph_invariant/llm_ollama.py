@@ -1,8 +1,15 @@
 import ipaddress
 import re
+from enum import Enum
 from urllib.parse import urlparse
 
 import requests
+
+
+class IslandStrategy(str, Enum):
+    REFINEMENT = "refinement"
+    COMBINATION = "combination"
+    NOVEL = "novel"
 
 _FEATURE_KEYS_DOC = (
     "Available keys in s: n (node count), m (edge count), density, avg_degree, "
@@ -16,6 +23,7 @@ def build_prompt(
     top_candidates: list[str],
     failures: list[str],
     target_name: str,
+    strategy: IslandStrategy | None = None,
 ) -> str:
     top_block = "\n\n".join(top_candidates[:3]) if top_candidates else "None yet."
     fail_block = "\n".join(failures[:3]) if failures else "None."

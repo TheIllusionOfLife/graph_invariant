@@ -52,6 +52,7 @@ class Phase1Config:
     enable_self_correction: bool = True
     self_correction_max_retries: int = 1
     self_correction_feedback_window: int = 3
+    novelty_gate_threshold: float = 0.15
 
     def __post_init__(self) -> None:
         self.island_temperatures = tuple(float(x) for x in self.island_temperatures)

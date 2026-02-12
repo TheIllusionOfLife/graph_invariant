@@ -1,6 +1,7 @@
 import pytest
 
 from graph_invariant.llm_ollama import (
+    IslandStrategy,
     _extract_code_block,
     _tags_endpoint,
     build_prompt,
@@ -147,6 +148,54 @@ def test_generate_candidate_code_no_retry_on_connection_error(monkeypatch):
     with pytest.raises(req.exceptions.ConnectionError):
         generate_candidate_code("p", "m", 0.3, "http://localhost:11434/api/generate")
     assert call_count == 1
+
+
+def test_build_prompt_refinement_strategy():
+    prompt = build_prompt(
+        "free", ["def new_invariant(s):\n    return s['n']"], [], "diameter",
+        strategy=IslandStrategy.REFINEMENT,
+    )
+    assert any(word in prompt.lower() for word in ("improve", "refine"))
+
+
+def test_build_prompt_combination_strategy():
+    prompt = build_prompt(
+        "free",
+        ["def new_invariant(s):\n    return s['n']", "def new_invariant(s):\n    return s['m']"],
+        [],
+        "diameter",
+        strategy=IslandStrategy.COMBINATION,
+    )
+    assert "combine" in prompt.lower()
+
+
+def test_build_prompt_novel_strategy():
+    prompt = build_prompt(
+        "free", [], [], "diameter",
+        strategy=IslandStrategy.NOVEL,
+    )
+    assert any(word in prompt.lower() for word in ("new", "novel"))
+
+
+def test_build_prompt_includes_anti_patterns():
+    for strategy in IslandStrategy:
+        prompt = build_prompt("free", [], [], "diameter", strategy=strategy)
+        assert "FORBIDDEN" in prompt
+        assert "BFS" in prompt or "bfs" in prompt.lower()
+
+
+def test_build_prompt_includes_formula_examples():
+    for strategy in IslandStrategy:
+        prompt = build_prompt("free", [], [], "diameter", strategy=strategy)
+        assert "def new_invariant(s)" in prompt
+        assert "s['n']" in prompt or "s['m']" in prompt
+
+
+def test_build_prompt_feature_dict_signature_with_strategy():
+    prompt = build_prompt("free", [], [], "diameter", strategy=IslandStrategy.REFINEMENT)
+    assert "new_invariant(s)" in prompt
+    assert "new_invariant(G)" not in prompt
+    assert "pre-computed" in prompt.lower() or "feature" in prompt.lower()
 
 
 def test_list_available_models_uses_no_redirects(monkeypatch):

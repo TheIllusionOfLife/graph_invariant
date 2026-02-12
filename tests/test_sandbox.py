@@ -25,17 +25,102 @@ def test_validate_code_static_rejects_getattr_bypass():
 
 
 def test_validate_code_static_rejects_non_whitelisted_call():
-    code = "def new_invariant(G):\n    return round(G.number_of_nodes())"
+    code = "def new_invariant(G):\n    return compile('1', '', 'eval')"
     ok, reason = validate_code_static(code)
     assert not ok
     assert reason is not None
 
 
-def test_validate_code_static_rejects_networkx_module_calls():
-    code = "def new_invariant(G):\n    return nx.number_of_nodes(G)"
+def test_validate_code_static_rejects_disallowed_module_calls():
+    code = "def new_invariant(G):\n    return json.dumps({})"
     ok, reason = validate_code_static(code)
     assert not ok
     assert reason is not None
+
+
+# --- P0: nx and np should be allowed in sandbox ---
+
+
+def test_validate_code_static_allows_nx_module_calls():
+    code = "def new_invariant(G):\n    return nx.density(G)"
+    ok, reason = validate_code_static(code)
+    assert ok
+    assert reason is None
+
+
+def test_validate_code_static_allows_np_calls():
+    code = "def new_invariant(G):\n    return np.mean([1, 2, 3])"
+    ok, reason = validate_code_static(code)
+    assert ok
+    assert reason is None
+
+
+def test_evaluate_with_nx_function_runtime():
+    import networkx as nx
+
+    code = "def new_invariant(G):\n    return nx.density(G)"
+    result = evaluate_candidate_on_graphs(code, [nx.path_graph(5)], timeout_sec=1.0, memory_mb=128)
+    assert result[0] is not None
+    assert abs(result[0] - 0.4) < 0.01
+
+
+def test_evaluate_with_np_function_runtime():
+    import networkx as nx
+
+    code = (
+        "def new_invariant(G):\n"
+        "    degrees = [d for _, d in G.degree()]\n"
+        "    return np.mean(degrees)"
+    )
+    result = evaluate_candidate_on_graphs(code, [nx.path_graph(5)], timeout_sec=1.0, memory_mb=128)
+    assert result[0] is not None
+    assert abs(result[0] - 1.6) < 0.01
+
+
+# --- P1: For/While loops and additional builtins ---
+
+
+def test_validate_code_static_allows_for_loop():
+    code = (
+        "def new_invariant(G):\n"
+        "    s = 0\n"
+        "    for _, d in G.degree():\n"
+        "        s = s + d\n"
+        "    return s"
+    )
+    ok, reason = validate_code_static(code)
+    assert ok
+    assert reason is None
+
+
+def test_validate_code_static_allows_while_loop():
+    code = "def new_invariant(G):\n    n = 1\n    while n < 10:\n        n = n + 1\n    return n"
+    ok, reason = validate_code_static(code)
+    assert ok
+    assert reason is None
+
+
+def test_validate_code_static_allows_round_and_list_builtins():
+    code = "def new_invariant(G):\n    return round(len(list(G.degree())))"
+    ok, reason = validate_code_static(code)
+    assert ok
+    assert reason is None
+
+
+def test_evaluate_for_loop_computes_correctly():
+    import networkx as nx
+
+    code = (
+        "def new_invariant(G):\n"
+        "    s = 0\n"
+        "    for _, d in G.degree():\n"
+        "        s = s + d\n"
+        "    return float(s)"
+    )
+    result = evaluate_candidate_on_graphs(code, [nx.path_graph(5)], timeout_sec=1.0, memory_mb=128)
+    # path_graph(5): degrees [1,2,2,2,1], sum=8
+    assert result[0] is not None
+    assert abs(result[0] - 8.0) < 0.01
 
 
 def test_evaluate_candidate_on_graphs_times_out_and_returns_none():

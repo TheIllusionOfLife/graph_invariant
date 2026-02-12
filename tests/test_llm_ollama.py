@@ -80,6 +80,63 @@ def test_validate_ollama_url_rejects_non_local_hosts():
         validate_ollama_url("http://169.254.169.254/api/generate", allow_remote=False)
 
 
+def test_generate_candidate_code_retries_on_read_timeout(monkeypatch):
+    import requests as req
+
+    call_count = 0
+
+    class DummyResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, str]:
+            return {"response": "def new_invariant(G):\n    return 1"}
+
+    def fake_post(url, json, timeout, allow_redirects):  # noqa: ANN001
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise req.exceptions.ReadTimeout("timed out")
+        return DummyResponse()
+
+    monkeypatch.setattr("graph_invariant.llm_ollama.requests.post", fake_post)
+    code = generate_candidate_code("p", "m", 0.3, "http://localhost:11434/api/generate")
+    assert "def new_invariant" in code
+    assert call_count == 2
+
+
+def test_generate_candidate_code_fails_after_max_retries(monkeypatch):
+    import requests as req
+
+    call_count = 0
+
+    def fake_post(url, json, timeout, allow_redirects):  # noqa: ANN001
+        nonlocal call_count
+        call_count += 1
+        raise req.exceptions.ReadTimeout("timed out")
+
+    monkeypatch.setattr("graph_invariant.llm_ollama.requests.post", fake_post)
+    with pytest.raises(req.exceptions.ReadTimeout):
+        generate_candidate_code("p", "m", 0.3, "http://localhost:11434/api/generate")
+    assert call_count == 3
+
+
+def test_generate_candidate_code_no_retry_on_connection_error(monkeypatch):
+    import requests as req
+
+    call_count = 0
+
+    def fake_post(url, json, timeout, allow_redirects):  # noqa: ANN001
+        nonlocal call_count
+        call_count += 1
+        raise req.exceptions.ConnectionError("refused")
+
+    monkeypatch.setattr("graph_invariant.llm_ollama.requests.post", fake_post)
+    with pytest.raises(req.exceptions.ConnectionError):
+        generate_candidate_code("p", "m", 0.3, "http://localhost:11434/api/generate")
+    assert call_count == 1
+
+
 def test_list_available_models_uses_no_redirects(monkeypatch):
     class DummyResponse:
         def raise_for_status(self) -> None:

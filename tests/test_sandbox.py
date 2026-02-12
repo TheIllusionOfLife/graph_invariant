@@ -283,6 +283,39 @@ def test_sandbox_evaluator_rebuilds_pool_after_broken_pipe(monkeypatch):
     assert starmap_attempts == 2
 
 
+# --- numpy I/O restriction ---
+
+
+def test_evaluate_np_fromfile_blocked_at_runtime():
+    """np.fromfile must not be accessible — it can read arbitrary files."""
+    code = "def new_invariant(s):\n    f = np.fromfile\n    return 1.0"
+    result = evaluate_candidate_on_features(code, [_FEATURES_PATH5], timeout_sec=1.0, memory_mb=128)
+    assert result == [None]
+
+
+def test_evaluate_np_save_blocked_at_runtime():
+    """np.save must not be accessible — it can write arbitrary files."""
+    code = "def new_invariant(s):\n    f = np.save\n    return 1.0"
+    result = evaluate_candidate_on_features(code, [_FEATURES_PATH5], timeout_sec=1.0, memory_mb=128)
+    assert result == [None]
+
+
+def test_evaluate_np_load_blocked_at_runtime():
+    """np.load must not be accessible — it can read arbitrary files."""
+    code = "def new_invariant(s):\n    f = np.load\n    return 1.0"
+    result = evaluate_candidate_on_features(code, [_FEATURES_PATH5], timeout_sec=1.0, memory_mb=128)
+    assert result == [None]
+
+
+def test_evaluate_np_safe_math_functions_work():
+    """Safe np functions (sqrt, log, array) must still work after restriction."""
+    code = "def new_invariant(s):\n    return float(np.sqrt(np.mean(np.array(s['degrees']))))"
+    result = evaluate_candidate_on_features(code, [_FEATURES_PATH5], timeout_sec=1.0, memory_mb=128)
+    assert result[0] is not None
+    # sqrt(mean([1,1,2,2,2])) = sqrt(1.6) ≈ 1.265
+    assert abs(result[0] - 1.2649110640673518) < 0.01
+
+
 def test_compiled_candidate_code_uses_cache():
     from graph_invariant import sandbox
 

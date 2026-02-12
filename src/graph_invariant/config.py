@@ -102,6 +102,8 @@ class Phase1Config:
             raise ValueError("self_correction_max_retries must be >= 0")
         if self.self_correction_feedback_window < 1:
             raise ValueError("self_correction_feedback_window must be >= 1")
+        if not (0.0 <= self.novelty_gate_threshold <= 1.0):
+            raise ValueError("novelty_gate_threshold must be between 0.0 and 1.0")
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> "Phase1Config":

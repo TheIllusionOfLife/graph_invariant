@@ -15,6 +15,7 @@ from .data import generate_phase1_datasets
 from .evolution import migrate_ring_top1
 from .known_invariants import compute_feature_dicts, compute_known_invariant_values
 from .llm_ollama import (
+    IslandStrategy,
     build_prompt,
     generate_candidate_code,
     generate_candidate_payload,
@@ -126,6 +127,14 @@ def _state_defaults(state: CheckpointState) -> None:
         state.island_recent_failures.setdefault(island_id, [])
 
 
+_ISLAND_STRATEGIES: dict[int, IslandStrategy] = {
+    0: IslandStrategy.REFINEMENT,
+    1: IslandStrategy.COMBINATION,
+    2: IslandStrategy.REFINEMENT,
+    3: IslandStrategy.NOVEL,
+}
+
+
 def _candidate_prompt(state: CheckpointState, island_id: int, target_name: str) -> str:
     top_candidates = [
         candidate.code
@@ -138,6 +147,7 @@ def _candidate_prompt(state: CheckpointState, island_id: int, target_name: str) 
         top_candidates=top_candidates,
         failures=state.island_recent_failures.get(island_id, []),
         target_name=target_name,
+        strategy=_ISLAND_STRATEGIES.get(island_id),
     )
     if state.island_prompt_mode.get(island_id, "free") == "constrained":
         return prompt + _CONSTRAINED_SUFFIX
@@ -455,6 +465,22 @@ def _run_one_generation(
                     for name, values in known_invariants_val.items()
                 }
                 novelty_bonus = compute_novelty_bonus(list(y_p_val), known_subset)
+                if cfg.novelty_gate_threshold > 0 and novelty_bonus < cfg.novelty_gate_threshold:
+                    should_retry, next_prompt = _handle_rejection(
+                        island_id=island_id,
+                        pop_idx=pop_idx,
+                        attempt_idx=attempt_idx,
+                        rejection_reason="below_novelty_threshold",
+                        failure_feedback=f"novelty_bonus={novelty_bonus:.6f}",
+                        base_prompt=base_prompt,
+                        code=code,
+                        max_attempts=max_attempts,
+                        repairable=False,
+                    )
+                    if should_retry and next_prompt is not None:
+                        current_prompt = next_prompt
+                        continue
+                    break
                 total = compute_total_score(
                     abs(val_metrics.rho_spearman),
                     simplicity,

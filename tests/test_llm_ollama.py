@@ -152,7 +152,10 @@ def test_generate_candidate_code_no_retry_on_connection_error(monkeypatch):
 
 def test_build_prompt_refinement_strategy():
     prompt = build_prompt(
-        "free", ["def new_invariant(s):\n    return s['n']"], [], "diameter",
+        "free",
+        ["def new_invariant(s):\n    return s['n']"],
+        [],
+        "diameter",
         strategy=IslandStrategy.REFINEMENT,
     )
     assert any(word in prompt.lower() for word in ("improve", "refine"))
@@ -171,7 +174,10 @@ def test_build_prompt_combination_strategy():
 
 def test_build_prompt_novel_strategy():
     prompt = build_prompt(
-        "free", [], [], "diameter",
+        "free",
+        [],
+        [],
+        "diameter",
         strategy=IslandStrategy.NOVEL,
     )
     assert any(word in prompt.lower() for word in ("new", "novel"))

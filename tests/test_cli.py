@@ -989,7 +989,6 @@ def test_run_phase1_accepts_single_healthy_baseline_when_required(monkeypatch, t
 
 def test_candidate_prompt_maps_island_0_to_refinement():
     from graph_invariant.cli import _candidate_prompt
-    from graph_invariant.llm_ollama import IslandStrategy
 
     state = CheckpointState(
         experiment_id="exp",
@@ -1002,7 +1001,6 @@ def test_candidate_prompt_maps_island_0_to_refinement():
 
 def test_candidate_prompt_maps_island_1_to_combination():
     from graph_invariant.cli import _candidate_prompt
-    from graph_invariant.llm_ollama import IslandStrategy
 
     state = CheckpointState(
         experiment_id="exp",
@@ -1015,7 +1013,6 @@ def test_candidate_prompt_maps_island_1_to_combination():
 
 def test_candidate_prompt_maps_island_3_to_novel():
     from graph_invariant.cli import _candidate_prompt
-    from graph_invariant.llm_ollama import IslandStrategy
 
     state = CheckpointState(
         experiment_id="exp",

@@ -13,7 +13,7 @@ from .baselines import run_pysr_baseline, run_stat_baselines
 from .config import Phase1Config
 from .data import generate_phase1_datasets
 from .evolution import migrate_ring_top1
-from .known_invariants import compute_known_invariant_values
+from .known_invariants import compute_feature_dicts, compute_known_invariant_values
 from .llm_ollama import (
     build_prompt,
     generate_candidate_code,
@@ -64,8 +64,8 @@ TARGET_FUNCTIONS = {
 _CONSTRAINED_SUFFIX = (
     "\nConstrained mode is active. Use only these operators: +, -, *, /, log, sqrt, **, "
     "sum, mean, max, min. Follow this template: "
-    "def new_invariant(G): n = G.number_of_nodes(); m = G.number_of_edges(); "
-    "degrees = [d for _, d in G.degree()]; return <expression using n,m,degrees>."
+    "def new_invariant(s): n = s['n']; m = s['m']; "
+    "degrees = s['degrees']; return <expression using n,m,degrees>."
 )
 
 
@@ -190,7 +190,7 @@ def _build_repair_prompt(
         f"Failure: {failure_feedback}\n"
         "Previous candidate code:\n"
         f"```python\n{candidate_code}\n```\n"
-        "Return only corrected python code defining `def new_invariant(G):`."
+        "Return only corrected python code defining `def new_invariant(s):`."
     )
 
 
@@ -275,8 +275,8 @@ def _run_one_generation(
     cfg: Phase1Config,
     state: CheckpointState,
     evaluator: SandboxEvaluator,
-    datasets_train: list[nx.Graph],
-    datasets_val: list[nx.Graph],
+    features_train: list[dict[str, Any]],
+    features_val: list[dict[str, Any]],
     y_true_train: list[float],
     y_true_val: list[float],
     known_invariants_val: dict[str, list[float]],
@@ -380,7 +380,7 @@ def _run_one_generation(
                     prompt=current_prompt,
                     temperature=cfg.island_temperatures[island_id],
                 )
-                train_details = evaluator.evaluate_detailed(code, datasets_train)
+                train_details = evaluator.evaluate_detailed(code, features_train)
                 y_pred_train_raw = [payload.get("value") for payload in train_details]
                 train_pairs = [
                     (idx, yt, yp)
@@ -421,7 +421,7 @@ def _run_one_generation(
                     break
 
                 had_valid_train_candidate = True
-                val_details = evaluator.evaluate_detailed(code, datasets_val)
+                val_details = evaluator.evaluate_detailed(code, features_val)
                 y_pred_val_raw = [payload.get("value") for payload in val_details]
                 val_pairs = [
                     (idx, yt, yp)
@@ -534,13 +534,13 @@ def _run_one_generation(
 
 def _evaluate_split(
     code: str,
-    graphs: list[nx.Graph],
+    features_list: list[dict[str, Any]],
     y_true: list[float],
     cfg: Phase1Config,
     evaluator: SandboxEvaluator,
     known_invariants: dict[str, list[float]] | None = None,
 ) -> dict[str, float | int | None]:
-    y_pred_raw = evaluator.evaluate(code, graphs)
+    y_pred_raw = evaluator.evaluate(code, features_list)
     valid_pairs = [
         (idx, yt, yp)
         for idx, (yt, yp) in enumerate(zip(y_true, y_pred_raw, strict=True))
@@ -600,7 +600,10 @@ def _write_phase1_summary(
     evaluator: SandboxEvaluator,
     artifacts_dir: Path,
     stop_reason: str,
-    datasets_train: list[nx.Graph],
+    features_train: list[dict[str, Any]],
+    features_val: list[dict[str, Any]],
+    features_test: list[dict[str, Any]],
+    features_sanity: list[dict[str, Any]],
     datasets_val: list[nx.Graph],
     datasets_test: list[nx.Graph],
     datasets_sanity: list[nx.Graph],
@@ -660,19 +663,19 @@ def _write_phase1_summary(
     known_val = compute_known_invariant_values(datasets_val)
     known_test = compute_known_invariant_values(datasets_test)
     y_sanity = _target_values(datasets_sanity, cfg.target_name)
-    val_metrics = _evaluate_split(best.code, datasets_val, y_true_val, cfg, evaluator, known_val)
+    val_metrics = _evaluate_split(best.code, features_val, y_true_val, cfg, evaluator, known_val)
     test_metrics = _evaluate_split(
-        best.code, datasets_test, y_true_test, cfg, evaluator, known_test
+        best.code, features_test, y_true_test, cfg, evaluator, known_test
     )
-    train_metrics = _evaluate_split(best.code, datasets_train, y_true_train, cfg, evaluator)
-    sanity_metrics = _evaluate_split(best.code, datasets_sanity, y_sanity, cfg, evaluator)
+    train_metrics = _evaluate_split(best.code, features_train, y_true_train, cfg, evaluator)
+    sanity_metrics = _evaluate_split(best.code, features_sanity, y_sanity, cfg, evaluator)
 
     def _novelty_ci_for_split(
-        graphs: list[nx.Graph],
+        split_features: list[dict[str, Any]],
         known_values: dict[str, list[float]],
         seed_offset: int,
     ) -> dict[str, object]:
-        y_pred_raw = evaluator.evaluate(best.code, graphs)
+        y_pred_raw = evaluator.evaluate(best.code, split_features)
         valid_pairs = [(idx, yp) for idx, yp in enumerate(y_pred_raw) if yp is not None]
         if not valid_pairs:
             return {
@@ -694,8 +697,8 @@ def _write_phase1_summary(
         )
 
     novelty_ci = {
-        "validation": _novelty_ci_for_split(datasets_val, known_val, seed_offset=17),
-        "test": _novelty_ci_for_split(datasets_test, known_test, seed_offset=29),
+        "validation": _novelty_ci_for_split(features_val, known_val, seed_offset=17),
+        "test": _novelty_ci_for_split(features_test, known_test, seed_offset=29),
     }
 
     stat_ok, pysr_ok, pysr_status, pysr_val_spearman, pysr_test_spearman = _baseline_health(
@@ -875,6 +878,10 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
     y_true_val = _target_values(datasets.val, cfg.target_name)
     y_true_test = _target_values(datasets.test, cfg.target_name)
     known_invariants_val = compute_known_invariant_values(datasets.val)
+    features_train = compute_feature_dicts(datasets.train)
+    features_val = compute_feature_dicts(datasets.val)
+    features_test = compute_feature_dicts(datasets.test)
+    features_sanity = compute_feature_dicts(datasets.sanity)
 
     append_jsonl(
         "phase1_started",
@@ -916,8 +923,8 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
                 cfg=cfg,
                 state=state,
                 evaluator=evaluator,
-                datasets_train=datasets.train,
-                datasets_val=datasets.val,
+                features_train=features_train,
+                features_val=features_val,
                 y_true_train=y_true_train,
                 y_true_val=y_true_val,
                 known_invariants_val=known_invariants_val,
@@ -959,7 +966,10 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
             evaluator=evaluator,
             artifacts_dir=artifacts_dir,
             stop_reason=stop_reason,
-            datasets_train=datasets.train,
+            features_train=features_train,
+            features_val=features_val,
+            features_test=features_test,
+            features_sanity=features_sanity,
             datasets_val=datasets.val,
             datasets_test=datasets.test,
             datasets_sanity=datasets.sanity,

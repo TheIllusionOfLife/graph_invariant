@@ -4,6 +4,12 @@ from urllib.parse import urlparse
 
 import requests
 
+_FEATURE_KEYS_DOC = (
+    "Available keys in s: n (node count), m (edge count), density, avg_degree, "
+    "max_degree, min_degree, std_degree, avg_clustering, transitivity, "
+    "degree_assortativity, num_triangles, degrees (sorted degree list)."
+)
+
 
 def build_prompt(
     island_mode: str,
@@ -18,7 +24,9 @@ def build_prompt(
         f"Island mode: {island_mode}\n"
         f"Best formulas:\n{top_block}\n"
         f"Recent failures:\n{fail_block}\n"
-        "Return only python code defining `def new_invariant(G):`."
+        "Return only python code defining `def new_invariant(s):` "
+        "where s is a dict of pre-computed graph features.\n"
+        f"{_FEATURE_KEYS_DOC}"
     )
 
 
@@ -55,6 +63,7 @@ def generate_candidate_payload(
     url: str,
     allow_remote: bool = False,
     timeout_sec: float = 60.0,
+    max_retries: int = 3,
 ) -> dict[str, str]:
     validate_ollama_url(url, allow_remote=allow_remote)
     payload = {
@@ -63,11 +72,19 @@ def generate_candidate_payload(
         "stream": False,
         "options": {"temperature": temperature},
     }
-    response = requests.post(url, json=payload, timeout=timeout_sec, allow_redirects=False)
-    response.raise_for_status()
-    body = response.json()
-    text = str(body.get("response", "")).strip()
-    return {"response": text, "code": _extract_code_block(text)}
+    last_exc: requests.exceptions.ReadTimeout | None = None
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(url, json=payload, timeout=timeout_sec, allow_redirects=False)
+            response.raise_for_status()
+            body = response.json()
+            text = str(body.get("response", "")).strip()
+            return {"response": text, "code": _extract_code_block(text)}
+        except requests.exceptions.ReadTimeout as exc:
+            last_exc = exc
+            if attempt < max_retries - 1:
+                continue
+    raise last_exc  # type: ignore[misc]
 
 
 def _tags_endpoint(generate_url: str) -> str:

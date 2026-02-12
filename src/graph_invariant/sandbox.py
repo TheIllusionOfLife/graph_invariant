@@ -4,10 +4,11 @@ import math
 import multiprocessing as mp
 import os
 import signal
+import types
 from multiprocessing.pool import Pool
 from typing import Any
 
-import networkx as nx
+import numpy as np
 
 try:
     import resource
@@ -28,8 +29,42 @@ FORBIDDEN_PATTERNS = [
     "__globals__",
 ]
 FORBIDDEN_CALLS = {"getattr", "setattr", "delattr", "globals", "locals", "vars"}
-ALLOWED_CALLS = {"abs", "min", "max", "sum", "len", "sorted", "range", "enumerate", "float", "int"}
-ALLOWED_ATTR_BASES = {"G", "math"}
+ALLOWED_CALLS = {
+    "abs",
+    "min",
+    "max",
+    "sum",
+    "len",
+    "sorted",
+    "range",
+    "enumerate",
+    "float",
+    "int",
+    "list",
+    "tuple",
+    "dict",
+    "set",
+    "zip",
+    "map",
+    "round",
+    "bool",
+    "str",
+    "pow",
+    "any",
+    "all",
+    "reversed",
+}
+FORBIDDEN_ATTR_BASES = {
+    "os",
+    "sys",
+    "subprocess",
+    "shutil",
+    "socket",
+    "http",
+    "urllib",
+    "nx",
+    "G",
+}
 ALLOWED_AST_NODES: tuple[type[ast.AST], ...] = (
     ast.Module,
     ast.FunctionDef,
@@ -68,7 +103,174 @@ ALLOWED_AST_NODES: tuple[type[ast.AST], ...] = (
     ast.unaryop,
     ast.boolop,
     ast.cmpop,
+    ast.For,
+    ast.While,
+    ast.Break,
+    ast.Continue,
+    ast.Pass,
 )
+
+_SAFE_NP_ATTRS: set[str] = {
+    # Array creation
+    "array",
+    "zeros",
+    "ones",
+    "full",
+    "empty",
+    "arange",
+    "linspace",
+    "zeros_like",
+    "ones_like",
+    "full_like",
+    "empty_like",
+    "eye",
+    "identity",
+    "diag",
+    # Element-wise math
+    "abs",
+    "absolute",
+    "sqrt",
+    "cbrt",
+    "square",
+    "log",
+    "log2",
+    "log10",
+    "log1p",
+    "exp",
+    "exp2",
+    "expm1",
+    "power",
+    "float_power",
+    "floor",
+    "ceil",
+    "trunc",
+    "rint",
+    "round",
+    "around",
+    "sign",
+    "clip",
+    "mod",
+    "remainder",
+    "maximum",
+    "minimum",
+    "fmax",
+    "fmin",
+    "negative",
+    "positive",
+    "reciprocal",
+    # Trigonometric
+    "sin",
+    "cos",
+    "tan",
+    "arcsin",
+    "arccos",
+    "arctan",
+    "arctan2",
+    "sinh",
+    "cosh",
+    "tanh",
+    "arcsinh",
+    "arccosh",
+    "arctanh",
+    "degrees",
+    "radians",
+    "hypot",
+    # Aggregation / reduction
+    "sum",
+    "prod",
+    "mean",
+    "std",
+    "var",
+    "median",
+    "average",
+    "min",
+    "max",
+    "argmin",
+    "argmax",
+    "nansum",
+    "nanprod",
+    "nanmean",
+    "nanstd",
+    "nanvar",
+    "nanmedian",
+    "nanmin",
+    "nanmax",
+    "percentile",
+    "quantile",
+    "count_nonzero",
+    # Sorting / searching
+    "sort",
+    "argsort",
+    "searchsorted",
+    "where",
+    "nonzero",
+    "unique",
+    # Shape manipulation
+    "reshape",
+    "ravel",
+    "transpose",
+    "concatenate",
+    "stack",
+    "vstack",
+    "hstack",
+    "squeeze",
+    "expand_dims",
+    "tile",
+    "repeat",
+    "flip",
+    "fliplr",
+    "flipud",
+    # Differences / cumulative
+    "diff",
+    "cumsum",
+    "cumprod",
+    "gradient",
+    # Linear algebra basics
+    "dot",
+    "inner",
+    "outer",
+    "matmul",
+    "cross",
+    "trace",
+    # Statistics
+    "corrcoef",
+    "cov",
+    "histogram",
+    "bincount",
+    # Logic / comparison
+    "isnan",
+    "isinf",
+    "isfinite",
+    "all",
+    "any",
+    "allclose",
+    "isclose",
+    "logical_and",
+    "logical_or",
+    "logical_not",
+    # Constants
+    "pi",
+    "e",
+    "inf",
+    "nan",
+    "newaxis",
+    # Types
+    "float64",
+    "float32",
+    "int64",
+    "int32",
+    "uint8",
+    "bool_",
+    "dtype",
+    # Utility
+    "asarray",
+    "copy",
+    "convolve",
+    "correlate",
+    "interp",
+    "polyfit",
+    "polyval",
+}
 
 LOGGER = logging.getLogger(__name__)
 _TASK_TIMEOUT_SEC = 0.0
@@ -124,10 +326,9 @@ def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
                 if node.func.id not in ALLOWED_CALLS:
                     return False, f"non-whitelisted call detected: {node.func.id}"
             elif isinstance(node.func, ast.Attribute):
-                if not isinstance(node.func.value, ast.Name):
-                    return False, "disallowed attribute call target"
-                if node.func.value.id not in ALLOWED_ATTR_BASES:
-                    return False, f"disallowed call base: {node.func.value.id}"
+                if isinstance(node.func.value, ast.Name):
+                    if node.func.value.id in FORBIDDEN_ATTR_BASES:
+                        return False, f"forbidden call base: {node.func.value.id}"
             else:
                 return False, "disallowed call expression"
     return True, None
@@ -157,6 +358,16 @@ def _compiled_candidate_code(code: str) -> Any:
     return compiled
 
 
+def _safe_numpy() -> types.SimpleNamespace:
+    """Return a restricted numpy namespace exposing only safe numerical functions."""
+    attrs = {}
+    for name in _SAFE_NP_ATTRS:
+        val = getattr(np, name, None)
+        if val is not None:
+            attrs[name] = val
+    return types.SimpleNamespace(**attrs)
+
+
 def _safe_globals() -> dict[str, Any]:
     safe_builtins = {
         "abs": abs,
@@ -169,22 +380,36 @@ def _safe_globals() -> dict[str, Any]:
         "enumerate": enumerate,
         "float": float,
         "int": int,
+        "list": list,
+        "tuple": tuple,
+        "dict": dict,
+        "set": set,
+        "zip": zip,
+        "map": map,
+        "round": round,
+        "bool": bool,
+        "str": str,
+        "pow": pow,
+        "any": any,
+        "all": all,
+        "reversed": reversed,
     }
     return {
         "__builtins__": safe_builtins,
         "math": math,
+        "np": _safe_numpy(),
     }
 
 
-def _run_candidate(code: str, graph: nx.Graph) -> float | None:
-    return _run_candidate_detailed(code, graph).get("value")
+def _run_candidate(code: str, features: dict[str, Any]) -> float | None:
+    return _run_candidate_detailed(code, features).get("value")
 
 
-def _run_candidate_with_queue_result(code: str, graph: nx.Graph) -> float | None:
-    return _run_candidate(code, graph)
+def _run_candidate_with_queue_result(code: str, features: dict[str, Any]) -> float | None:
+    return _run_candidate(code, features)
 
 
-def _run_candidate_detailed(code: str, graph: nx.Graph) -> dict[str, Any]:
+def _run_candidate_detailed(code: str, features: dict[str, Any]) -> dict[str, Any]:
     safe_globals = _safe_globals()
     safe_locals: dict[str, Any] = {}
     try:
@@ -195,7 +420,7 @@ def _run_candidate_detailed(code: str, graph: nx.Graph) -> dict[str, Any]:
         fn = safe_locals.get("new_invariant")
         if fn is None:
             return {"value": None, "error_type": "runtime_exception", "error_detail": "missing_fn"}
-        value = fn(graph)
+        value = fn(features)
         if value is None:
             return {
                 "value": None,
@@ -221,14 +446,21 @@ def _run_candidate_detailed(code: str, graph: nx.Graph) -> dict[str, Any]:
             signal.setitimer(signal.ITIMER_REAL, 0.0)
 
 
-def _run_candidate_with_queue_result_detailed(code: str, graph: nx.Graph) -> dict[str, Any]:
-    return _run_candidate_detailed(code, graph)
+def _run_candidate_with_queue_result_detailed(
+    code: str, features: dict[str, Any]
+) -> dict[str, Any]:
+    return _run_candidate_detailed(code, features)
 
 
 class SandboxEvaluator:
     """Reusable evaluator that keeps a worker pool alive across calls."""
 
-    def __init__(self, timeout_sec: float, memory_mb: int, max_workers: int | None = None):
+    def __init__(
+        self,
+        timeout_sec: float,
+        memory_mb: int,
+        max_workers: int | None = None,
+    ):
         self.timeout_sec = timeout_sec
         self.memory_mb = memory_mb
         self._pool: Pool | None = None
@@ -264,58 +496,62 @@ class SandboxEvaluator:
             maxtasksperchild=100,
         )
 
-    def _evaluate_once(self, code: str, graphs: list[nx.Graph]) -> list[float | None]:
+    def _evaluate_once(self, code: str, features_list: list[dict[str, Any]]) -> list[float | None]:
         if self._pool is None:
             raise RuntimeError("sandbox pool is not initialized")
-        tasks = [(code, graph) for graph in graphs]
+        tasks = [(code, features) for features in features_list]
         # Keep chunksize small for fairness; tune upward if IPC becomes dominant.
         return self._pool.starmap(_run_candidate_with_queue_result, tasks, chunksize=1)
 
-    def _evaluate_once_detailed(self, code: str, graphs: list[nx.Graph]) -> list[dict[str, Any]]:
+    def _evaluate_once_detailed(
+        self, code: str, features_list: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         if self._pool is None:
             raise RuntimeError("sandbox pool is not initialized")
-        tasks = [(code, graph) for graph in graphs]
+        tasks = [(code, features) for features in features_list]
         return self._pool.starmap(_run_candidate_with_queue_result_detailed, tasks, chunksize=1)
 
-    def evaluate(self, code: str, graphs: list[nx.Graph]) -> list[float | None]:
+    def evaluate(self, code: str, features_list: list[dict[str, Any]]) -> list[float | None]:
         ok, _ = validate_code_static(code)
         if not ok:
-            return [None for _ in graphs]
-        if not graphs:
+            return [None for _ in features_list]
+        if not features_list:
             return []
 
         self._ensure_pool()
         try:
-            return self._evaluate_once(code, graphs)
+            return self._evaluate_once(code, features_list)
         except (BrokenPipeError, EOFError, OSError):
             LOGGER.debug("sandbox pool failed; rebuilding once", exc_info=True)
             self.close()
             self._ensure_pool()
-            return self._evaluate_once(code, graphs)
+            return self._evaluate_once(code, features_list)
 
-    def evaluate_detailed(self, code: str, graphs: list[nx.Graph]) -> list[dict[str, Any]]:
+    def evaluate_detailed(
+        self, code: str, features_list: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         ok, reason = validate_code_static(code)
         if not ok:
             return [
                 {"value": None, "error_type": "static_invalid", "error_detail": reason}
-                for _ in graphs
+                for _ in features_list
             ]
-        if not graphs:
+        if not features_list:
             return []
 
         self._ensure_pool()
         try:
-            return self._evaluate_once_detailed(code, graphs)
+            return self._evaluate_once_detailed(code, features_list)
         except (BrokenPipeError, EOFError, OSError):
             LOGGER.debug("sandbox pool failed; rebuilding once", exc_info=True)
             self.close()
             self._ensure_pool()
-            return self._evaluate_once_detailed(code, graphs)
+            return self._evaluate_once_detailed(code, features_list)
 
 
-def evaluate_candidate_on_graphs(
+def evaluate_candidate_on_features(
     code: str,
-    graphs: list[nx.Graph],
+    features_list: list[dict[str, Any]],
     timeout_sec: float,
     memory_mb: int,
     max_workers: int | None = None,
@@ -325,4 +561,4 @@ def evaluate_candidate_on_graphs(
         memory_mb=memory_mb,
         max_workers=max_workers,
     ) as evaluator:
-        return evaluator.evaluate(code, graphs)
+        return evaluator.evaluate(code, features_list)

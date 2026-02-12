@@ -29,16 +29,16 @@ def _patch_sandbox_evaluator(monkeypatch, evaluate_fn):  # noqa: ANN001
             del exc_type, exc, tb
             return False
 
-        def evaluate(self, code, graphs):  # noqa: ANN001
+        def evaluate(self, code, features_list):  # noqa: ANN001
             return evaluate_fn(
                 code,
-                graphs,
+                features_list,
                 timeout_sec=self.timeout_sec,
                 memory_mb=self.memory_mb,
             )
 
-        def evaluate_detailed(self, code, graphs):  # noqa: ANN001
-            values = self.evaluate(code, graphs)
+        def evaluate_detailed(self, code, features_list):  # noqa: ANN001
+            values = self.evaluate(code, features_list)
             details = []
             for value in values:
                 if value is None:
@@ -92,7 +92,7 @@ def test_run_phase1_uses_configured_score_weights(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(
         "graph_invariant.cli.generate_candidate_code",
-        lambda *_args, **_kwargs: "def new_invariant(G):\n    return 1.0",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return 1.0",
     )
     _patch_sandbox_evaluator(
         monkeypatch,
@@ -158,7 +158,7 @@ def test_run_phase1_rotates_generation_checkpoints(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(
         "graph_invariant.cli.generate_candidate_code",
-        lambda *_args, **_kwargs: "def new_invariant(G):\n    return 1.0",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return 1.0",
     )
     _patch_sandbox_evaluator(
         monkeypatch,
@@ -204,7 +204,7 @@ def test_run_phase1_resume_continues_from_saved_generation(monkeypatch, tmp_path
     )
     monkeypatch.setattr(
         "graph_invariant.cli.generate_candidate_code",
-        lambda *_args, **_kwargs: "def new_invariant(G):\n    return 1.0",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return 1.0",
     )
     _patch_sandbox_evaluator(
         monkeypatch,
@@ -285,7 +285,7 @@ def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path
     )
     monkeypatch.setattr(
         "graph_invariant.cli.generate_candidate_code",
-        lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
         monkeypatch,
@@ -302,7 +302,7 @@ def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path
 
     summary_path = Path(cfg.artifacts_dir) / "phase1_summary.json"
     payload = json.loads(summary_path.read_text(encoding="utf-8"))
-    expected_code = "def new_invariant(G):\n    return float(G.number_of_nodes())"
+    expected_code = "def new_invariant(s):\n    return float(s['n'])"
     assert "test_metrics" in payload
     assert "val_metrics" in payload
     assert "success" in payload
@@ -343,7 +343,7 @@ def test_run_phase1_activates_constrained_prompt_after_stagnation(monkeypatch, t
 
     def fake_generate(prompt: str, *_args, **_kwargs) -> str:
         prompts.append(prompt)
-        return "def new_invariant(G):\n    return 1.0"
+        return "def new_invariant(s):\n    return 1.0"
 
     monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
@@ -387,8 +387,8 @@ def test_run_phase1_self_correction_repairs_failed_candidate_once(monkeypatch, t
         prompts.append(prompt)
         calls["count"] += 1
         if calls["count"] == 1:
-            return "def new_invariant(G):\n    BROKEN"
-        return "def new_invariant(G):\n    return float(G.number_of_nodes())"
+            return "def new_invariant(s):\n    BROKEN"
+        return "def new_invariant(s):\n    return float(s['n'])"
 
     def _fake_eval(code, graphs, **_kwargs):  # noqa: ANN001
         if "BROKEN" in code:
@@ -654,7 +654,7 @@ def test_run_phase1_success_threshold_is_configurable(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(
         "graph_invariant.cli.generate_candidate_code",
-        lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
         monkeypatch,
@@ -788,7 +788,7 @@ def test_run_phase1_summary_enforces_pysr_parity(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(
         "graph_invariant.cli.generate_candidate_code",
-        lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
         monkeypatch,
@@ -844,7 +844,7 @@ def test_run_phase1_pysr_parity_allows_small_epsilon_gap(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(
         "graph_invariant.cli.generate_candidate_code",
-        lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
         monkeypatch,
@@ -897,7 +897,7 @@ def test_run_phase1_requires_healthy_baselines_when_configured(monkeypatch, tmp_
     )
     monkeypatch.setattr(
         "graph_invariant.cli.generate_candidate_code",
-        lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
         monkeypatch,
@@ -954,7 +954,7 @@ def test_run_phase1_accepts_single_healthy_baseline_when_required(monkeypatch, t
     )
     monkeypatch.setattr(
         "graph_invariant.cli.generate_candidate_code",
-        lambda *_args, **_kwargs: "def new_invariant(G):\n    return float(G.number_of_nodes())",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
         monkeypatch,
@@ -1015,7 +1015,7 @@ def test_run_phase1_persists_prompt_and_response_when_enabled(monkeypatch, tmp_p
         "graph_invariant.cli.generate_candidate_payload",
         lambda *_args, **_kwargs: {
             "response": "llm text",
-            "code": "def new_invariant(G):\n    return 1.0",
+            "code": "def new_invariant(s):\n    return 1.0",
         },
     )
     _patch_sandbox_evaluator(

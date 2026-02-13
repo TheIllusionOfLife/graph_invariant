@@ -50,6 +50,51 @@ def test_load_checkpoint_defaults_missing_recent_failures(tmp_path):
     assert loaded.island_recent_failures == {}
 
 
+def test_checkpoint_roundtrip_with_map_elites_archive(tmp_path):
+    from graph_invariant.map_elites import (
+        MapElitesArchive,
+        serialize_archive,
+        try_insert,
+    )
+
+    ckpt_path = tmp_path / "state.json"
+    archive = MapElitesArchive(num_bins=5, cells={})
+    c = Candidate(
+        id="c1",
+        code="def new_invariant(s): return 1.0",
+        simplicity_score=0.5,
+        novelty_bonus=0.5,
+    )
+    try_insert(archive, c, fitness_signal=0.8)
+
+    state = CheckpointState(
+        experiment_id="exp",
+        generation=3,
+        islands={0: [Candidate(id="c2", code="def new_invariant(s): return 2.0")]},
+        rng_seed=42,
+        map_elites_archive=serialize_archive(archive),
+    )
+    save_checkpoint(state, ckpt_path)
+    loaded = load_checkpoint(ckpt_path)
+    assert loaded.map_elites_archive is not None
+    assert loaded.map_elites_archive["num_bins"] == 5
+    assert len(loaded.map_elites_archive["cells"]) == 1
+
+
+def test_checkpoint_roundtrip_without_map_elites_archive(tmp_path):
+    """Old checkpoints without map_elites_archive should load with None."""
+    ckpt_path = tmp_path / "state.json"
+    payload = {
+        "experiment_id": "exp",
+        "generation": 1,
+        "rng_seed": 42,
+        "islands": {"0": []},
+    }
+    ckpt_path.write_text(json.dumps(payload), encoding="utf-8")
+    loaded = load_checkpoint(ckpt_path)
+    assert loaded.map_elites_archive is None
+
+
 def test_rotate_generation_checkpoints_uses_numeric_generation_order(tmp_path):
     checkpoint_dir = tmp_path / "checkpoints"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)

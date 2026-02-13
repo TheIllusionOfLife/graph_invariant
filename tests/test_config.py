@@ -159,3 +159,26 @@ def test_bound_score_thresholds_default_and_validate():
 def test_run_baselines_defaults_to_true():
     cfg = Phase1Config()
     assert cfg.run_baselines is True
+
+
+# ── MAP-Elites config tests ─────────────────────────────────────────
+
+
+def test_enable_map_elites_defaults_to_false():
+    cfg = Phase1Config()
+    assert cfg.enable_map_elites is False
+
+
+def test_map_elites_bins_defaults_to_5():
+    cfg = Phase1Config()
+    assert cfg.map_elites_bins == 5
+
+
+def test_map_elites_bins_validates_minimum():
+    with pytest.raises(ValueError, match="map_elites_bins"):
+        Phase1Config(map_elites_bins=1)
+
+
+def test_map_elites_bins_accepts_valid_value():
+    cfg = Phase1Config(map_elites_bins=10)
+    assert cfg.map_elites_bins == 10

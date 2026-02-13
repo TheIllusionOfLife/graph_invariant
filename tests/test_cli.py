@@ -1381,3 +1381,176 @@ def test_run_phase1_persists_prompt_and_response_when_enabled(monkeypatch, tmp_p
     assert payload["prompt"] is not None
     assert payload["llm_response"] == "llm text"
     assert payload["extracted_code"].startswith("def new_invariant")
+
+
+# ── MAP-Elites integration tests ─────────────────────────────────────
+
+
+def test_run_phase1_with_map_elites_populates_archive(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        enable_map_elites=True,
+        map_elites_bins=3,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+
+    assert run_phase1(cfg) == 0
+
+    # Check that archive stats appear in generation_summary events
+    events_path = Path(cfg.artifacts_dir) / "logs" / "events.jsonl"
+    records = [json.loads(line) for line in events_path.read_text("utf-8").splitlines()]
+    gen_summaries = [r for r in records if r["event_type"] == "generation_summary"]
+    assert gen_summaries
+    assert "map_elites_stats" in gen_summaries[0]["payload"]
+    stats = gen_summaries[0]["payload"]["map_elites_stats"]
+    assert stats["coverage"] > 0
+
+
+def test_run_phase1_without_map_elites_omits_archive(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        enable_map_elites=False,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+
+    assert run_phase1(cfg) == 0
+
+    # No archive stats in generation_summary
+    events_path = Path(cfg.artifacts_dir) / "logs" / "events.jsonl"
+    records = [json.loads(line) for line in events_path.read_text("utf-8").splitlines()]
+    gen_summaries = [r for r in records if r["event_type"] == "generation_summary"]
+    assert gen_summaries
+    assert "map_elites_stats" not in gen_summaries[0]["payload"]
+
+
+def test_run_phase1_map_elites_checkpoint_roundtrip(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        enable_map_elites=True,
+        map_elites_bins=3,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+
+    assert run_phase1(cfg) == 0
+
+    # Verify checkpoint contains archive
+    ckpt_root = Path(cfg.artifacts_dir) / "checkpoints"
+    experiment_dir = next(ckpt_root.iterdir())
+    ckpt_path = sorted(experiment_dir.glob("gen_*.json"))[-1]
+    ckpt_data = json.loads(ckpt_path.read_text("utf-8"))
+    assert "map_elites_archive" in ckpt_data
+    assert ckpt_data["map_elites_archive"]["num_bins"] == 3
+
+
+def test_candidate_prompt_includes_archive_exemplars():
+    from graph_invariant.cli import _candidate_prompt
+
+    state = CheckpointState(
+        experiment_id="exp",
+        generation=0,
+        islands={0: [], 1: [], 2: [], 3: []},
+    )
+    exemplar_codes = ["def new_invariant(s): return s['n'] + 1"]
+    prompt = _candidate_prompt(
+        state,
+        island_id=1,
+        target_name="diameter",
+        archive_exemplars=exemplar_codes,
+    )
+    assert "s['n'] + 1" in prompt

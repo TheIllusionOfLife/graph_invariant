@@ -28,6 +28,14 @@ from .logging_io import (
     save_checkpoint,
     write_json,
 )
+from .map_elites import (
+    MapElitesArchive,
+    archive_stats,
+    deserialize_archive,
+    sample_diverse_exemplars,
+    serialize_archive,
+    try_insert,
+)
 from .sandbox import SandboxEvaluator
 from .scoring import (
     compute_bound_metrics,
@@ -152,6 +160,7 @@ def _candidate_prompt(
     island_id: int,
     target_name: str,
     fitness_mode: str = "correlation",
+    archive_exemplars: list[str] | None = None,
 ) -> str:
     """Build the LLM prompt for a candidate, applying the island's strategy."""
     top_candidates = [
@@ -160,12 +169,15 @@ def _candidate_prompt(
             state.islands.get(island_id, []), key=lambda c: c.val_score, reverse=True
         )
     ]
+    strategy = _ISLAND_STRATEGIES.get(island_id)
+    if archive_exemplars and strategy in (IslandStrategy.COMBINATION, IslandStrategy.NOVEL):
+        top_candidates = top_candidates + archive_exemplars
     prompt = build_prompt(
         island_mode=f"island_{island_id}_{state.island_prompt_mode.get(island_id, 'free')}",
         top_candidates=top_candidates,
         failures=state.island_recent_failures.get(island_id, []),
         target_name=target_name,
-        strategy=_ISLAND_STRATEGIES.get(island_id),
+        strategy=strategy,
         fitness_mode=fitness_mode,
     )
     if state.island_prompt_mode.get(island_id, "free") == "constrained":
@@ -312,6 +324,7 @@ def _run_one_generation(
     rng: np.random.Generator,
     log_path: Path,
     self_correction_stats: dict[str, Any],
+    archive: MapElitesArchive | None = None,
 ) -> None:
     failure_categories = self_correction_stats.setdefault("failure_categories", {})
 
@@ -395,11 +408,20 @@ def _run_one_generation(
 
     island_ids = sorted(state.islands.keys())
     for island_id in island_ids:
+        archive_exemplar_codes: list[str] | None = None
+        if archive is not None:
+            exemplars = sample_diverse_exemplars(archive, rng, count=3, exclude_island=island_id)
+            if exemplars:
+                archive_exemplar_codes = [c.code for c in exemplars]
         new_candidates: list[Candidate] = []
         had_valid_train_candidate = False
         for pop_idx in range(cfg.population_size):
             base_prompt = _candidate_prompt(
-                state, island_id, cfg.target_name, fitness_mode=cfg.fitness_mode
+                state,
+                island_id,
+                cfg.target_name,
+                fitness_mode=cfg.fitness_mode,
+                archive_exemplars=archive_exemplar_codes,
             )
             current_prompt = base_prompt
             max_attempts = 1 + (
@@ -539,6 +561,8 @@ def _run_one_generation(
                     novelty_bonus=novelty_bonus,
                 )
                 new_candidates.append(candidate)
+                if archive is not None:
+                    try_insert(archive, candidate, fitness_signal)
                 log_payload: dict[str, Any] = {
                     "candidate_id": candidate.id,
                     "generation": state.generation,
@@ -1054,6 +1078,12 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         "failed_repairs": 0,
         "failure_categories": {},
     }
+    archive: MapElitesArchive | None = None
+    if cfg.enable_map_elites:
+        if state.map_elites_archive is not None:
+            archive = deserialize_archive(state.map_elites_archive)
+        else:
+            archive = MapElitesArchive(num_bins=cfg.map_elites_bins, cells={})
     with SandboxEvaluator(
         timeout_sec=cfg.timeout_sec,
         memory_mb=cfg.memory_mb,
@@ -1072,6 +1102,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
                 rng=rng,
                 log_path=log_path,
                 self_correction_stats=self_correction_stats,
+                archive=archive,
             )
             current_best = _global_best_score(state)
             improved = current_best > state.best_val_score + 1e-12
@@ -1083,20 +1114,21 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
 
             state.generation += 1
             state.rng_state = rng.bit_generator.state
+            if archive is not None:
+                state.map_elites_archive = serialize_archive(archive)
             checkpoint_path = checkpoint_dir / f"gen_{state.generation}.json"
             save_checkpoint(state, checkpoint_path)
             rotate_generation_checkpoints(checkpoint_dir, cfg.checkpoint_keep_last)
-            append_jsonl(
-                "generation_summary",
-                {
-                    "experiment_id": experiment_id,
-                    "generation": state.generation,
-                    "model_name": cfg.model_name,
-                    "best_val_score": state.best_val_score,
-                    "no_improve_count": state.no_improve_count,
-                },
-                log_path,
-            )
+            gen_summary_payload: dict[str, Any] = {
+                "experiment_id": experiment_id,
+                "generation": state.generation,
+                "model_name": cfg.model_name,
+                "best_val_score": state.best_val_score,
+                "no_improve_count": state.no_improve_count,
+            }
+            if archive is not None:
+                gen_summary_payload["map_elites_stats"] = archive_stats(archive)
+            append_jsonl("generation_summary", gen_summary_payload, log_path)
             if state.no_improve_count >= cfg.early_stop_patience:
                 stop_reason = "early_stop"
                 break

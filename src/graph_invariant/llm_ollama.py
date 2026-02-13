@@ -1,8 +1,18 @@
 import ipaddress
 import re
+from enum import StrEnum
 from urllib.parse import urlparse
 
 import requests
+
+
+class IslandStrategy(StrEnum):
+    """Prompt strategy assigned to each island in the evolutionary search."""
+
+    REFINEMENT = "refinement"
+    COMBINATION = "combination"
+    NOVEL = "novel"
+
 
 _FEATURE_KEYS_DOC = (
     "Available keys in s: n (node count), m (edge count), density, avg_degree, "
@@ -10,23 +20,68 @@ _FEATURE_KEYS_DOC = (
     "degree_assortativity, num_triangles, degrees (sorted degree list)."
 )
 
+_ANTI_PATTERNS = (
+    "\nFORBIDDEN: Do NOT return a single feature directly (e.g., return s['diameter']).\n"
+    "Do NOT implement BFS/DFS/shortest-path algorithms.\n"
+    "The input is a pre-computed feature dict, not a graph object.\n"
+)
+
+_FORMULA_EXAMPLES = (
+    "\nExample formulas:\n"
+    "def new_invariant(s): return s['n'] / (s['m'] + 1)\n"
+    "def new_invariant(s): return np.log(s['n']) * np.mean(s['degrees'])"
+    " / max(s['max_degree'], 1)\n"
+    "def new_invariant(s): return np.sqrt(s['n']) / (1 + s['avg_clustering'])\n"
+)
+
+_STRATEGY_INSTRUCTIONS: dict[IslandStrategy, str] = {
+    IslandStrategy.REFINEMENT: (
+        "Improve the best existing formula. Make small targeted changes "
+        "to refine accuracy while keeping the formula simple."
+    ),
+    IslandStrategy.COMBINATION: (
+        "Combine elements from the top 2 formulas into a new one. "
+        "Merge their strengths into a single improved formula."
+    ),
+    IslandStrategy.NOVEL: (
+        "Invent a completely novel mathematical formula. "
+        "Think about how average path length relates to density, "
+        "degree distribution, clustering, and other structural features."
+    ),
+}
+
 
 def build_prompt(
     island_mode: str,
     top_candidates: list[str],
     failures: list[str],
     target_name: str,
+    strategy: IslandStrategy | None = None,
 ) -> str:
+    """Build an LLM prompt for candidate formula generation.
+
+    When *strategy* is provided, the prompt includes strategy-specific
+    instructions (refine / combine / novel), anti-pattern warnings, and
+    example formulas.
+    """
     top_block = "\n\n".join(top_candidates[:3]) if top_candidates else "None yet."
     fail_block = "\n".join(failures[:3]) if failures else "None."
+
+    strategy_instruction = ""
+    if strategy is not None:
+        strategy_instruction = f"\nStrategy: {_STRATEGY_INSTRUCTIONS[strategy]}\n"
+
     return (
-        f"You are improving graph invariant formulas for target `{target_name}`.\n"
+        f"You are discovering graph invariant formulas for target `{target_name}`.\n"
         f"Island mode: {island_mode}\n"
+        f"{strategy_instruction}"
         f"Best formulas:\n{top_block}\n"
         f"Recent failures:\n{fail_block}\n"
         "Return only python code defining `def new_invariant(s):` "
         "where s is a dict of pre-computed graph features.\n"
-        f"{_FEATURE_KEYS_DOC}"
+        f"{_FEATURE_KEYS_DOC}\n"
+        f"{_ANTI_PATTERNS}"
+        f"{_FORMULA_EXAMPLES}"
     )
 
 

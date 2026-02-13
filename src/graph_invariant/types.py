@@ -25,6 +25,17 @@ class EvaluationResult:
 
 
 @dataclass(slots=True)
+class BoundMetrics:
+    """Metrics for evaluating bound satisfaction in upper/lower bound fitness mode."""
+
+    satisfaction_rate: float  # [0, 1] — fraction where bound holds
+    mean_gap: float  # >= 0 — avg |f(x) - y| on satisfied points
+    bound_score: float  # satisfaction_rate * tightness
+    violation_count: int
+    valid_count: int
+
+
+@dataclass(slots=True)
 class CheckpointState:
     experiment_id: str
     generation: int

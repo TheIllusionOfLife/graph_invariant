@@ -79,7 +79,7 @@ def test_run_phase1_uses_configured_score_weights(monkeypatch, tmp_path):
     )
     captured: dict[str, float] = {}
 
-    def fake_total(abs_spearman, simplicity, novelty_bonus, alpha, beta, gamma):  # noqa: ANN001
+    def fake_total(fitness_signal, simplicity, novelty_bonus, alpha, beta, gamma):  # noqa: ANN001
         captured["alpha"] = alpha
         captured["beta"] = beta
         captured["gamma"] = gamma
@@ -307,6 +307,7 @@ def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path
     assert "val_metrics" in payload
     assert "success" in payload
     assert payload["schema_version"] == 3
+    assert payload["fitness_mode"] == "correlation"
     assert "best_candidate_code" not in payload
     assert payload["model_name"] == "gpt-oss:20b"
     assert payload["config"]["num_train_graphs"] == 2
@@ -1158,6 +1159,175 @@ def test_novelty_gate_disabled_when_zero(monkeypatch, tmp_path):
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
     # Should still produce candidates since gate is disabled
     assert summary.get("best_candidate_id") is not None
+
+
+# ── Algebraic connectivity target + bounds mode tests ────────────────
+
+
+def test_target_values_supports_algebraic_connectivity():
+    import networkx as nx
+
+    from graph_invariant.cli import _target_values
+
+    g = nx.path_graph(5)
+    values = _target_values([g], "algebraic_connectivity")
+    assert len(values) == 1
+    assert values[0] > 0.0
+
+
+def test_target_values_algebraic_connectivity_handles_disconnected():
+    import networkx as nx
+
+    from graph_invariant.cli import _target_values
+
+    g = nx.Graph()
+    g.add_nodes_from([0, 1, 2])
+    g.add_edge(0, 1)
+    values = _target_values([g], "algebraic_connectivity")
+    assert values == [0.0]
+
+
+def test_target_values_algebraic_connectivity_single_node():
+    import networkx as nx
+
+    from graph_invariant.cli import _target_values
+
+    g = nx.Graph()
+    g.add_node(0)
+    values = _target_values([g], "algebraic_connectivity")
+    assert values == [0.0]
+
+
+def test_safe_algebraic_connectivity_handles_eigenvalue_error(monkeypatch):
+    """_safe_algebraic_connectivity should return 0.0 on eigenvalue computation errors."""
+    import networkx as nx
+
+    from graph_invariant.cli import _safe_algebraic_connectivity
+
+    g = nx.path_graph(5)
+    monkeypatch.setattr(
+        "graph_invariant.cli.nx.algebraic_connectivity",
+        lambda *_a, **_kw: (_ for _ in ()).throw(nx.NetworkXError("convergence failed")),
+    )
+    assert _safe_algebraic_connectivity(g) == 0.0
+
+
+def test_run_phase1_bounds_mode_uses_bound_score(monkeypatch, tmp_path):
+    """In bounds mode, the generation loop should use bound_score instead of spearman."""
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        fitness_mode="upper_bound",
+        train_score_threshold=0.0,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n']) * 10",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 100) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+
+    assert run_phase1(cfg) == 0
+    summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
+    assert summary["schema_version"] == 4
+    assert summary["fitness_mode"] == "upper_bound"
+    assert "bounds_metrics" in summary
+    assert "success_criteria_bounds" in summary
+
+
+def test_run_phase1_bounds_mode_summary_schema(monkeypatch, tmp_path):
+    """Bounds mode summary should include bounds-specific fields and schema v4."""
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        fitness_mode="lower_bound",
+        train_score_threshold=0.0,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return 0.1",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [0.1 for _ in range(len(graphs))],
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+
+    assert run_phase1(cfg) == 0
+    summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
+    assert summary["schema_version"] == 4
+    bounds_metrics = summary["bounds_metrics"]
+    assert "val" in bounds_metrics
+    assert "test" in bounds_metrics
+    criteria = summary["success_criteria_bounds"]
+    assert "bound_score_threshold" in criteria
+    assert "satisfaction_threshold" in criteria
+
+
+def test_candidate_prompt_passes_fitness_mode(monkeypatch):
+    """_candidate_prompt should forward fitness_mode to build_prompt."""
+    import inspect
+
+    from graph_invariant.cli import _candidate_prompt
+    from graph_invariant.llm_ollama import build_prompt as original_build
+
+    captured: dict[str, str] = {}
+    sig = inspect.signature(original_build)
+
+    def spy_build(*args, **kwargs):
+        bound = sig.bind(*args, **kwargs)
+        bound.apply_defaults()
+        captured["fitness_mode"] = bound.arguments["fitness_mode"]
+        return original_build(*args, **kwargs)
+
+    monkeypatch.setattr("graph_invariant.cli.build_prompt", spy_build)
+
+    state = CheckpointState(
+        experiment_id="exp",
+        generation=0,
+        islands={0: [], 1: [], 2: [], 3: []},
+    )
+    _candidate_prompt(state, island_id=0, target_name="diameter", fitness_mode="upper_bound")
+    assert captured["fitness_mode"] == "upper_bound"
 
 
 def test_run_phase1_persists_prompt_and_response_when_enabled(monkeypatch, tmp_path):

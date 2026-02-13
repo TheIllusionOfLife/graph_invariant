@@ -30,6 +30,7 @@ from .logging_io import (
 )
 from .sandbox import SandboxEvaluator
 from .scoring import (
+    compute_bound_metrics,
     compute_metrics,
     compute_novelty_bonus,
     compute_novelty_ci,
@@ -48,6 +49,16 @@ def _safe_average_shortest_path_length(graph: nx.Graph) -> float:
         return 0.0
 
 
+def _safe_algebraic_connectivity(graph: nx.Graph) -> float:
+    """Return the algebraic connectivity (Fiedler value), or 0.0 on failure."""
+    if len(graph) < 2 or not nx.is_connected(graph):
+        return 0.0
+    try:
+        return float(nx.algebraic_connectivity(graph))
+    except nx.NetworkXError:
+        return 0.0
+
+
 def _safe_diameter(graph: nx.Graph) -> float:
     if len(graph) == 0 or not nx.is_connected(graph):
         return 0.0
@@ -59,6 +70,7 @@ def _safe_diameter(graph: nx.Graph) -> float:
 
 TARGET_FUNCTIONS = {
     "average_shortest_path_length": _safe_average_shortest_path_length,
+    "algebraic_connectivity": _safe_algebraic_connectivity,
     "diameter": _safe_diameter,
 }
 
@@ -135,7 +147,12 @@ _ISLAND_STRATEGIES: dict[int, IslandStrategy] = {
 }
 
 
-def _candidate_prompt(state: CheckpointState, island_id: int, target_name: str) -> str:
+def _candidate_prompt(
+    state: CheckpointState,
+    island_id: int,
+    target_name: str,
+    fitness_mode: str = "correlation",
+) -> str:
     """Build the LLM prompt for a candidate, applying the island's strategy."""
     top_candidates = [
         candidate.code
@@ -149,6 +166,7 @@ def _candidate_prompt(state: CheckpointState, island_id: int, target_name: str) 
         failures=state.island_recent_failures.get(island_id, []),
         target_name=target_name,
         strategy=_ISLAND_STRATEGIES.get(island_id),
+        fitness_mode=fitness_mode,
     )
     if state.island_prompt_mode.get(island_id, "free") == "constrained":
         return prompt + _CONSTRAINED_SUFFIX
@@ -380,7 +398,9 @@ def _run_one_generation(
         new_candidates: list[Candidate] = []
         had_valid_train_candidate = False
         for pop_idx in range(cfg.population_size):
-            base_prompt = _candidate_prompt(state, island_id, cfg.target_name)
+            base_prompt = _candidate_prompt(
+                state, island_id, cfg.target_name, fitness_mode=cfg.fitness_mode
+            )
             current_prompt = base_prompt
             max_attempts = 1 + (
                 cfg.self_correction_max_retries if cfg.enable_self_correction else 0
@@ -402,13 +422,24 @@ def _run_one_generation(
                 failure_feedback: str | None = None
                 train_signal: float | None = None
 
+                is_bounds = cfg.fitness_mode in ("upper_bound", "lower_bound")
+
                 if not train_pairs:
                     rejection_reason = "no_valid_train_predictions"
                     failure_feedback = _summarize_error_details(train_details)
                 else:
                     _, y_t_train, y_p_train = zip(*train_pairs, strict=True)
-                    train_metrics = compute_metrics(list(y_t_train), list(y_p_train))
-                    train_signal = abs(train_metrics.rho_spearman)
+                    if is_bounds:
+                        train_bound = compute_bound_metrics(
+                            list(y_t_train),
+                            list(y_p_train),
+                            mode=cfg.fitness_mode,
+                            tolerance=cfg.bound_tolerance,
+                        )
+                        train_signal = train_bound.bound_score
+                    else:
+                        train_metrics = compute_metrics(list(y_t_train), list(y_p_train))
+                        train_signal = abs(train_metrics.rho_spearman)
                     if train_signal <= cfg.train_score_threshold:
                         rejection_reason = "below_train_threshold"
                         failure_feedback = f"train_signal={train_signal:.6f}"
@@ -459,7 +490,6 @@ def _run_one_generation(
                     break
 
                 valid_indices, y_t_val, y_p_val = zip(*val_pairs, strict=True)
-                val_metrics = compute_metrics(list(y_t_val), list(y_p_val))
                 simplicity = compute_simplicity_score(code)
                 known_subset = {
                     name: [values[idx] for idx in valid_indices]
@@ -479,8 +509,19 @@ def _run_one_generation(
                         repairable=False,
                     )
                     break
+                if is_bounds:
+                    val_bound = compute_bound_metrics(
+                        list(y_t_val),
+                        list(y_p_val),
+                        mode=cfg.fitness_mode,
+                        tolerance=cfg.bound_tolerance,
+                    )
+                    fitness_signal = val_bound.bound_score
+                else:
+                    val_metrics = compute_metrics(list(y_t_val), list(y_p_val))
+                    fitness_signal = abs(val_metrics.rho_spearman)
                 total = compute_total_score(
-                    abs(val_metrics.rho_spearman),
+                    fitness_signal,
                     simplicity,
                     novelty_bonus=novelty_bonus,
                     alpha=cfg.alpha,
@@ -498,29 +539,30 @@ def _run_one_generation(
                     novelty_bonus=novelty_bonus,
                 )
                 new_candidates.append(candidate)
-                append_jsonl(
-                    "candidate_evaluated",
-                    {
-                        "candidate_id": candidate.id,
-                        "generation": state.generation,
-                        "island_id": island_id,
-                        "model_name": cfg.model_name,
-                        "train_signal": train_signal,
-                        "spearman": val_metrics.rho_spearman,
-                        "pearson": val_metrics.r_pearson,
-                        "rmse": val_metrics.rmse,
-                        "mae": val_metrics.mae,
-                        "simplicity_score": simplicity,
-                        "novelty_bonus": novelty_bonus,
-                        "total_score": total,
-                        "prompt": current_prompt if cfg.persist_prompt_and_response_logs else None,
-                        "llm_response": llm_response
-                        if cfg.persist_prompt_and_response_logs
-                        else None,
-                        "extracted_code": code if cfg.persist_prompt_and_response_logs else None,
-                    },
-                    log_path,
-                )
+                log_payload: dict[str, Any] = {
+                    "candidate_id": candidate.id,
+                    "generation": state.generation,
+                    "island_id": island_id,
+                    "model_name": cfg.model_name,
+                    "train_signal": train_signal,
+                    "fitness_mode": cfg.fitness_mode,
+                    "simplicity_score": simplicity,
+                    "novelty_bonus": novelty_bonus,
+                    "total_score": total,
+                    "prompt": current_prompt if cfg.persist_prompt_and_response_logs else None,
+                    "llm_response": llm_response if cfg.persist_prompt_and_response_logs else None,
+                    "extracted_code": code if cfg.persist_prompt_and_response_logs else None,
+                }
+                if is_bounds:
+                    log_payload["bound_score"] = val_bound.bound_score
+                    log_payload["satisfaction_rate"] = val_bound.satisfaction_rate
+                    log_payload["mean_gap"] = val_bound.mean_gap
+                else:
+                    log_payload["spearman"] = val_metrics.rho_spearman
+                    log_payload["pearson"] = val_metrics.r_pearson
+                    log_payload["rmse"] = val_metrics.rmse
+                    log_payload["mae"] = val_metrics.mae
+                append_jsonl("candidate_evaluated", log_payload, log_path)
                 if attempt_idx > 0:
                     self_correction_stats["successful_repairs"] = (
                         int(self_correction_stats.get("successful_repairs", 0)) + 1
@@ -597,6 +639,36 @@ def _evaluate_split(
         "mae": metrics.mae,
         "valid_count": metrics.valid_count,
         "novelty_bonus": novelty,
+    }
+
+
+def _evaluate_bound_split(
+    code: str,
+    features_list: list[dict[str, Any]],
+    y_true: list[float],
+    evaluator: SandboxEvaluator,
+    fitness_mode: str,
+    tolerance: float = 1e-9,
+) -> dict[str, float | int]:
+    """Evaluate a candidate against a data split in bounds mode."""
+    y_pred_raw = evaluator.evaluate(code, features_list)
+    valid_pairs = [(yt, yp) for yt, yp in zip(y_true, y_pred_raw, strict=True) if yp is not None]
+    if not valid_pairs:
+        return {
+            "bound_score": 0.0,
+            "satisfaction_rate": 0.0,
+            "mean_gap": 0.0,
+            "violation_count": 0,
+            "valid_count": 0,
+        }
+    y_t, y_p = zip(*valid_pairs, strict=True)
+    bm = compute_bound_metrics(list(y_t), list(y_p), mode=fitness_mode, tolerance=tolerance)
+    return {
+        "bound_score": bm.bound_score,
+        "satisfaction_rate": bm.satisfaction_rate,
+        "mean_gap": bm.mean_gap,
+        "violation_count": bm.violation_count,
+        "valid_count": bm.valid_count,
     }
 
 
@@ -725,64 +797,104 @@ def _write_phase1_summary(
         "test": _novelty_ci_for_split(features_test, known_test, seed_offset=29),
     }
 
-    stat_ok, pysr_ok, pysr_status, pysr_val_spearman, pysr_test_spearman = _baseline_health(
-        baseline_results
-    )
-    candidate_val_spearman = float(val_metrics.get("spearman", 0.0))
-    candidate_test_spearman = float(test_metrics.get("spearman", 0.0))
+    is_bounds = cfg.fitness_mode in ("upper_bound", "lower_bound")
 
-    threshold_passed = abs(candidate_val_spearman) >= cfg.success_spearman_threshold
-    baselines_available = baseline_results is not None
-    baselines_healthy = stat_ok or pysr_ok
-    baselines_passed = (not cfg.require_baselines_for_success) or (
-        baselines_available and baselines_healthy
-    )
-    pysr_parity_passed = True
-    pysr_parity_reason = "disabled"
-    if cfg.enforce_pysr_parity_for_success:
-        if pysr_status != "ok" or pysr_val_spearman is None:
-            pysr_parity_passed = False
-            pysr_parity_reason = "pysr_missing_or_unavailable"
-        else:
-            pysr_parity_passed = (
-                candidate_val_spearman + cfg.pysr_parity_epsilon >= pysr_val_spearman
-            )
-            pysr_parity_reason = "ok"
+    if is_bounds:
+        val_bound_metrics = _evaluate_bound_split(
+            best.code,
+            features_val,
+            y_true_val,
+            evaluator,
+            fitness_mode=cfg.fitness_mode,
+            tolerance=cfg.bound_tolerance,
+        )
+        test_bound_metrics = _evaluate_bound_split(
+            best.code,
+            features_test,
+            y_true_test,
+            evaluator,
+            fitness_mode=cfg.fitness_mode,
+            tolerance=cfg.bound_tolerance,
+        )
+        bounds_success = (
+            val_bound_metrics["bound_score"] >= cfg.success_bound_score_threshold
+            and val_bound_metrics["satisfaction_rate"] >= cfg.success_satisfaction_threshold
+        )
+        success = bounds_success
+        success_criteria = None
+        success_criteria_bounds = {
+            "bound_score_threshold": cfg.success_bound_score_threshold,
+            "satisfaction_threshold": cfg.success_satisfaction_threshold,
+            "val_bound_score": val_bound_metrics["bound_score"],
+            "val_satisfaction_rate": val_bound_metrics["satisfaction_rate"],
+            "passed": bounds_success,
+        }
+        baseline_comparison = None
+        schema_version = 4
+    else:
+        stat_ok, pysr_ok, pysr_status, pysr_val_spearman, pysr_test_spearman = _baseline_health(
+            baseline_results
+        )
+        candidate_val_spearman = float(val_metrics.get("spearman", 0.0))
+        candidate_test_spearman = float(test_metrics.get("spearman", 0.0))
 
-    success_criteria = {
-        "success_spearman_threshold": cfg.success_spearman_threshold,
-        "threshold_passed": threshold_passed,
-        "require_baselines_for_success": cfg.require_baselines_for_success,
-        "baselines_available": baselines_available,
-        "baselines_healthy": baselines_healthy,
-        "stat_baseline_ok": stat_ok,
-        "pysr_ok": pysr_ok,
-        "baselines_passed": baselines_passed,
-        "enforce_pysr_parity_for_success": cfg.enforce_pysr_parity_for_success,
-        "pysr_parity_epsilon": cfg.pysr_parity_epsilon,
-        "pysr_status": pysr_status,
-        "candidate_val_spearman": candidate_val_spearman,
-        "pysr_val_spearman": pysr_val_spearman,
-        "pysr_parity_passed": pysr_parity_passed,
-        "pysr_parity_reason": pysr_parity_reason,
-    }
-    success = threshold_passed and baselines_passed and pysr_parity_passed
+        threshold_passed = abs(candidate_val_spearman) >= cfg.success_spearman_threshold
+        baselines_available = baseline_results is not None
+        baselines_healthy = stat_ok or pysr_ok
+        baselines_passed = (not cfg.require_baselines_for_success) or (
+            baselines_available and baselines_healthy
+        )
+        pysr_parity_passed = True
+        pysr_parity_reason = "disabled"
+        if cfg.enforce_pysr_parity_for_success:
+            if pysr_status != "ok" or pysr_val_spearman is None:
+                pysr_parity_passed = False
+                pysr_parity_reason = "pysr_missing_or_unavailable"
+            else:
+                pysr_parity_passed = (
+                    candidate_val_spearman + cfg.pysr_parity_epsilon >= pysr_val_spearman
+                )
+                pysr_parity_reason = "ok"
 
-    baseline_comparison = {
-        "candidate": {
-            "val_spearman": candidate_val_spearman,
-            "test_spearman": candidate_test_spearman,
-        },
-        "pysr": {
-            "status": pysr_status,
-            "val_spearman": pysr_val_spearman,
-            "test_spearman": pysr_test_spearman,
-        },
-    }
+        success_criteria = {
+            "success_spearman_threshold": cfg.success_spearman_threshold,
+            "threshold_passed": threshold_passed,
+            "require_baselines_for_success": cfg.require_baselines_for_success,
+            "baselines_available": baselines_available,
+            "baselines_healthy": baselines_healthy,
+            "stat_baseline_ok": stat_ok,
+            "pysr_ok": pysr_ok,
+            "baselines_passed": baselines_passed,
+            "enforce_pysr_parity_for_success": cfg.enforce_pysr_parity_for_success,
+            "pysr_parity_epsilon": cfg.pysr_parity_epsilon,
+            "pysr_status": pysr_status,
+            "candidate_val_spearman": candidate_val_spearman,
+            "pysr_val_spearman": pysr_val_spearman,
+            "pysr_parity_passed": pysr_parity_passed,
+            "pysr_parity_reason": pysr_parity_reason,
+        }
+        success = threshold_passed and baselines_passed and pysr_parity_passed
 
-    payload = {
-        "schema_version": 3,
+        baseline_comparison = {
+            "candidate": {
+                "val_spearman": candidate_val_spearman,
+                "test_spearman": candidate_test_spearman,
+            },
+            "pysr": {
+                "status": pysr_status,
+                "val_spearman": pysr_val_spearman,
+                "test_spearman": pysr_test_spearman,
+            },
+        }
+        val_bound_metrics = None
+        test_bound_metrics = None
+        success_criteria_bounds = None
+        schema_version = 3
+
+    payload: dict[str, Any] = {
+        "schema_version": schema_version,
         "experiment_id": state.experiment_id,
+        "fitness_mode": cfg.fitness_mode,
         "model_name": cfg.model_name,
         "best_candidate_id": best.id,
         "best_candidate_code_sha256": sha256(best.code.encode("utf-8")).hexdigest(),
@@ -799,11 +911,16 @@ def _write_phase1_summary(
         "test_metrics": test_metrics,
         "sanity_metrics": sanity_metrics,
         "novelty_ci": novelty_ci,
-        "baseline_comparison": baseline_comparison,
-        "success_criteria": success_criteria,
         "dataset_fingerprint": _dataset_fingerprint(cfg, y_true_train, y_true_val, y_true_test),
         "self_correction_stats": self_correction_stats,
     }
+    if baseline_comparison is not None:
+        payload["baseline_comparison"] = baseline_comparison
+    if success_criteria is not None:
+        payload["success_criteria"] = success_criteria
+    if is_bounds:
+        payload["bounds_metrics"] = {"val": val_bound_metrics, "test": test_bound_metrics}
+        payload["success_criteria_bounds"] = success_criteria_bounds
     if cfg.persist_candidate_code_in_summary:
         payload["best_candidate_code"] = best.code
     write_json(payload, summary_path)

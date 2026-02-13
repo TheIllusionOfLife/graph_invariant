@@ -50,9 +50,13 @@ def _safe_average_shortest_path_length(graph: nx.Graph) -> float:
 
 
 def _safe_algebraic_connectivity(graph: nx.Graph) -> float:
+    """Return the algebraic connectivity (Fiedler value), or 0.0 on failure."""
     if len(graph) < 2 or not nx.is_connected(graph):
         return 0.0
-    return float(nx.algebraic_connectivity(graph))
+    try:
+        return float(nx.algebraic_connectivity(graph))
+    except nx.NetworkXError:
+        return 0.0
 
 
 def _safe_diameter(graph: nx.Graph) -> float:
@@ -793,61 +797,6 @@ def _write_phase1_summary(
         "test": _novelty_ci_for_split(features_test, known_test, seed_offset=29),
     }
 
-    stat_ok, pysr_ok, pysr_status, pysr_val_spearman, pysr_test_spearman = _baseline_health(
-        baseline_results
-    )
-    candidate_val_spearman = float(val_metrics.get("spearman", 0.0))
-    candidate_test_spearman = float(test_metrics.get("spearman", 0.0))
-
-    threshold_passed = abs(candidate_val_spearman) >= cfg.success_spearman_threshold
-    baselines_available = baseline_results is not None
-    baselines_healthy = stat_ok or pysr_ok
-    baselines_passed = (not cfg.require_baselines_for_success) or (
-        baselines_available and baselines_healthy
-    )
-    pysr_parity_passed = True
-    pysr_parity_reason = "disabled"
-    if cfg.enforce_pysr_parity_for_success:
-        if pysr_status != "ok" or pysr_val_spearman is None:
-            pysr_parity_passed = False
-            pysr_parity_reason = "pysr_missing_or_unavailable"
-        else:
-            pysr_parity_passed = (
-                candidate_val_spearman + cfg.pysr_parity_epsilon >= pysr_val_spearman
-            )
-            pysr_parity_reason = "ok"
-
-    success_criteria = {
-        "success_spearman_threshold": cfg.success_spearman_threshold,
-        "threshold_passed": threshold_passed,
-        "require_baselines_for_success": cfg.require_baselines_for_success,
-        "baselines_available": baselines_available,
-        "baselines_healthy": baselines_healthy,
-        "stat_baseline_ok": stat_ok,
-        "pysr_ok": pysr_ok,
-        "baselines_passed": baselines_passed,
-        "enforce_pysr_parity_for_success": cfg.enforce_pysr_parity_for_success,
-        "pysr_parity_epsilon": cfg.pysr_parity_epsilon,
-        "pysr_status": pysr_status,
-        "candidate_val_spearman": candidate_val_spearman,
-        "pysr_val_spearman": pysr_val_spearman,
-        "pysr_parity_passed": pysr_parity_passed,
-        "pysr_parity_reason": pysr_parity_reason,
-    }
-    success = threshold_passed and baselines_passed and pysr_parity_passed
-
-    baseline_comparison = {
-        "candidate": {
-            "val_spearman": candidate_val_spearman,
-            "test_spearman": candidate_test_spearman,
-        },
-        "pysr": {
-            "status": pysr_status,
-            "val_spearman": pysr_val_spearman,
-            "test_spearman": pysr_test_spearman,
-        },
-    }
-
     is_bounds = cfg.fitness_mode in ("upper_bound", "lower_bound")
 
     if is_bounds:
@@ -872,6 +821,7 @@ def _write_phase1_summary(
             and val_bound_metrics["satisfaction_rate"] >= cfg.success_satisfaction_threshold
         )
         success = bounds_success
+        success_criteria = None
         success_criteria_bounds = {
             "bound_score_threshold": cfg.success_bound_score_threshold,
             "satisfaction_threshold": cfg.success_satisfaction_threshold,
@@ -879,16 +829,72 @@ def _write_phase1_summary(
             "val_satisfaction_rate": val_bound_metrics["satisfaction_rate"],
             "passed": bounds_success,
         }
+        baseline_comparison = None
+        schema_version = 4
     else:
+        stat_ok, pysr_ok, pysr_status, pysr_val_spearman, pysr_test_spearman = _baseline_health(
+            baseline_results
+        )
+        candidate_val_spearman = float(val_metrics.get("spearman", 0.0))
+        candidate_test_spearman = float(test_metrics.get("spearman", 0.0))
+
+        threshold_passed = abs(candidate_val_spearman) >= cfg.success_spearman_threshold
+        baselines_available = baseline_results is not None
+        baselines_healthy = stat_ok or pysr_ok
+        baselines_passed = (not cfg.require_baselines_for_success) or (
+            baselines_available and baselines_healthy
+        )
+        pysr_parity_passed = True
+        pysr_parity_reason = "disabled"
+        if cfg.enforce_pysr_parity_for_success:
+            if pysr_status != "ok" or pysr_val_spearman is None:
+                pysr_parity_passed = False
+                pysr_parity_reason = "pysr_missing_or_unavailable"
+            else:
+                pysr_parity_passed = (
+                    candidate_val_spearman + cfg.pysr_parity_epsilon >= pysr_val_spearman
+                )
+                pysr_parity_reason = "ok"
+
+        success_criteria = {
+            "success_spearman_threshold": cfg.success_spearman_threshold,
+            "threshold_passed": threshold_passed,
+            "require_baselines_for_success": cfg.require_baselines_for_success,
+            "baselines_available": baselines_available,
+            "baselines_healthy": baselines_healthy,
+            "stat_baseline_ok": stat_ok,
+            "pysr_ok": pysr_ok,
+            "baselines_passed": baselines_passed,
+            "enforce_pysr_parity_for_success": cfg.enforce_pysr_parity_for_success,
+            "pysr_parity_epsilon": cfg.pysr_parity_epsilon,
+            "pysr_status": pysr_status,
+            "candidate_val_spearman": candidate_val_spearman,
+            "pysr_val_spearman": pysr_val_spearman,
+            "pysr_parity_passed": pysr_parity_passed,
+            "pysr_parity_reason": pysr_parity_reason,
+        }
+        success = threshold_passed and baselines_passed and pysr_parity_passed
+
+        baseline_comparison = {
+            "candidate": {
+                "val_spearman": candidate_val_spearman,
+                "test_spearman": candidate_test_spearman,
+            },
+            "pysr": {
+                "status": pysr_status,
+                "val_spearman": pysr_val_spearman,
+                "test_spearman": pysr_test_spearman,
+            },
+        }
         val_bound_metrics = None
         test_bound_metrics = None
         success_criteria_bounds = None
+        schema_version = 3
 
-    schema_version = 4 if is_bounds else 3
-
-    payload = {
+    payload: dict[str, Any] = {
         "schema_version": schema_version,
         "experiment_id": state.experiment_id,
+        "fitness_mode": cfg.fitness_mode,
         "model_name": cfg.model_name,
         "best_candidate_id": best.id,
         "best_candidate_code_sha256": sha256(best.code.encode("utf-8")).hexdigest(),
@@ -905,11 +911,13 @@ def _write_phase1_summary(
         "test_metrics": test_metrics,
         "sanity_metrics": sanity_metrics,
         "novelty_ci": novelty_ci,
-        "baseline_comparison": baseline_comparison,
-        "success_criteria": success_criteria,
         "dataset_fingerprint": _dataset_fingerprint(cfg, y_true_train, y_true_val, y_true_test),
         "self_correction_stats": self_correction_stats,
     }
+    if baseline_comparison is not None:
+        payload["baseline_comparison"] = baseline_comparison
+    if success_criteria is not None:
+        payload["success_criteria"] = success_criteria
     if is_bounds:
         payload["bounds_metrics"] = {"val": val_bound_metrics, "test": test_bound_metrics}
         payload["success_criteria_bounds"] = success_criteria_bounds

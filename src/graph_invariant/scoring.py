@@ -194,14 +194,15 @@ def compute_novelty_bonus(
 
 
 def compute_total_score(
-    abs_spearman: float,
+    fitness_signal: float,
     simplicity: float,
     novelty_bonus: float,
     alpha: float = 0.6,
     beta: float = 0.2,
     gamma: float = 0.2,
 ) -> float:
-    return (alpha * abs_spearman) + (beta * simplicity) + (gamma * novelty_bonus)
+    """Compute the weighted total score from fitness signal, simplicity, and novelty."""
+    return (alpha * fitness_signal) + (beta * simplicity) + (gamma * novelty_bonus)
 
 
 def _bootstrap_abs_spearman_ci_upper(

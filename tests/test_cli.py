@@ -79,7 +79,7 @@ def test_run_phase1_uses_configured_score_weights(monkeypatch, tmp_path):
     )
     captured: dict[str, float] = {}
 
-    def fake_total(abs_spearman, simplicity, novelty_bonus, alpha, beta, gamma):  # noqa: ANN001
+    def fake_total(fitness_signal, simplicity, novelty_bonus, alpha, beta, gamma):  # noqa: ANN001
         captured["alpha"] = alpha
         captured["beta"] = beta
         captured["gamma"] = gamma
@@ -307,6 +307,7 @@ def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path
     assert "val_metrics" in payload
     assert "success" in payload
     assert payload["schema_version"] == 3
+    assert payload["fitness_mode"] == "correlation"
     assert "best_candidate_code" not in payload
     assert payload["model_name"] == "gpt-oss:20b"
     assert payload["config"]["num_train_graphs"] == 2
@@ -1197,6 +1198,20 @@ def test_target_values_algebraic_connectivity_single_node():
     assert values == [0.0]
 
 
+def test_safe_algebraic_connectivity_handles_eigenvalue_error(monkeypatch):
+    """_safe_algebraic_connectivity should return 0.0 on eigenvalue computation errors."""
+    import networkx as nx
+
+    from graph_invariant.cli import _safe_algebraic_connectivity
+
+    g = nx.path_graph(5)
+    monkeypatch.setattr(
+        "graph_invariant.cli.nx.algebraic_connectivity",
+        lambda *_a, **_kw: (_ for _ in ()).throw(nx.NetworkXError("convergence failed")),
+    )
+    assert _safe_algebraic_connectivity(g) == 0.0
+
+
 def test_run_phase1_bounds_mode_uses_bound_score(monkeypatch, tmp_path):
     """In bounds mode, the generation loop should use bound_score instead of spearman."""
     import networkx as nx
@@ -1236,6 +1251,7 @@ def test_run_phase1_bounds_mode_uses_bound_score(monkeypatch, tmp_path):
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
     assert summary["schema_version"] == 4
+    assert summary["fitness_mode"] == "upper_bound"
     assert "bounds_metrics" in summary
     assert "success_criteria_bounds" in summary
 
@@ -1289,15 +1305,18 @@ def test_run_phase1_bounds_mode_summary_schema(monkeypatch, tmp_path):
 
 def test_candidate_prompt_passes_fitness_mode(monkeypatch):
     """_candidate_prompt should forward fitness_mode to build_prompt."""
+    import inspect
+
     from graph_invariant.cli import _candidate_prompt
+    from graph_invariant.llm_ollama import build_prompt as original_build
 
     captured: dict[str, str] = {}
-    original_build = __import__(
-        "graph_invariant.llm_ollama", fromlist=["build_prompt"]
-    ).build_prompt
+    sig = inspect.signature(original_build)
 
     def spy_build(*args, **kwargs):
-        captured["fitness_mode"] = kwargs.get("fitness_mode", "correlation")
+        bound = sig.bind(*args, **kwargs)
+        bound.apply_defaults()
+        captured["fitness_mode"] = bound.arguments["fitness_mode"]
         return original_build(*args, **kwargs)
 
     monkeypatch.setattr("graph_invariant.cli.build_prompt", spy_build)

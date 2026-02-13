@@ -79,8 +79,10 @@ _BOUNDS_INSTRUCTIONS: dict[str, str] = {
     ),
 }
 
-# Keep backward-compatible alias
-_STRATEGY_INSTRUCTIONS = _STRATEGY_INSTRUCTIONS_CORRELATION
+
+def _sanitize_llm_output(text: str) -> str:
+    """Strip code fences from LLM-generated text to prevent prompt injection."""
+    return text.replace("```", "")
 
 
 def build_prompt(
@@ -99,8 +101,12 @@ def build_prompt(
     ``lower_bound``, the prompt asks the LLM to produce an inequality
     rather than a correlation-maximizing formula.
     """
-    top_block = "\n\n".join(top_candidates[:3]) if top_candidates else "None yet."
-    fail_block = "\n".join(failures[:3]) if failures else "None."
+    top_block = (
+        "\n\n".join(_sanitize_llm_output(c) for c in top_candidates[:3])
+        if top_candidates
+        else "None yet."
+    )
+    fail_block = "\n".join(_sanitize_llm_output(f) for f in failures[:3]) if failures else "None."
 
     is_bounds = fitness_mode in ("upper_bound", "lower_bound")
     strategy_table = (

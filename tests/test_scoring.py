@@ -66,7 +66,7 @@ def test_compute_simplicity_score_skips_sympy_for_unsafe_expression(monkeypatch)
 def test_compute_novelty_bonus_and_total_score():
     bonus = compute_novelty_bonus([1, 2, 3], {"known": [1, 2, 4]})
     assert 0.0 <= bonus <= 1.0
-    total = compute_total_score(abs_spearman=0.9, simplicity=0.5, novelty_bonus=0.25)
+    total = compute_total_score(fitness_signal=0.9, simplicity=0.5, novelty_bonus=0.25)
     assert math.isclose(total, 0.69, rel_tol=1e-9)
 
 

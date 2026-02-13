@@ -1,6 +1,9 @@
 import math
 
+import pytest
+
 from graph_invariant.scoring import (
+    compute_bound_metrics,
     compute_metrics,
     compute_novelty_bonus,
     compute_novelty_ci,
@@ -84,3 +87,65 @@ def test_compute_novelty_ci_reports_bootstrap_upper_bounds():
     assert set(result["per_invariant"].keys()) == {"known_a", "known_b"}
     for payload in result["per_invariant"].values():
         assert payload["ci_upper_abs_rho"] >= payload["point_abs_rho"]
+
+
+# ── BoundMetrics tests ───────────────────────────────────────────────
+
+
+def test_compute_bound_metrics_perfect_upper_bound():
+    """f(x) >= y for all points → satisfaction_rate=1.0, tight bound scores well."""
+    # y_true = [1, 2, 3], y_pred = [1.5, 2.5, 3.5] → all satisfy f(x) >= y
+    result = compute_bound_metrics([1.0, 2.0, 3.0], [1.5, 2.5, 3.5], mode="upper_bound")
+    assert result.satisfaction_rate == 1.0
+    assert result.violation_count == 0
+    assert result.valid_count == 3
+    assert result.bound_score > 0.0
+    assert result.mean_gap == pytest.approx(0.5, abs=1e-9)
+
+
+def test_compute_bound_metrics_perfect_lower_bound():
+    """f(x) <= y for all points → satisfaction_rate=1.0."""
+    result = compute_bound_metrics([3.0, 4.0, 5.0], [2.0, 3.0, 4.0], mode="lower_bound")
+    assert result.satisfaction_rate == 1.0
+    assert result.violation_count == 0
+    assert result.valid_count == 3
+    assert result.bound_score > 0.0
+
+
+def test_compute_bound_metrics_violating_upper_bound():
+    """One violation tanks the satisfaction rate."""
+    # y_true = [1, 2, 3], y_pred = [0.5, 2.5, 3.5] → first point violates f(x) >= y
+    result = compute_bound_metrics([1.0, 2.0, 3.0], [0.5, 2.5, 3.5], mode="upper_bound")
+    assert result.satisfaction_rate == pytest.approx(2.0 / 3.0, abs=1e-9)
+    assert result.violation_count == 1
+
+
+def test_compute_bound_metrics_all_violating():
+    """All points violate → score is 0."""
+    result = compute_bound_metrics([5.0, 6.0, 7.0], [1.0, 2.0, 3.0], mode="upper_bound")
+    assert result.satisfaction_rate == 0.0
+    assert result.bound_score == 0.0
+    assert result.violation_count == 3
+
+
+def test_compute_bound_metrics_tighter_bound_scores_higher():
+    """Among two fully-satisfying upper bounds, the tighter one scores higher."""
+    tight = compute_bound_metrics([1.0, 2.0, 3.0], [1.1, 2.1, 3.1], mode="upper_bound")
+    loose = compute_bound_metrics([1.0, 2.0, 3.0], [10.0, 20.0, 30.0], mode="upper_bound")
+    assert tight.bound_score > loose.bound_score
+
+
+def test_compute_bound_metrics_empty_input():
+    """Empty input should return safe defaults."""
+    result = compute_bound_metrics([], [], mode="upper_bound")
+    assert result.satisfaction_rate == 0.0
+    assert result.bound_score == 0.0
+    assert result.valid_count == 0
+
+
+def test_compute_bound_metrics_respects_tolerance():
+    """A tiny violation within tolerance should still count as satisfied."""
+    # f(x) = 0.9999999999 vs y = 1.0 — within default epsilon
+    result = compute_bound_metrics([1.0], [1.0 - 1e-10], mode="upper_bound", tolerance=1e-9)
+    assert result.satisfaction_rate == 1.0
+    assert result.violation_count == 0

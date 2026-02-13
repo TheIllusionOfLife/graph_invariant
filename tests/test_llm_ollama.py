@@ -204,6 +204,27 @@ def test_build_prompt_feature_dict_signature_with_strategy():
     assert "pre-computed" in prompt.lower() or "feature" in prompt.lower()
 
 
+# ── Target-aware and bounds mode prompt tests ────────────────────────
+
+
+def test_build_prompt_includes_target_context_for_aspl():
+    prompt = build_prompt("free", [], [], "average_shortest_path_length")
+    assert "density" in prompt.lower() or "degree" in prompt.lower()
+
+
+def test_build_prompt_includes_target_context_for_algebraic_connectivity():
+    prompt = build_prompt("free", [], [], "algebraic_connectivity")
+    assert "fiedler" in prompt.lower() or "laplacian" in prompt.lower()
+
+
+def test_build_prompt_bounds_mode_upper():
+    prompt = build_prompt(
+        "free", [], [], "average_shortest_path_length", fitness_mode="upper_bound"
+    )
+    assert "f(x) >=" in prompt or "upper bound" in prompt.lower()
+    assert "trivial" in prompt.lower() or "constant" in prompt.lower()
+
+
 def test_list_available_models_uses_no_redirects(monkeypatch):
     class DummyResponse:
         def raise_for_status(self) -> None:

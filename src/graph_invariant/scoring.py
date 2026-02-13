@@ -6,7 +6,7 @@ import numpy as np
 import scipy.stats
 import sympy
 
-from .types import EvaluationResult
+from .types import BoundMetrics, EvaluationResult
 
 _ALLOWED_SYMPY_FUNCS = {
     "abs",
@@ -67,6 +67,54 @@ def compute_metrics(y_true: list[float], y_pred: list[float]) -> EvaluationResul
         mae=mae,
         valid_count=len(true_arr),
         error_count=0,
+    )
+
+
+def compute_bound_metrics(
+    y_true: list[float],
+    y_pred: list[float],
+    mode: str,
+    tolerance: float = 1e-9,
+) -> BoundMetrics:
+    """Compute bound satisfaction metrics for upper/lower bound fitness mode.
+
+    Upper bound: f(x) >= y (pred >= true)
+    Lower bound: f(x) <= y (pred <= true)
+    """
+    true_arr = np.asarray(y_true, dtype=float)
+    pred_arr = np.asarray(y_pred, dtype=float)
+    n = true_arr.size
+    if n == 0:
+        return BoundMetrics(
+            satisfaction_rate=0.0, mean_gap=0.0, bound_score=0.0, violation_count=0, valid_count=0
+        )
+
+    if mode == "upper_bound":
+        satisfied_mask = pred_arr >= true_arr - tolerance
+    elif mode == "lower_bound":
+        satisfied_mask = pred_arr <= true_arr + tolerance
+    else:
+        raise ValueError(f"unsupported bound mode: {mode}")
+
+    satisfied_count = int(np.sum(satisfied_mask))
+    violation_count = n - satisfied_count
+    satisfaction_rate = satisfied_count / n
+
+    if satisfied_count > 0:
+        gaps = np.abs(pred_arr[satisfied_mask] - true_arr[satisfied_mask])
+        mean_gap = float(np.mean(gaps))
+    else:
+        mean_gap = 0.0
+
+    tightness = 1.0 / (1.0 + mean_gap)
+    bound_score = satisfaction_rate * tightness
+
+    return BoundMetrics(
+        satisfaction_rate=satisfaction_rate,
+        mean_gap=mean_gap,
+        bound_score=bound_score,
+        violation_count=violation_count,
+        valid_count=n,
     )
 
 

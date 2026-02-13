@@ -34,7 +34,7 @@ class Phase1Config:
     stagnation_trigger_generations: int = 5
     constrained_recovery_generations: int = 3
     allow_late_constrained_recovery: bool = True
-    run_baselines: bool = False
+    run_baselines: bool = True
     persist_candidate_code_in_summary: bool = False
     success_spearman_threshold: float = 0.85
     pysr_niterations: int = 30
@@ -53,6 +53,10 @@ class Phase1Config:
     self_correction_max_retries: int = 1
     self_correction_feedback_window: int = 3
     novelty_gate_threshold: float = 0.15
+    fitness_mode: str = "correlation"
+    bound_tolerance: float = 1e-9
+    success_bound_score_threshold: float = 0.7
+    success_satisfaction_threshold: float = 0.95
 
     def __post_init__(self) -> None:
         self.island_temperatures = tuple(float(x) for x in self.island_temperatures)
@@ -104,6 +108,14 @@ class Phase1Config:
             raise ValueError("self_correction_feedback_window must be >= 1")
         if not (0.0 <= self.novelty_gate_threshold <= 1.0):
             raise ValueError("novelty_gate_threshold must be between 0.0 and 1.0")
+        if self.fitness_mode not in {"correlation", "upper_bound", "lower_bound"}:
+            raise ValueError("fitness_mode must be 'correlation', 'upper_bound', or 'lower_bound'")
+        if self.bound_tolerance < 0.0:
+            raise ValueError("bound_tolerance must be >= 0.0")
+        if not (0.0 <= self.success_bound_score_threshold <= 1.0):
+            raise ValueError("success_bound_score_threshold must be between 0.0 and 1.0")
+        if not (0.0 <= self.success_satisfaction_threshold <= 1.0):
+            raise ValueError("success_satisfaction_threshold must be between 0.0 and 1.0")
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> "Phase1Config":

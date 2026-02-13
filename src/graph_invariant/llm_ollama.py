@@ -34,7 +34,18 @@ _FORMULA_EXAMPLES = (
     "def new_invariant(s): return np.sqrt(s['n']) / (1 + s['avg_clustering'])\n"
 )
 
-_STRATEGY_INSTRUCTIONS: dict[IslandStrategy, str] = {
+_TARGET_CONTEXT: dict[str, str] = {
+    "average_shortest_path_length": (
+        "Think about how it relates to density, degree distribution, "
+        "clustering, and other structural features."
+    ),
+    "algebraic_connectivity": (
+        "The Fiedler value is the 2nd-smallest Laplacian eigenvalue. "
+        "Think about degree distribution, connectivity patterns, spectral relationships."
+    ),
+}
+
+_STRATEGY_INSTRUCTIONS_CORRELATION: dict[IslandStrategy, str] = {
     IslandStrategy.REFINEMENT: (
         "Improve the best existing formula. Make small targeted changes "
         "to refine accuracy while keeping the formula simple."
@@ -43,12 +54,33 @@ _STRATEGY_INSTRUCTIONS: dict[IslandStrategy, str] = {
         "Combine elements from the top 2 formulas into a new one. "
         "Merge their strengths into a single improved formula."
     ),
-    IslandStrategy.NOVEL: (
-        "Invent a completely novel mathematical formula. "
-        "Think about how average path length relates to density, "
-        "degree distribution, clustering, and other structural features."
+    IslandStrategy.NOVEL: "Invent a completely novel mathematical formula. ",
+}
+
+_STRATEGY_INSTRUCTIONS_BOUNDS: dict[IslandStrategy, str] = {
+    IslandStrategy.REFINEMENT: "Tighten the best bound. Reduce the gap while keeping it valid.",
+    IslandStrategy.COMBINATION: (
+        "Combine elements from the top 2 bounds into a new one. "
+        "Merge their strengths into a single tighter bound."
+    ),
+    IslandStrategy.NOVEL: "Invent a novel inequality. ",
+}
+
+_BOUNDS_INSTRUCTIONS: dict[str, str] = {
+    "upper_bound": (
+        "\nFind f(x) such that f(x) >= y for ALL graphs. Tighter bounds score higher.\n"
+        "Think about inequalities: AM-GM, degree-sum, spectral bounds.\n"
+        "Do NOT return trivially large constants.\n"
+    ),
+    "lower_bound": (
+        "\nFind f(x) such that f(x) <= y for ALL graphs. Tighter bounds score higher.\n"
+        "Think about inequalities: AM-GM, degree-sum, spectral bounds.\n"
+        "Do NOT return trivially small constants (like 0).\n"
     ),
 }
+
+# Keep backward-compatible alias
+_STRATEGY_INSTRUCTIONS = _STRATEGY_INSTRUCTIONS_CORRELATION
 
 
 def build_prompt(
@@ -57,24 +89,48 @@ def build_prompt(
     failures: list[str],
     target_name: str,
     strategy: IslandStrategy | None = None,
+    fitness_mode: str = "correlation",
 ) -> str:
     """Build an LLM prompt for candidate formula generation.
 
     When *strategy* is provided, the prompt includes strategy-specific
     instructions (refine / combine / novel), anti-pattern warnings, and
-    example formulas.
+    example formulas.  When *fitness_mode* is ``upper_bound`` or
+    ``lower_bound``, the prompt asks the LLM to produce an inequality
+    rather than a correlation-maximizing formula.
     """
     top_block = "\n\n".join(top_candidates[:3]) if top_candidates else "None yet."
     fail_block = "\n".join(failures[:3]) if failures else "None."
 
+    is_bounds = fitness_mode in ("upper_bound", "lower_bound")
+    strategy_table = (
+        _STRATEGY_INSTRUCTIONS_BOUNDS if is_bounds else _STRATEGY_INSTRUCTIONS_CORRELATION
+    )
+
     strategy_instruction = ""
     if strategy is not None:
-        strategy_instruction = f"\nStrategy: {_STRATEGY_INSTRUCTIONS[strategy]}\n"
+        base = strategy_table[strategy]
+        # Append target-specific context to the NOVEL strategy
+        if strategy == IslandStrategy.NOVEL:
+            target_ctx = _TARGET_CONTEXT.get(target_name, "")
+            if target_ctx:
+                base = base + target_ctx
+        strategy_instruction = f"\nStrategy: {base}\n"
+
+    target_context_block = ""
+    target_ctx = _TARGET_CONTEXT.get(target_name)
+    if target_ctx and strategy is None:
+        target_context_block = f"\n{target_ctx}\n"
+
+    bounds_block = ""
+    if is_bounds:
+        bounds_block = _BOUNDS_INSTRUCTIONS.get(fitness_mode, "")
 
     return (
         f"You are discovering graph invariant formulas for target `{target_name}`.\n"
         f"Island mode: {island_mode}\n"
         f"{strategy_instruction}"
+        f"{target_context_block}"
         f"Best formulas:\n{top_block}\n"
         f"Recent failures:\n{fail_block}\n"
         "Return only python code defining `def new_invariant(s):` "
@@ -82,6 +138,7 @@ def build_prompt(
         f"{_FEATURE_KEYS_DOC}\n"
         f"{_ANTI_PATTERNS}"
         f"{_FORMULA_EXAMPLES}"
+        f"{bounds_block}"
     )
 
 

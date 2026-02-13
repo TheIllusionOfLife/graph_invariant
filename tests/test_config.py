@@ -16,7 +16,7 @@ def test_phase1_config_defaults_are_valid():
     assert cfg.stagnation_trigger_generations == 5
     assert cfg.constrained_recovery_generations == 3
     assert cfg.allow_late_constrained_recovery is True
-    assert cfg.run_baselines is False
+    assert cfg.run_baselines is True
     assert cfg.persist_candidate_code_in_summary is False
     assert cfg.success_spearman_threshold == 0.85
     assert cfg.benchmark_seeds == (11, 22, 33, 44, 55)
@@ -118,3 +118,44 @@ def test_phase1_config_validates_self_correction_fields():
         Phase1Config(self_correction_max_retries=-1)
     with pytest.raises(ValueError, match="self_correction_feedback_window"):
         Phase1Config(self_correction_feedback_window=0)
+
+
+# ── Bounds mode config tests ────────────────────────────────────────
+
+
+def test_fitness_mode_defaults_to_correlation():
+    cfg = Phase1Config()
+    assert cfg.fitness_mode == "correlation"
+
+
+def test_fitness_mode_accepts_valid_modes():
+    for mode in ("correlation", "upper_bound", "lower_bound"):
+        cfg = Phase1Config(fitness_mode=mode)
+        assert cfg.fitness_mode == mode
+
+
+def test_fitness_mode_rejects_invalid_mode():
+    with pytest.raises(ValueError, match="fitness_mode"):
+        Phase1Config(fitness_mode="invalid")
+
+
+def test_bound_tolerance_defaults_and_validates():
+    cfg = Phase1Config()
+    assert cfg.bound_tolerance == 1e-9
+    with pytest.raises(ValueError, match="bound_tolerance"):
+        Phase1Config(bound_tolerance=-1.0)
+
+
+def test_bound_score_thresholds_default_and_validate():
+    cfg = Phase1Config()
+    assert cfg.success_bound_score_threshold == 0.7
+    assert cfg.success_satisfaction_threshold == 0.95
+    with pytest.raises(ValueError, match="success_bound_score_threshold"):
+        Phase1Config(success_bound_score_threshold=-0.1)
+    with pytest.raises(ValueError, match="success_satisfaction_threshold"):
+        Phase1Config(success_satisfaction_threshold=1.5)
+
+
+def test_run_baselines_defaults_to_true():
+    cfg = Phase1Config()
+    assert cfg.run_baselines is True

@@ -9,6 +9,8 @@ dependencies = [
   "requests>=2.32",
   "scipy>=1.15",
   "sympy>=1.13",
+  "scikit-learn>=1.5",
+  "pysr>=1.0",
 ]
 
 [dependency-groups]

@@ -7,6 +7,8 @@ import requests
 
 
 class IslandStrategy(StrEnum):
+    """Prompt strategy assigned to each island in the evolutionary search."""
+
     REFINEMENT = "refinement"
     COMBINATION = "combination"
     NOVEL = "novel"
@@ -56,6 +58,12 @@ def build_prompt(
     target_name: str,
     strategy: IslandStrategy | None = None,
 ) -> str:
+    """Build an LLM prompt for candidate formula generation.
+
+    When *strategy* is provided, the prompt includes strategy-specific
+    instructions (refine / combine / novel), anti-pattern warnings, and
+    example formulas.
+    """
     top_block = "\n\n".join(top_candidates[:3]) if top_candidates else "None yet."
     fail_block = "\n".join(failures[:3]) if failures else "None."
 

@@ -136,6 +136,7 @@ _ISLAND_STRATEGIES: dict[int, IslandStrategy] = {
 
 
 def _candidate_prompt(state: CheckpointState, island_id: int, target_name: str) -> str:
+    """Build the LLM prompt for a candidate, applying the island's strategy."""
     top_candidates = [
         candidate.code
         for candidate in sorted(
@@ -466,7 +467,7 @@ def _run_one_generation(
                 }
                 novelty_bonus = compute_novelty_bonus(list(y_p_val), known_subset)
                 if cfg.novelty_gate_threshold > 0 and novelty_bonus < cfg.novelty_gate_threshold:
-                    should_retry, next_prompt = _handle_rejection(
+                    _handle_rejection(
                         island_id=island_id,
                         pop_idx=pop_idx,
                         attempt_idx=attempt_idx,
@@ -477,9 +478,6 @@ def _run_one_generation(
                         max_attempts=max_attempts,
                         repairable=False,
                     )
-                    if should_retry and next_prompt is not None:
-                        current_prompt = next_prompt
-                        continue
                     break
                 total = compute_total_score(
                     abs(val_metrics.rho_spearman),

@@ -180,7 +180,7 @@ def test_build_prompt_novel_strategy():
         "diameter",
         strategy=IslandStrategy.NOVEL,
     )
-    assert any(word in prompt.lower() for word in ("new", "novel"))
+    assert "novel" in prompt.lower()
 
 
 def test_build_prompt_includes_anti_patterns():

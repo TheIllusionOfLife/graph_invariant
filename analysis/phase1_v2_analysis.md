@@ -18,9 +18,9 @@ Changes from v1 (experiment_05):
 | Seed | 42 |
 | Stop reason | early_stop (gen 12 of 20) |
 | Generations completed | 12 |
-| Candidates evaluated | 159 |
-| Candidates rejected | 117 |
-| Acceptance rate | 57.6% |
+| Candidates evaluated (LLM calls) | 159 |
+| Candidates rejected (events) | 117 |
+| Acceptance rate | 26.4% (42/159) |
 | Best val Spearman | **0.9370** |
 | Best test Spearman | **0.9215** |
 | Best train Spearman | 0.9221 |
@@ -59,11 +59,13 @@ def new_invariant(s):
     return base * clustering_adj * variance_adj * density_adj * assort_adj
 ```
 
+> **Note on defensive patterns**: This formula is LLM-generated and preserved verbatim. The `or` guards (e.g., `s.get('avg_degree', 0.0) or 1.0`) are over-defensive — the `or` replaces falsy `0.0` with a non-zero default, which may mask real zero-valued features. The `eps` variable is redundant given the `density or 1e-6` guard. These quirks are retained for reproducibility; simplifying them could change output values.
+
 ### Mathematical Interpretation
 
 The formula approximates average shortest path length as:
 
-```
+```text
 ASPL ≈ [log(n) / log(k+1)] × [1 + 0.5(C_t + C_avg)] × [1/(1 + σ_k/(k+1))] × √(1/ρ) × [1 + 0.5r]
 ```
 
@@ -113,6 +115,8 @@ The novelty gate is the primary filter, rejecting 45% of all failed candidates.
 | degree_assortativity | 0.048 | 0.174 |
 
 **Novelty CI threshold (0.7) not passed**: The formula is highly correlated with density (0.855) and diameter (0.846). This is expected — average path length is fundamentally linked to these graph properties. The formula captures this relationship through its density and structural terms.
+
+> **Two novelty thresholds serve different purposes**: The **novelty gate** (threshold=0.15) operates *during* generation to reject trivially-correlated candidates in real time (e.g., `return s['diameter']`). The **novelty CI threshold** (0.7) is a stricter *post-hoc* assessment that checks whether the best formula's 95% CI upper bound for |ρ| with any known invariant stays below 0.7 — confirming the formula captures genuinely new structure rather than proxying a known quantity.
 
 ## 6. Failure Mode Analysis
 

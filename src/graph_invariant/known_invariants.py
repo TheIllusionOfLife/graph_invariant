@@ -4,6 +4,7 @@ from typing import Any
 import networkx as nx
 import numpy as np
 import scipy.sparse
+import scipy.sparse.csgraph
 import scipy.sparse.linalg
 
 

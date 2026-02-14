@@ -91,20 +91,24 @@ echo ""
 echo "━━━ [5/5] OOD Validation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Start:  $(date)"
 
-for dir in "${SUCCEEDED_DIRS[@]}"; do
-    summary="$dir/phase1_summary.json"
-    if [ -f "$summary" ]; then
-        echo "--- OOD validating: $dir ---"
-        ood_output="$dir/ood"
-        if $CLI ood-validate --summary "$summary" --output "$ood_output"; then
-            echo "✓ OOD validation for $dir completed"
+if [ "${#SUCCEEDED_DIRS[@]}" -gt 0 ]; then
+    for dir in "${SUCCEEDED_DIRS[@]}"; do
+        summary="$dir/phase1_summary.json"
+        if [ -f "$summary" ]; then
+            echo "--- OOD validating: $dir ---"
+            ood_output="$dir/ood"
+            if $CLI ood-validate --summary "$summary" --output "$ood_output"; then
+                echo "✓ OOD validation for $dir completed"
+            else
+                echo "✗ OOD validation for $dir failed"
+            fi
         else
-            echo "✗ OOD validation for $dir failed"
+            echo "⚠ No phase1_summary.json in $dir, skipping OOD"
         fi
-    else
-        echo "⚠ No phase1_summary.json in $dir, skipping OOD"
-    fi
-done
+    done
+else
+    echo "⚠ No experiments succeeded, skipping OOD validation"
+fi
 
 # Also OOD-validate the existing experiment_v2 results
 if [ -f "artifacts/experiment_v2/phase1_summary.json" ]; then
@@ -120,7 +124,11 @@ echo ""
 
 # ── 6. Generate reports ─────────────────────────────────────────────
 echo "━━━ Reports ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-for dir in "${SUCCEEDED_DIRS[@]}" "artifacts/experiment_v2"; do
+REPORT_DIRS=("artifacts/experiment_v2")
+if [ "${#SUCCEEDED_DIRS[@]}" -gt 0 ]; then
+    REPORT_DIRS=("${SUCCEEDED_DIRS[@]}" "${REPORT_DIRS[@]}")
+fi
+for dir in "${REPORT_DIRS[@]}"; do
     if [ -f "$dir/phase1_summary.json" ]; then
         echo "--- Report: $dir ---"
         $CLI report --artifacts "$dir" || echo "⚠ Report generation failed for $dir"

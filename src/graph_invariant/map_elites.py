@@ -36,6 +36,8 @@ class MapElitesArchive:
 
 def _bin_index(value: float, num_bins: int) -> int:
     """Map a [0,1] value to a bin index in [0, num_bins-1]."""
+    if num_bins <= 0:
+        raise ValueError("num_bins must be > 0")
     clamped = max(0.0, min(1.0, value))
     idx = int(clamped * num_bins)
     return min(idx, num_bins - 1)
@@ -111,6 +113,8 @@ def deserialize_archive(data: dict[str, Any]) -> MapElitesArchive:
     Gracefully skips malformed cell entries to tolerate corrupted checkpoints.
     """
     num_bins = int(data["num_bins"])
+    if num_bins <= 0:
+        raise ValueError(f"Cannot deserialize archive with num_bins={num_bins}; must be > 0")
     cells: dict[tuple[int, int], ArchiveCell] = {}
     for key, cell_data in data.get("cells", {}).items():
         try:

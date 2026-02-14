@@ -13,6 +13,8 @@ from .features import FEATURE_ORDER, features_from_graphs
 
 LOGGER = logging.getLogger(__name__)
 
+_LEAKABLE_FEATURES = frozenset(FEATURE_ORDER)
+
 
 def _load_pysr_module() -> ModuleType | None:
     try:
@@ -79,8 +81,7 @@ def run_pysr_baseline(
     if pysr_module is None:
         return {"status": "skipped", "reason": "pysr not installed"}
 
-    _leakable = frozenset(FEATURE_ORDER)
-    exclude = (target_name,) if target_name and target_name in _leakable else None
+    exclude = (target_name,) if target_name and target_name in _LEAKABLE_FEATURES else None
     x_train = features_from_graphs(train_graphs, exclude_features=exclude)
     x_val = features_from_graphs(val_graphs, exclude_features=exclude)
     x_test = features_from_graphs(test_graphs, exclude_features=exclude)

@@ -1119,7 +1119,7 @@ def test_novelty_gate_rejection_triggers_self_correction(monkeypatch, tmp_path):
     # Novelty below threshold → should trigger repair attempt
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.08)
 
-    run_phase1(cfg)
+    assert run_phase1(cfg) == 0
     # 4 islands × 1 candidate × 2 attempts (original + repair) = 8 generate calls.
     # Without the fix, novelty gate has repairable=False so only 4 calls (no repairs).
     assert generate_call_count["count"] == 8

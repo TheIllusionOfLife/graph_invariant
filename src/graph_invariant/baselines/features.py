@@ -22,11 +22,11 @@ def features_from_graphs(
     graphs: list[nx.Graph],
     exclude_features: tuple[str, ...] | None = None,
 ) -> np.ndarray:
-    selected = (
-        tuple(f for f in FEATURE_ORDER if f not in exclude_features)
-        if exclude_features
-        else FEATURE_ORDER
-    )
+    if exclude_features:
+        exclude_set = frozenset(exclude_features)
+        selected = tuple(f for f in FEATURE_ORDER if f not in exclude_set)
+    else:
+        selected = FEATURE_ORDER
     if not graphs:
         return np.empty((0, len(selected)), dtype=float)
     values = compute_known_invariant_values(graphs)

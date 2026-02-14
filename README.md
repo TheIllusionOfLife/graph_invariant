@@ -1,14 +1,19 @@
 # graph_invariant
 
-LLM-driven graph invariant discovery for research workflows.  
-This repository contains a Phase 1 implementation (data generation, candidate search/evaluation, novelty scoring, baselines, and reporting) plus the project specification documents.
+[![Python CI](https://github.com/yuyamukai/graph_invariant/actions/workflows/python-ci.yml/badge.svg)](https://github.com/yuyamukai/graph_invariant/actions/workflows/python-ci.yml)
+
+LLM-driven graph invariant discovery for research workflows.
+This repository contains a Phase 1 implementation (data generation, candidate search/evaluation, novelty scoring, baselines, and reporting) with MAP-Elites diversity archive, bounds mode optimization, OOD validation, and self-correction.
 
 ## What This Project Does
 
-- Generates synthetic graph datasets and target values.
-- Uses an island-style evolutionary loop to search candidate invariants from an LLM.
+- Generates synthetic graph datasets and target values for configurable targets.
+- Uses an island-style evolutionary loop with MAP-Elites diversity archive to search candidate invariants from an LLM.
 - Evaluates candidates with a constrained Python sandbox.
 - Scores by accuracy, simplicity, and novelty against known invariants.
+- Supports bounds mode (upper/lower bound optimization) in addition to correlation fitness.
+- Applies self-correction: failed candidates are repaired via LLM feedback loops.
+- Validates discovered invariants on out-of-distribution graphs (large-scale, extreme topologies).
 - Produces reproducible JSON/JSONL artifacts, checkpoints, and markdown reports.
 
 ## Requirements
@@ -16,6 +21,7 @@ This repository contains a Phase 1 implementation (data generation, candidate se
 - Python 3.11+
 - `uv` for environment/dependency management
 - Optional: local Ollama model for candidate generation (default model: `gpt-oss:20b`)
+- Optional: Julia runtime for PySR symbolic regression baseline
 
 ## Quickstart
 
@@ -68,20 +74,51 @@ JSON
 uv run python -m graph_invariant.cli benchmark --config /tmp/benchmark_config.json
 ```
 
+6. Run OOD validation on experiment results:
+
+```bash
+uv run python -m graph_invariant.cli ood-validate \
+  --summary artifacts_smoke/phase1_summary.json \
+  --output artifacts_smoke/ood
+```
+
+## Experiment Automation
+
+Run the full experiment suite (MAP-Elites, algebraic connectivity, upper bound, benchmark, OOD validation):
+
+```bash
+# Quick profile (default):
+bash run_all_experiments.sh
+
+# Full profile:
+PROFILE=full bash run_all_experiments.sh
+
+# To override model or generation count, edit the relevant config file under configs/.
+```
+
+Pre-built configs are available under `configs/`.
+
 ## CLI Commands
 
 - `uv run python -m graph_invariant.cli phase1 --config <config.json> [--resume <checkpoint.json>]`
 - `uv run python -m graph_invariant.cli report --artifacts <artifacts_dir>`
 - `uv run python -m graph_invariant.cli benchmark --config <config.json>`
+- `uv run python -m graph_invariant.cli ood-validate --summary <summary.json> --output <output_dir> [--seed N] [--num-large N] [--num-extreme N]`
 
 ## Architecture Snapshot
 
 - `src/graph_invariant/cli.py`: orchestration and CLI entry points.
+- `src/graph_invariant/config.py`: validated runtime config dataclass (`Phase1Config`).
 - `src/graph_invariant/data.py`: graph generation and dataset splitting.
 - `src/graph_invariant/sandbox.py`: static checks + constrained execution pool.
-- `src/graph_invariant/scoring.py`: metrics, simplicity, novelty, total score.
+- `src/graph_invariant/scoring.py`: metrics, simplicity, novelty, total score, bound metrics.
+- `src/graph_invariant/targets.py`: target value computation for configurable invariant targets.
+- `src/graph_invariant/map_elites.py`: MAP-Elites diversity archive (grid-based).
+- `src/graph_invariant/ood_validation.py`: out-of-distribution validation on large/extreme graphs.
 - `src/graph_invariant/benchmark.py`: deterministic multi-seed benchmark runner.
 - `src/graph_invariant/baselines/`: statistical and PySR baselines.
+- `src/graph_invariant/baselines/features.py`: baseline feature extraction (excludes target to prevent leakage).
+- `configs/`: pre-built experiment configurations (quick and full profiles).
 
 ## Artifacts
 
@@ -91,6 +128,9 @@ Phase 1 run outputs:
 - `<artifacts_dir>/phase1_summary.json`
 - `<artifacts_dir>/baselines_summary.json` (if `run_baselines=true`)
 - `<artifacts_dir>/report.md` (from `report` command)
+
+OOD validation outputs:
+- `<artifacts_dir>/ood/ood_validation.json`
 
 Benchmark outputs:
 - `<artifacts_dir>/benchmark_<timestamp>/benchmark_summary.json`
@@ -103,9 +143,9 @@ Benchmark outputs:
 - `PRODUCT.md`: product goals and user-centric context.
 - `TECH.md`: technology choices and constraints.
 - `STRUCTURE.md`: repository layout and code organization.
-- `SPEC.md`: implementation spec (authoritative details).
-- `REVIEW.md`: resolved review findings.
-- `Research_Plan_Graph_Invariant_Discovery.md`: original proposal (historical context).
+- `docs/SPEC.md`: implementation spec (authoritative details).
+- `docs/REVIEW.md`: resolved review findings.
+- `docs/Research_Plan_Graph_Invariant_Discovery.md`: original proposal (historical context).
 
 ## Security and Safety Notes
 

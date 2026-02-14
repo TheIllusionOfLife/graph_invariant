@@ -21,19 +21,25 @@ It aims to help researchers generate, evaluate, and compare candidate formulas a
 
 - Deterministic graph dataset generation for train/validation/test splits
 - LLM-driven candidate generation with island-style exploration
+- MAP-Elites diversity archive for maintaining behaviorally diverse candidates
+- Bounds mode: optimize for upper/lower bound relationships (not just correlation)
+- Self-correction loop: failed candidates are repaired via LLM feedback
 - Sandboxed candidate execution with timeout and memory constraints
 - Composite scoring:
   - predictive quality
   - simplicity
   - novelty vs known invariants
 - Baseline comparisons (statistical + optional PySR)
+- Out-of-distribution (OOD) validation on large-scale and extreme-topology graphs
 - JSON/JSONL artifacts, checkpoints, and markdown report generation
 - Multi-seed benchmark mode
+- Automated experiment suite (`run_all_experiments.sh`) with quick/full profiles
 
 ## Product Objectives
 
 - Short term:
-  - Provide a reliable Phase 1 research loop with reproducible outputs.
+  - Complete Phase 2 readiness: multiple targets, OOD validation, diversity-driven search.
+  - Provide a reliable research loop with reproducible outputs and automated experiment orchestration.
   - Make experiment outcomes auditable through structured artifacts.
 - Medium term:
   - Improve discovery quality under fixed compute budgets.

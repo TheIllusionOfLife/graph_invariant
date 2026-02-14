@@ -1,6 +1,6 @@
 # 実装仕様書: LLM駆動型グラフ不変量自動発見システム
 
-> **文書の位置づけ:** 本文書は、初期提案書 [Research_Plan_Graph_Invariant_Discovery.md](./Research_Plan_Graph_Invariant_Discovery.md) とそのレビュー [REVIEW.md](./REVIEW.md) を踏まえ、研究者へのインタビューを経て策定した**確定実装仕様**である。レビューで指摘された全課題（セキュリティ、実験設計、評価指標等）に対する設計判断を含む。実装はこの文書に準拠すること。
+> **文書の位置づけ:** 本文書は、初期提案書 [Research_Plan_Graph_Invariant_Discovery.md](./Research_Plan_Graph_Invariant_Discovery.md) とそのレビュー [REVIEW.md](./REVIEW.md) を踏まえ、研究者へのインタビューを経て策定した**確定実装仕様**である。レビューで指摘された全課題（セキュリティ、実験設計、評価指標等）に対する設計判断を含む。実装はこの文書に準拠すること。（注: これらの文書は `docs/` ディレクトリにまとめて配置されている。）
 
 ## 1. 設計判断サマリ
 

@@ -483,7 +483,7 @@ def _run_one_generation(
                 }
                 novelty_bonus = compute_novelty_bonus(list(y_p_val), known_subset)
                 if cfg.novelty_gate_threshold > 0 and novelty_bonus < cfg.novelty_gate_threshold:
-                    _handle_rejection(
+                    should_retry, next_prompt = _handle_rejection(
                         island_id=island_id,
                         pop_idx=pop_idx,
                         attempt_idx=attempt_idx,
@@ -492,8 +492,11 @@ def _run_one_generation(
                         base_prompt=base_prompt,
                         code=code,
                         max_attempts=max_attempts,
-                        repairable=False,
+                        repairable=True,
                     )
+                    if should_retry and next_prompt is not None:
+                        current_prompt = next_prompt
+                        continue
                     break
                 if is_bounds:
                     val_bound = compute_bound_metrics(
@@ -943,6 +946,7 @@ def _collect_baseline_results(
         y_train=y_true_train,
         y_val=y_true_val,
         y_test=y_true_test,
+        target_name=cfg.target_name,
     )
     pysr = run_pysr_baseline(
         train_graphs=datasets_train,
@@ -955,6 +959,7 @@ def _collect_baseline_results(
         populations=cfg.pysr_populations,
         procs=cfg.pysr_procs,
         timeout_in_seconds=cfg.pysr_timeout_in_seconds,
+        target_name=cfg.target_name,
     )
     return {
         "schema_version": 1,

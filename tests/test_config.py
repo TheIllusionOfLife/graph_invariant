@@ -182,3 +182,31 @@ def test_map_elites_bins_validates_minimum():
 def test_map_elites_bins_accepts_valid_value():
     cfg = Phase1Config(map_elites_bins=10)
     assert cfg.map_elites_bins == 10
+
+
+# ── Flexible island count tests ──────────────────────────────────────
+
+
+def test_island_temperatures_accepts_two_islands():
+    cfg = Phase1Config(island_temperatures=(0.5, 0.8))
+    assert cfg.island_temperatures == (0.5, 0.8)
+
+
+def test_island_temperatures_accepts_three_islands():
+    cfg = Phase1Config(island_temperatures=(0.3, 0.5, 1.0))
+    assert cfg.island_temperatures == (0.3, 0.5, 1.0)
+
+
+def test_island_temperatures_accepts_six_islands():
+    cfg = Phase1Config(island_temperatures=(0.2, 0.3, 0.5, 0.7, 0.9, 1.2))
+    assert len(cfg.island_temperatures) == 6
+
+
+def test_island_temperatures_rejects_empty():
+    with pytest.raises(ValueError, match="island_temperatures"):
+        Phase1Config(island_temperatures=())
+
+
+def test_island_temperatures_accepts_single_island():
+    cfg = Phase1Config(island_temperatures=(0.5,))
+    assert cfg.island_temperatures == (0.5,)

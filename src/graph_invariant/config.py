@@ -15,7 +15,7 @@ class Phase1Config:
     max_generations: int = 20
     population_size: int = 5
     migration_interval: int = 10
-    island_temperatures: tuple[float, float, float, float] = (0.3, 0.3, 0.8, 1.2)
+    island_temperatures: tuple[float, ...] = (0.3, 0.3, 0.8, 1.2)
     timeout_sec: float = 2.0
     memory_mb: int = 256
     sandbox_max_workers: int | None = None
@@ -62,8 +62,8 @@ class Phase1Config:
 
     def __post_init__(self) -> None:
         self.island_temperatures = tuple(float(x) for x in self.island_temperatures)
-        if len(self.island_temperatures) != 4:
-            raise ValueError("island_temperatures must contain exactly 4 values")
+        if len(self.island_temperatures) < 1:
+            raise ValueError("island_temperatures must contain at least 1 value")
         if self.stagnation_trigger_generations < 1:
             raise ValueError("stagnation_trigger_generations must be >= 1")
         if self.constrained_recovery_generations < 1:

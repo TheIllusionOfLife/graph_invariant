@@ -106,12 +106,17 @@ def _state_defaults(state: CheckpointState) -> None:
         state.island_recent_failures.setdefault(island_id, [])
 
 
-_ISLAND_STRATEGIES: dict[int, IslandStrategy] = {
-    0: IslandStrategy.REFINEMENT,
-    1: IslandStrategy.COMBINATION,
-    2: IslandStrategy.REFINEMENT,
-    3: IslandStrategy.NOVEL,
-}
+_STRATEGY_CYCLE = [
+    IslandStrategy.REFINEMENT,
+    IslandStrategy.COMBINATION,
+    IslandStrategy.REFINEMENT,
+    IslandStrategy.NOVEL,
+]
+
+
+def _island_strategy(island_id: int) -> IslandStrategy:
+    """Return the strategy for a given island, cycling through the pattern."""
+    return _STRATEGY_CYCLE[island_id % len(_STRATEGY_CYCLE)]
 
 
 def _candidate_prompt(
@@ -128,7 +133,7 @@ def _candidate_prompt(
             state.islands.get(island_id, []), key=lambda c: c.val_score, reverse=True
         )
     ]
-    strategy = _ISLAND_STRATEGIES.get(island_id)
+    strategy = _island_strategy(island_id)
     if archive_exemplars and strategy in (IslandStrategy.COMBINATION, IslandStrategy.NOVEL):
         top_candidates = top_candidates + archive_exemplars
     prompt = build_prompt(
@@ -977,7 +982,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         state = CheckpointState(
             experiment_id=experiment_id,
             generation=0,
-            islands={i: [] for i in range(4)},
+            islands={i: [] for i in range(len(cfg.island_temperatures))},
             rng_seed=cfg.seed,
             rng_state=None,
             best_val_score=0.0,
@@ -988,7 +993,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         state = CheckpointState(
             experiment_id=experiment_id,
             generation=0,
-            islands={i: [] for i in range(4)},
+            islands={i: [] for i in range(len(cfg.island_temperatures))},
             rng_seed=cfg.seed,
             rng_state=None,
             best_val_score=0.0,

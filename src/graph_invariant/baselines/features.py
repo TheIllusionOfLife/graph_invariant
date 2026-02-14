@@ -27,8 +27,8 @@ def features_from_graphs(
         selected = tuple(f for f in FEATURE_ORDER if f not in exclude_set)
     else:
         selected = FEATURE_ORDER
-    if not graphs:
-        return np.empty((0, len(selected)), dtype=float)
+    if not graphs or not selected:
+        return np.empty((len(graphs), len(selected)), dtype=float)
     values = compute_known_invariant_values(graphs)
     cols = [values[name] for name in selected]
     return np.asarray(list(zip(*cols, strict=True)), dtype=float)

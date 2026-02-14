@@ -144,6 +144,14 @@ def test_features_from_graphs_excludes_multiple_features():
     assert filtered.shape[1] == len(FEATURE_ORDER) - 3
 
 
+def test_features_from_graphs_all_excluded_returns_2d_empty():
+    """Excluding every feature must return shape (n_graphs, 0), not (0,)."""
+    graphs = [nx.path_graph(5), nx.cycle_graph(6), nx.star_graph(4)]
+    result = features_from_graphs(graphs, exclude_features=FEATURE_ORDER)
+    assert result.ndim == 2
+    assert result.shape == (3, 0)
+
+
 def test_features_from_graphs_no_exclusion_returns_all():
     """Default (no exclusion) returns the full feature matrix."""
     graphs = [nx.path_graph(5)]

@@ -14,7 +14,7 @@ class DatasetBundle:
     sanity: list[nx.Graph]
 
 
-def _connected_subgraph(graph: nx.Graph) -> nx.Graph:
+def connected_subgraph(graph: nx.Graph) -> nx.Graph:
     if len(graph) == 0:
         return nx.path_graph(2)
     if nx.is_connected(graph):
@@ -23,7 +23,7 @@ def _connected_subgraph(graph: nx.Graph) -> nx.Graph:
     return nx.convert_node_labels_to_integers(graph.subgraph(largest).copy())
 
 
-def _generate_graph(rng: np.random.Generator, n: int) -> nx.Graph:
+def generate_graph(rng: np.random.Generator, n: int) -> nx.Graph:
     kind = rng.choice(["ER", "BA", "WS", "RGG", "SBM"])
     if kind == "ER":
         g = nx.erdos_renyi_graph(n, float(rng.uniform(0.05, 0.3)), seed=rng)
@@ -45,14 +45,14 @@ def _generate_graph(rng: np.random.Generator, n: int) -> nx.Graph:
         sizes = [n // 3, n // 3, n - 2 * (n // 3)]
         probs = [[0.25, 0.05, 0.02], [0.05, 0.25, 0.05], [0.02, 0.05, 0.25]]
         g = nx.stochastic_block_model(sizes, probs, seed=rng)
-    return _connected_subgraph(g)
+    return connected_subgraph(g)
 
 
 def _sample_graphs(rng: np.random.Generator, count: int) -> list[nx.Graph]:
     out: list[nx.Graph] = []
     for _ in range(count):
         n = int(rng.integers(30, 101))
-        out.append(_generate_graph(rng, n))
+        out.append(generate_graph(rng, n))
     return out
 
 

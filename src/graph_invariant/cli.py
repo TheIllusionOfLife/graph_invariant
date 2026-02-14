@@ -1225,6 +1225,13 @@ def main() -> int:
     benchmark = sub.add_parser("benchmark")
     benchmark.add_argument("--config", type=str, default=None)
 
+    ood = sub.add_parser("ood-validate")
+    ood.add_argument("--summary", type=str, required=True)
+    ood.add_argument("--output", type=str, required=True)
+    ood.add_argument("--seed", type=int, default=42)
+    ood.add_argument("--num-large", type=int, default=100)
+    ood.add_argument("--num-extreme", type=int, default=50)
+
     args = parser.parse_args()
 
     if args.command == "phase1":
@@ -1239,6 +1246,16 @@ def main() -> int:
 
         cfg = Phase1Config.from_json(args.config) if args.config else Phase1Config()
         return run_benchmark(cfg)
+    if args.command == "ood-validate":
+        from .ood_validation import run_ood_validation
+
+        return run_ood_validation(
+            summary_path=args.summary,
+            output_dir=args.output,
+            seed=args.seed,
+            num_large=args.num_large,
+            num_extreme=args.num_extreme,
+        )
     return 1
 
 

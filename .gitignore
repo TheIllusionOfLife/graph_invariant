@@ -13,7 +13,10 @@ venv/
 env/
 
 # Local tool/editor files
-.DS_Store
+**/.DS_Store
+
+# Log files
+*.log
 
 # Build and packaging outputs
 build/

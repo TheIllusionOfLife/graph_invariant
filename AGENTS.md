@@ -19,6 +19,11 @@ Repository-specific instructions for coding agents and contributors.
   - `uv run python -m graph_invariant.cli phase1 --config <config.json> --resume <checkpoint.json>`
 - Generate report: `uv run python -m graph_invariant.cli report --artifacts <artifacts_dir>`
 - Run benchmark: `uv run python -m graph_invariant.cli benchmark --config <config.json>`
+- Run OOD validation: `uv run python -m graph_invariant.cli ood-validate --summary <summary.json> --output <output_dir>`
+- Run full experiment suite: `bash run_all_experiments.sh`
+  - Quick profile (default): `bash run_all_experiments.sh`
+  - Full profile: `PROFILE=full bash run_all_experiments.sh`
+  - Override model: `MODEL=gemma3:4b bash run_all_experiments.sh`
 
 ## Code Style and Architecture Rules
 
@@ -32,7 +37,11 @@ Repository-specific instructions for coding agents and contributors.
   - generation in `data.py`
   - evaluation sandbox in `sandbox.py`
   - metrics/scoring in `scoring.py`
+  - target value computation in `targets.py`
+  - MAP-Elites diversity archive in `map_elites.py`
+  - OOD validation in `ood_validation.py`
   - baseline methods under `baselines/`
+  - baseline feature extraction in `baselines/features.py`
 - Do not bypass `Phase1Config` for new runtime flags; add validated config fields there first.
 - Preserve compatibility for artifact schema readers when changing summary payloads.
 
@@ -86,5 +95,42 @@ Repository-specific instructions for coding agents and contributors.
 
 - Keep cross-document consistency when changing behavior:
   - `README.md` (usage)
-  - `SPEC.md` (implementation spec)
+  - `docs/SPEC.md` (implementation spec)
   - `TECH.md` / `STRUCTURE.md` (architecture and stack)
+
+## Lessons from Past Reviews
+
+Patterns and pitfalls distilled from PR reviews across the project history.
+
+### Security
+
+- **numpy sandbox escape** (PR #11): `np.fromfile`/`np.tofile` allow filesystem access from within the sandbox. Whitelist only safe numpy functions in `safe_globals`.
+- **sympy.simplify() uses eval()** (PR #8): SymPy's simplification internally calls `eval()`. Never pass untrusted or user-supplied strings to `sympy.simplify()`.
+- **Indirect prompt injection** (PR #14): Raw LLM output concatenated into subsequent prompts can carry injection payloads. Sanitize or constrain content when building prompts from prior LLM output.
+
+### Feature Leakage
+
+- **Baseline features must exclude the target** (PR #16): When building feature matrices for baselines, the target invariant must be excluded from the feature set to prevent trivial leakage.
+
+### Edge Cases
+
+- **`deserialize_archive` must handle malformed data** (PR #15): MAP-Elites archive deserialization should wrap cell parsing in `try/except` to handle corrupted checkpoint data gracefully.
+- **Grid graphs have tuple node labels** (PR #15): `nx.grid_2d_graph()` produces nodes labeled as `(row, col)` tuples. Relabel to integers before computing invariants.
+- **`degree_assortativity_coefficient` can raise on uniform-degree graphs** (PR #15): Guard calls with `try/except` for graphs where all nodes have equal degree.
+- **Empty feature exclusion can produce 1D array** (PR #16): When all features are excluded, `np.asarray(list(zip(...)))` may yield a 1D array instead of 2D. Guard the shape.
+
+### Error Handling
+
+- **Catch `ImportError` not bare `Exception`** (PR #5, #6): Optional dependency imports (e.g., `scikit-learn`, `pysr`) should catch `ImportError` specifically, not bare `Exception`.
+
+### Code Quality
+
+- **Extract duplicated rejection-handling logic** (PR #10): Repetitive rejection-handling code should be factored into helper functions (see `_handle_rejection` in `cli.py`).
+
+### Config Discipline
+
+- **New runtime flags must go through `Phase1Config`** with validation in `__post_init__`. Never bypass config with ad-hoc global variables or environment reads.
+
+### Prompt Safety
+
+- **Sanitize LLM output in prompts**: When building prompts from prior LLM output (e.g., self-correction feedback, failure summaries), constrain the concatenated content to prevent prompt injection.

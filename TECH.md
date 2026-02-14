@@ -16,18 +16,26 @@
 - `networkx`: graph generation and graph statistics
 - `numpy`: vectorized numerical operations
 - `scipy`: statistical metrics (Spearman/Pearson)
+- `scipy.sparse` / `scipy.sparse.linalg`: sparse eigensolver for algebraic connectivity on large graphs
 - `sympy`: symbolic simplification for simplicity scoring
 - `requests`: HTTP integration with Ollama API
+- `argparse`: CLI framework (stdlib)
+- `multiprocessing`: sandbox execution via pre-spawned worker pool (stdlib)
 
 ## Optional Libraries
 
 - `scikit-learn`: random-forest baseline
-- `pysr` + Julia runtime: symbolic regression baseline
+- `pysr` + Julia runtime: symbolic regression baseline (requires Julia 1.10+ installed via `juliaup` or official installer)
 
 ## Linting and Testing
 
 - `ruff` for linting and formatting checks
 - `pytest` for unit and integration-style module tests
+
+## Experiment Orchestration
+
+- `run_all_experiments.sh`: sequential experiment runner with OOD validation and reporting
+- `configs/`: pre-built experiment configurations (quick and full profiles)
 
 ## CI
 

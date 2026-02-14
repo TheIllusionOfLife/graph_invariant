@@ -1,6 +1,6 @@
 # 統合レビュー: LLM駆動型グラフ不変量自動発見
 
-> **文書の位置づけ:** 本文書は [Research_Plan_Graph_Invariant_Discovery.md](./Research_Plan_Graph_Invariant_Discovery.md)（初期提案書）に対する**技術レビュー**である。2名のレビュアーの指摘を深刻度順に統合した。ここで挙げた課題と提言は、研究者へのインタビューを経て [SPEC.md](./SPEC.md)（実装仕様書）に反映済み。
+> **文書の位置づけ:** 本文書は [Research_Plan_Graph_Invariant_Discovery.md](./Research_Plan_Graph_Invariant_Discovery.md)（初期提案書）に対する**技術レビュー**である。2名のレビュアーの指摘を深刻度順に統合した。ここで挙げた課題と提言は、研究者へのインタビューを経て [SPEC.md](./SPEC.md)（実装仕様書）に反映済み。（注: これらの文書は `docs/` ディレクトリにまとめて配置されている。）
 
 両レビューを統合し、深刻度順に整理した。
 

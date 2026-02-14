@@ -130,7 +130,3 @@ Patterns and pitfalls distilled from PR reviews across the project history.
 ### Config Discipline
 
 - **New runtime flags must go through `Phase1Config`** with validation in `__post_init__`. Never bypass config with ad-hoc global variables or environment reads.
-
-### Prompt Safety
-
-- **Sanitize LLM output in prompts**: When building prompts from prior LLM output (e.g., self-correction feedback, failure summaries), constrain the concatenated content to prevent prompt injection.

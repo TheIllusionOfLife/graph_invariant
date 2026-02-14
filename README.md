@@ -93,9 +93,7 @@ bash run_all_experiments.sh
 # Full profile:
 PROFILE=full bash run_all_experiments.sh
 
-# Override model or generation count:
-MODEL=gemma3:4b bash run_all_experiments.sh
-MAX_GENS=10 bash run_all_experiments.sh
+# To override model or generation count, edit the relevant config file under configs/.
 ```
 
 Pre-built configs are available under `configs/`.

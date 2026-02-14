@@ -56,7 +56,7 @@ def test_generate_ood_datasets_is_deterministic():
 # ── Evaluation ───────────────────────────────────────────────────────
 
 
-def test_evaluate_ood_split_returns_metrics(monkeypatch):
+def test_evaluate_ood_split_returns_metrics():
     from graph_invariant.ood_validation import _evaluate_ood_split
 
     graphs = [nx.path_graph(5), nx.path_graph(6)]
@@ -76,7 +76,7 @@ def test_evaluate_ood_split_returns_metrics(monkeypatch):
     assert "valid_count" in result
 
 
-def test_evaluate_ood_split_handles_all_none(monkeypatch):
+def test_evaluate_ood_split_handles_all_none():
     from graph_invariant.ood_validation import _evaluate_ood_split
 
     graphs = [nx.path_graph(5)]
@@ -95,7 +95,7 @@ def test_evaluate_ood_split_handles_all_none(monkeypatch):
     assert result["valid_count"] == 0
 
 
-def test_evaluate_ood_split_bounds_mode(monkeypatch):
+def test_evaluate_ood_split_bounds_mode():
     from graph_invariant.ood_validation import _evaluate_ood_split
 
     graphs = [nx.path_graph(5), nx.path_graph(6)]

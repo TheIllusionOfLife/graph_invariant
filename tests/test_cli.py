@@ -583,14 +583,14 @@ def test_constrained_mode_can_forbid_late_recovery():
 def test_target_values_handles_disconnected_graph():
     import networkx as nx
 
-    from graph_invariant.cli import _target_values
+    from graph_invariant.targets import target_values
 
     g = nx.Graph()
     g.add_nodes_from([0, 1, 2])
     g.add_edge(0, 1)
 
-    assert _target_values([g], "average_shortest_path_length") == [0.0]
-    assert _target_values([g], "diameter") == [0.0]
+    assert target_values([g], "average_shortest_path_length") == [0.0]
+    assert target_values([g], "diameter") == [0.0]
 
 
 def test_summarize_error_details_uses_detail_for_top_category():
@@ -1167,10 +1167,10 @@ def test_novelty_gate_disabled_when_zero(monkeypatch, tmp_path):
 def test_target_values_supports_algebraic_connectivity():
     import networkx as nx
 
-    from graph_invariant.cli import _target_values
+    from graph_invariant.targets import target_values
 
     g = nx.path_graph(5)
-    values = _target_values([g], "algebraic_connectivity")
+    values = target_values([g], "algebraic_connectivity")
     assert len(values) == 1
     assert values[0] > 0.0
 
@@ -1178,23 +1178,23 @@ def test_target_values_supports_algebraic_connectivity():
 def test_target_values_algebraic_connectivity_handles_disconnected():
     import networkx as nx
 
-    from graph_invariant.cli import _target_values
+    from graph_invariant.targets import target_values
 
     g = nx.Graph()
     g.add_nodes_from([0, 1, 2])
     g.add_edge(0, 1)
-    values = _target_values([g], "algebraic_connectivity")
+    values = target_values([g], "algebraic_connectivity")
     assert values == [0.0]
 
 
 def test_target_values_algebraic_connectivity_single_node():
     import networkx as nx
 
-    from graph_invariant.cli import _target_values
+    from graph_invariant.targets import target_values
 
     g = nx.Graph()
     g.add_node(0)
-    values = _target_values([g], "algebraic_connectivity")
+    values = target_values([g], "algebraic_connectivity")
     assert values == [0.0]
 
 
@@ -1202,11 +1202,11 @@ def test_safe_algebraic_connectivity_handles_eigenvalue_error(monkeypatch):
     """_safe_algebraic_connectivity should return 0.0 on eigenvalue computation errors."""
     import networkx as nx
 
-    from graph_invariant.cli import _safe_algebraic_connectivity
+    from graph_invariant.targets import _safe_algebraic_connectivity
 
     g = nx.path_graph(5)
     monkeypatch.setattr(
-        "graph_invariant.cli.nx.algebraic_connectivity",
+        "graph_invariant.targets.nx.algebraic_connectivity",
         lambda *_a, **_kw: (_ for _ in ()).throw(nx.NetworkXError("convergence failed")),
     )
     assert _safe_algebraic_connectivity(g) == 0.0

@@ -10,91 +10,28 @@ distribution (n in [30,100], ER/BA/WS/RGG/SBM) in three ways:
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
 import networkx as nx
 import numpy as np
 
-from .data import connected_subgraph, generate_graph
+from .data import (
+    generate_ood_extreme_params,
+    generate_ood_large_random,
+    generate_ood_special_topology,
+)
 from .known_invariants import compute_feature_dicts
 from .logging_io import write_json
 from .sandbox import SandboxEvaluator
 from .scoring import compute_bound_metrics, compute_metrics
+from .targets import target_values
 
-# ── Target functions (imported lazily to avoid circular deps) ────────
-
-_TARGET_FUNCTIONS: dict[str, Any] | None = None
-
-
-def _get_target_functions() -> dict[str, Any]:
-    global _TARGET_FUNCTIONS  # noqa: PLW0603
-    if _TARGET_FUNCTIONS is None:
-        from .cli import TARGET_FUNCTIONS
-
-        _TARGET_FUNCTIONS = TARGET_FUNCTIONS
-    return _TARGET_FUNCTIONS
-
-
-def _target_values(graphs: list[nx.Graph], target_name: str) -> list[float]:
-    fns = _get_target_functions()
-    fn = fns.get(target_name)
-    if fn is None:
-        raise ValueError(f"unsupported target: {target_name}")
-    return [fn(g) for g in graphs]
+logger = logging.getLogger(__name__)
 
 
 # ── Dataset generation ───────────────────────────────────────────────
-
-
-def _generate_large_random(rng: np.random.Generator, count: int) -> list[nx.Graph]:
-    """Same graph types as training but with n in [200, 500]."""
-    graphs: list[nx.Graph] = []
-    for _ in range(count):
-        n = int(rng.integers(200, 501))
-        graphs.append(generate_graph(rng, n))
-    return graphs
-
-
-def _generate_extreme_params(rng: np.random.Generator, count: int) -> list[nx.Graph]:
-    """Graphs with extreme densities/degrees, n in [50, 200]."""
-    graphs: list[nx.Graph] = []
-    for _ in range(count):
-        n = int(rng.integers(50, 201))
-        kind = rng.choice(["dense_er", "sparse_er", "high_ba", "low_ws"])
-        if kind == "dense_er":
-            g = nx.erdos_renyi_graph(n, float(rng.uniform(0.4, 0.7)), seed=rng)
-        elif kind == "sparse_er":
-            g = nx.erdos_renyi_graph(n, float(rng.uniform(0.01, 0.04)), seed=rng)
-        elif kind == "high_ba":
-            m = int(rng.integers(8, min(15, n - 1) + 1))
-            g = nx.barabasi_albert_graph(n, m, seed=rng)
-        else:  # low_ws
-            k = 2
-            g = nx.watts_strogatz_graph(n, k, float(rng.uniform(0.01, 0.1)), seed=rng)
-        graphs.append(connected_subgraph(g))
-    return graphs
-
-
-def _generate_special_topology() -> list[nx.Graph]:
-    """Deterministic structures for structural generalization."""
-    graphs: list[nx.Graph] = []
-    # Barbell
-    graphs.append(nx.barbell_graph(20, 5))
-    # Grid
-    graphs.append(nx.grid_2d_graph(8, 8))
-    # Circular ladder
-    graphs.append(nx.circular_ladder_graph(30))
-    # Random regular (deterministic seed)
-    graphs.append(nx.random_regular_graph(4, 50, seed=0))
-    # Powerlaw cluster
-    graphs.append(nx.powerlaw_cluster_graph(100, 3, 0.5, seed=0))
-    # Sanity set
-    graphs.append(nx.karate_club_graph())
-    graphs.append(nx.les_miserables_graph())
-    graphs.append(nx.florentine_families_graph())
-    # Ensure all connected and relabeled
-    return [connected_subgraph(g) for g in graphs]
 
 
 def generate_ood_datasets(
@@ -102,12 +39,18 @@ def generate_ood_datasets(
     num_large: int = 100,
     num_extreme: int = 50,
 ) -> dict[str, list[nx.Graph]]:
-    """Generate the three OOD dataset categories."""
+    """Generate the three OOD dataset categories.
+
+    Returns a dict mapping category name to list of graphs:
+      - large_random: same types as training but n in [200, 500]
+      - extreme_params: extreme densities/degrees, n in [50, 200]
+      - special_topology: deterministic structures (barbell, grid, etc.)
+    """
     rng = np.random.default_rng(seed)
     return {
-        "large_random": _generate_large_random(rng, num_large),
-        "extreme_params": _generate_extreme_params(rng, num_extreme),
-        "special_topology": _generate_special_topology(),
+        "large_random": generate_ood_large_random(rng, num_large),
+        "extreme_params": generate_ood_extreme_params(rng, num_extreme),
+        "special_topology": generate_ood_special_topology(),
     }
 
 
@@ -124,7 +67,7 @@ def _evaluate_ood_split(
 ) -> dict[str, float | int]:
     """Evaluate candidate code against a list of graphs."""
     features = compute_feature_dicts(graphs)
-    y_true = _target_values(graphs, target_name)
+    y_true = target_values(graphs, target_name)
     y_pred_raw = evaluator.evaluate(code, features)
     valid_pairs = [(yt, yp) for yt, yp in zip(y_true, y_pred_raw, strict=True) if yp is not None]
     if not valid_pairs:
@@ -166,8 +109,8 @@ def run_ood_validation(
     summary = json.loads(Path(summary_path).read_text(encoding="utf-8"))
     code = summary.get("best_candidate_code")
     if not code:
-        print(
-            "ERROR: summary missing 'best_candidate_code'. "
+        logger.error(
+            "summary missing 'best_candidate_code'. "
             "Re-run phase1 with persist_candidate_code_in_summary=true."
         )
         return 1

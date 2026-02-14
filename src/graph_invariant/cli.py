@@ -45,42 +45,8 @@ from .scoring import (
     compute_simplicity_score,
     compute_total_score,
 )
+from .targets import target_values
 from .types import Candidate, CheckpointState
-
-
-def _safe_average_shortest_path_length(graph: nx.Graph) -> float:
-    if len(graph) == 0 or not nx.is_connected(graph):
-        return 0.0
-    try:
-        return float(nx.average_shortest_path_length(graph))
-    except nx.NetworkXError:
-        return 0.0
-
-
-def _safe_algebraic_connectivity(graph: nx.Graph) -> float:
-    """Return the algebraic connectivity (Fiedler value), or 0.0 on failure."""
-    if len(graph) < 2 or not nx.is_connected(graph):
-        return 0.0
-    try:
-        return float(nx.algebraic_connectivity(graph))
-    except nx.NetworkXError:
-        return 0.0
-
-
-def _safe_diameter(graph: nx.Graph) -> float:
-    if len(graph) == 0 or not nx.is_connected(graph):
-        return 0.0
-    try:
-        return float(nx.diameter(graph))
-    except nx.NetworkXError:
-        return 0.0
-
-
-TARGET_FUNCTIONS = {
-    "average_shortest_path_length": _safe_average_shortest_path_length,
-    "algebraic_connectivity": _safe_algebraic_connectivity,
-    "diameter": _safe_diameter,
-}
 
 _CONSTRAINED_SUFFIX = (
     "\nConstrained mode is active. Use only these operators: +, -, *, /, log, sqrt, **, "
@@ -88,13 +54,6 @@ _CONSTRAINED_SUFFIX = (
     "def new_invariant(s): n = s['n']; m = s['m']; "
     "degrees = s['degrees']; return <expression using n,m,degrees>."
 )
-
-
-def _target_values(graphs: list[nx.Graph], target_name: str) -> list[float]:
-    target_fn = TARGET_FUNCTIONS.get(target_name)
-    if target_fn is None:
-        raise ValueError(f"unsupported target: {target_name}")
-    return [target_fn(graph) for graph in graphs]
 
 
 def _new_experiment_id() -> str:
@@ -782,7 +741,7 @@ def _write_phase1_summary(
 
     known_val = compute_known_invariant_values(datasets_val)
     known_test = compute_known_invariant_values(datasets_test)
-    y_sanity = _target_values(datasets_sanity, cfg.target_name)
+    y_sanity = target_values(datasets_sanity, cfg.target_name)
     val_metrics = _evaluate_split(best.code, features_val, y_true_val, cfg, evaluator, known_val)
     test_metrics = _evaluate_split(
         best.code, features_test, y_true_test, cfg, evaluator, known_test
@@ -1039,9 +998,9 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
     _state_defaults(state)
     checkpoint_dir = _checkpoint_dir_for_experiment(artifacts_dir, experiment_id)
     rng = _restore_rng(state)
-    y_true_train = _target_values(datasets.train, cfg.target_name)
-    y_true_val = _target_values(datasets.val, cfg.target_name)
-    y_true_test = _target_values(datasets.test, cfg.target_name)
+    y_true_train = target_values(datasets.train, cfg.target_name)
+    y_true_val = target_values(datasets.val, cfg.target_name)
+    y_true_test = target_values(datasets.test, cfg.target_name)
     known_invariants_val = compute_known_invariant_values(datasets.val)
     features_train = compute_feature_dicts(datasets.train)
     features_val = compute_feature_dicts(datasets.val)
@@ -1217,25 +1176,27 @@ def write_report(artifacts_dir: str | Path) -> Path:
             total = metrics.get("total_count", 0)
             spearman = metrics.get("spearman")
             bound_score = metrics.get("bound_score")
-            score_str = (
-                f"spearman={spearman:.4f}" if spearman is not None else f"bound_score={bound_score}"
-            )
+            if spearman is not None:
+                score_str = f"spearman={spearman:.4f}"
+            elif bound_score is not None:
+                score_str = f"bound_score={bound_score:.4f}"
+            else:
+                score_str = "no valid predictions"
             lines.append(f"- {category}: {score_str} ({valid}/{total} valid)")
 
     # MAP-Elites archive coverage from generation logs
     events_path = root / "logs" / "events.jsonl"
     if events_path.exists():
         try:
-            gen_events = [
-                json.loads(line)
-                for line in events_path.read_text(encoding="utf-8").splitlines()
-                if '"generation_summary"' in line
-            ]
-            archive_coverages = [
-                e["payload"]["map_elites_stats"]["coverage"]
-                for e in gen_events
-                if "map_elites_stats" in e.get("payload", {})
-            ]
+            archive_coverages: list[int] = []
+            with events_path.open("r", encoding="utf-8") as f:
+                for line in f:
+                    if '"generation_summary"' not in line:
+                        continue
+                    event = json.loads(line)
+                    payload = event.get("payload", {})
+                    if "map_elites_stats" in payload:
+                        archive_coverages.append(payload["map_elites_stats"]["coverage"])
             if archive_coverages:
                 lines.extend(["", "## MAP-Elites Archive", ""])
                 lines.append(f"- Final coverage: {archive_coverages[-1]} cells")

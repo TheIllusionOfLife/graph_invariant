@@ -234,6 +234,34 @@ def test_serialize_empty_archive():
     assert restored.cells == {}
 
 
+def test_deserialize_archive_skips_malformed_cells():
+    from graph_invariant.map_elites import deserialize_archive
+
+    data = {
+        "num_bins": 5,
+        "cells": {
+            "0,0": {
+                "candidate": {
+                    "id": "good",
+                    "code": "def new_invariant(s): return 1.0",
+                    "island_id": 0,
+                    "generation": 0,
+                    "train_score": 0.0,
+                    "val_score": 0.0,
+                    "simplicity_score": 0.5,
+                    "novelty_bonus": 0.5,
+                },
+                "fitness_signal": 0.8,
+            },
+            "bad_key": {"candidate": {}, "fitness_signal": "not_a_number"},
+            "1,1": {"missing_candidate_key": True},
+        },
+    }
+    archive = deserialize_archive(data)
+    assert len(archive.cells) == 1
+    assert archive.cells[(0, 0)].candidate.id == "good"
+
+
 def test_serialize_is_json_safe():
     import json
 

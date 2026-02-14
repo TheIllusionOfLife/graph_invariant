@@ -7,21 +7,29 @@ Runs alongside the existing island model to provide diverse prompt exemplars.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import asdict, dataclass, field
+from typing import Any
 
 import numpy as np
 
 from .types import Candidate
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass(slots=True)
 class ArchiveCell:
+    """A single cell in the MAP-Elites archive holding one candidate."""
+
     candidate: Candidate
     fitness_signal: float
 
 
 @dataclass(slots=True)
 class MapElitesArchive:
+    """2D behavioral grid mapping (simplicity, novelty) bins to elite candidates."""
+
     num_bins: int
     cells: dict[tuple[int, int], ArchiveCell] = field(default_factory=dict)
 
@@ -65,8 +73,8 @@ def sample_diverse_exemplars(
     return [eligible[i] for i in indices]
 
 
-def archive_stats(archive: MapElitesArchive) -> dict:
-    """Summary statistics: coverage, best/mean fitness."""
+def archive_stats(archive: MapElitesArchive) -> dict[str, int | float]:
+    """Return summary statistics: coverage, total_cells, best/mean fitness."""
     total_cells = archive.num_bins * archive.num_bins
     coverage = len(archive.cells)
     if coverage == 0:
@@ -85,8 +93,8 @@ def archive_stats(archive: MapElitesArchive) -> dict:
     }
 
 
-def serialize_archive(archive: MapElitesArchive) -> dict:
-    """Convert archive to a JSON-safe dict."""
+def serialize_archive(archive: MapElitesArchive) -> dict[str, Any]:
+    """Convert archive to a JSON-safe dict for checkpoint persistence."""
     cells_data = {}
     for (row, col), cell in archive.cells.items():
         key = f"{row},{col}"
@@ -97,16 +105,23 @@ def serialize_archive(archive: MapElitesArchive) -> dict:
     return {"num_bins": archive.num_bins, "cells": cells_data}
 
 
-def deserialize_archive(data: dict) -> MapElitesArchive:
-    """Restore archive from a JSON-safe dict."""
+def deserialize_archive(data: dict[str, Any]) -> MapElitesArchive:
+    """Restore archive from a JSON-safe dict.
+
+    Gracefully skips malformed cell entries to tolerate corrupted checkpoints.
+    """
     num_bins = int(data["num_bins"])
     cells: dict[tuple[int, int], ArchiveCell] = {}
     for key, cell_data in data.get("cells", {}).items():
-        row_str, col_str = key.split(",")
-        row, col = int(row_str), int(col_str)
-        candidate = Candidate(**cell_data["candidate"])
-        cells[(row, col)] = ArchiveCell(
-            candidate=candidate,
-            fitness_signal=float(cell_data["fitness_signal"]),
-        )
+        try:
+            row_str, col_str = key.split(",")
+            row, col = int(row_str), int(col_str)
+            candidate = Candidate(**cell_data["candidate"])
+            cells[(row, col)] = ArchiveCell(
+                candidate=candidate,
+                fitness_signal=float(cell_data["fitness_signal"]),
+            )
+        except (ValueError, KeyError, TypeError):
+            logger.warning("Skipping malformed archive cell: %s", key)
+            continue
     return MapElitesArchive(num_bins=num_bins, cells=cells)

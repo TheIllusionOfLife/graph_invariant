@@ -6,7 +6,15 @@
 - `tests/`: test suite
 - `configs/`: pre-built experiment configurations (quick and full profiles)
 - `docs/`: historical and reference documents
-- `analysis/`: experiment analysis notes
+- `analysis/`: experiment analysis scripts and notes
+  - `analysis/analyze_experiments.py`: cross-experiment analysis and report generation
+  - `analysis/generate_figures.py`: publication-quality figure generation (PDF)
+- `paper/`: main-conference paper (NeurIPS format)
+  - `paper/main.tex`: paper entry point
+  - `paper/references.bib`: verified bibliography
+  - `paper/neurips_2025.sty`: NeurIPS style file
+  - `paper/sections/`: section files (abstract through conclusion)
+  - `paper/figures/`: generated figures (from `generate_figures.py`)
 - `.github/workflows/`: CI and automation workflows
 - `run_all_experiments.sh`: automated experiment suite runner
 - `README.md`: human-oriented project entry point

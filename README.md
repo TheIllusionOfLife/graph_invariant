@@ -1,6 +1,7 @@
 # graph_invariant
 
 [![Python CI](https://github.com/yuyamukai/graph_invariant/actions/workflows/python-ci.yml/badge.svg)](https://github.com/yuyamukai/graph_invariant/actions/workflows/python-ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 LLM-driven graph invariant discovery for research workflows.
 This repository contains a Phase 1 implementation (data generation, candidate search/evaluation, novelty scoring, baselines, and reporting) with MAP-Elites diversity archive, bounds mode optimization, OOD validation, and self-correction.
@@ -146,6 +147,19 @@ Benchmark outputs:
 - `docs/SPEC.md`: implementation spec (authoritative details).
 - `docs/REVIEW.md`: resolved review findings.
 - `docs/Research_Plan_Graph_Invariant_Discovery.md`: original proposal (historical context).
+
+## Paper
+
+This repository accompanies the paper:
+
+> **LLM-Driven Discovery of Interpretable Graph Invariants via Island-Model Evolution**
+> Yuya Mukai. 2026.
+
+The paper source is in `paper/` (NeurIPS format). Analysis scripts are in `analysis/`.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## Security and Safety Notes
 

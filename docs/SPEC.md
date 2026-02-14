@@ -328,11 +328,34 @@ runs a deterministic multi-seed Phase 1 benchmark sweep and aggregates results
 
 ---
 
-## 10. 未決定事項（Phase 1完了後に決定）
+## 10. 決定事項（Phase 1完了に基づき確定）
 
-- OOD検証用の実世界データセット選定
-- Gemini API フォールバックの効果検証（Phase 1で発動した場合、その寄与を分析）
-- Phase 2 のターゲット（algebraic_connectivity で確定か、他の候補も検討するか）
-- 論文の投稿先（Workshop or Main conference）
+以下の項目は Phase 1 の実験完了に基づき確定した。
 
-> **注:** OODデータセットとPhase 2ターゲットが未確定のため、現時点ではエンドツーエンドの成功条件が閉じていない。Phase 1完了時に全未決定事項を確定し、本文書を改訂する。
+### 10.1 OOD検証用データセット — 確定
+
+**合成OOD**（`src/graph_invariant/ood_validation.py` で実装済み）:
+- `large_random`: 訓練分布と同じ5タイプ、$n \in [200, 500]$（100グラフ）
+- `extreme_params`: 極端な密度・次数分布、$n \in [50, 200]$（50グラフ）
+- `special_topology`: 決定論的構造（barbell, grid, ladder, circulant, Petersen）+ NetworkX built-in（karate, les_miserables, florentine, davis_southern_women）
+
+**根拠**: 合成OODデータセットはスケーラビリティ・頑健性・特殊構造への汎化を系統的に検証するのに十分であり、再現性も確保できる。実世界グラフは属性データを含むため、ラベルなしグラフ不変量の検証には合成OODの方が適切。
+
+### 10.2 Gemini API フォールバック — 該当なし
+
+全実験はローカル `gpt-oss:20b`（Ollama経由）で実行。Gemini API フォールバックは発動していない。外部API依存なしで全パイプラインが完結することを確認。
+
+### 10.3 Phase 2 ターゲット — algebraic_connectivity で確定
+
+`algebraic_connectivity`（Fiedler値）を Phase 2 の主要ターゲットとして確定。理由:
+- Phase 1 の Experiment 2 で algebraic connectivity への適用可能性を実証
+- スペクトル理論との接点があり、数学的に興味深い発見の可能性が高い
+- ASPL とは異なる数学的直感を要求するため、手法の汎用性検証に最適
+
+### 10.4 論文投稿先 — Main conference (NeurIPS/ICML/ICLR)
+
+Main conference（NeurIPS 2025 が第一候補）に投稿する。理由:
+- 手法の新規性（LLM + island model + MAP-Elites + self-correction + bounds mode）が十分
+- 4実験構成 + OOD検証 + multi-seed benchmark の体系的評価
+- オープンソースの再現可能な研究基盤を提供
+- 解釈可能な記号式発見は ML + 数学コミュニティ双方に訴求力がある

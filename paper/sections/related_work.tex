@@ -1,0 +1,47 @@
+\section{Related Work}
+
+\paragraph{LLM-guided program search.}
+FunSearch~\citep{romeraparedes2024funsearch} demonstrated that LLMs can
+discover novel mathematical constructions through evolutionary program search,
+achieving new results for the cap set problem and online bin packing. Our work
+extends this paradigm to graph invariant discovery with three key
+differences: (i)~we use island-model evolution with heterogeneous prompt
+strategies rather than a single-population approach, (ii)~we incorporate
+MAP-Elites quality-diversity search to maintain behavioral diversity, and
+(iii)~we add an LLM-driven self-correction loop that repairs failing
+candidates.
+
+\paragraph{Symbolic regression.}
+PySR~\citep{cranmer2023pysr} uses multi-population evolutionary search over
+symbolic expressions to discover interpretable formulas from data. It has been
+applied successfully in physics and astrophysics. Classical genetic
+programming~\citep{koza1992gp} and more recent neural-guided
+approaches~\citep{makke2024sr_survey} also search the space of symbolic
+expressions. These methods optimize purely for predictive accuracy over a fixed
+operator set, while our approach leverages the LLM's mathematical reasoning to
+propose structurally informed formulas. We use PySR as a primary baseline.
+
+\paragraph{Graph neural networks.}
+GNNs~\citep{kipf2017gcn, xu2019gin} learn distributed representations of graph
+structure and achieve strong predictive performance on graph-level tasks.
+However, they produce opaque predictions unsuitable for mathematical analysis.
+Our work prioritizes interpretability: discovered formulas can be inspected,
+simplified symbolically, and potentially proven as bounds.
+
+\paragraph{Quality-diversity and novelty search.}
+MAP-Elites~\citep{mouret2015mapelites} maintains an archive of diverse
+high-performing solutions indexed by behavioral descriptors. Novelty
+search~\citep{lehman2008novelty} drives exploration by rewarding behavioral
+novelty rather than objective performance. We combine both ideas: our
+MAP-Elites archive uses simplicity and novelty as behavioral axes, and our
+composite scoring function includes a novelty bonus computed via bootstrap
+confidence intervals against known graph invariants.
+
+\paragraph{Island-model evolution.}
+Island-model (multi-deme) evolutionary
+algorithms~\citep{whitley1999island} partition the population into
+subpopulations with distinct selection pressures, connected by periodic
+migration. This provides natural diversity maintenance and has been shown to
+improve convergence on multimodal fitness landscapes. We assign each island a
+distinct prompt strategy (refinement, combination, or novelty) and temperature
+schedule, with ring-topology migration of the top candidate.

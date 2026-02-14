@@ -1,0 +1,159 @@
+\section{Method}
+
+Our system discovers graph invariants through an evolutionary loop that
+combines LLM code generation, sandboxed evaluation, composite scoring, and
+quality-diversity archiving. Figure~\ref{fig:architecture} provides an overview.
+
+\begin{figure}[t]
+  \centering
+  \fbox{\parbox{0.9\textwidth}{\centering\small
+    \textbf{System Architecture} \\[4pt]
+    Dataset Generation $\rightarrow$ Island-Model LLM Loop $\rightarrow$
+    Sandbox Evaluation $\rightarrow$ Composite Scoring $\rightarrow$
+    MAP-Elites Archive $\rightarrow$ Migration $\rightarrow$ Self-Correction
+    \\[2pt]
+    \textit{[Placeholder: will be replaced with vector diagram from results]}
+  }}
+  \caption{Overview of the LLM-driven graph invariant discovery pipeline.
+    Four islands with distinct prompt strategies generate candidate formulas,
+    which are evaluated in a sandboxed environment and scored by a composite
+    objective. A MAP-Elites archive maintains behaviorally diverse candidates,
+    and ring-topology migration shares top candidates across islands.}
+  \label{fig:architecture}
+\end{figure}
+
+\subsection{Dataset Generation}
+
+We generate synthetic graph datasets from five generative
+families---Erd\H{o}s--R\'{e}nyi (ER), Barab\'{a}si--Albert (BA),
+Watts--Strogatz (WS), random geometric graphs (RGG), and stochastic block
+models (SBM)---with node counts $n \in [30, 100]$. Each graph is augmented with
+a feature dictionary containing pre-computed structural properties: node count
+$n$, edge count $m$, density, degree statistics (mean, max, min, std), average
+clustering coefficient, transitivity, degree assortativity, triangle count, and
+the sorted degree sequence. The dataset is split into train ($n_{\text{train}}
+= 50$), validation ($n_{\text{val}} = 200$), and test ($n_{\text{test}} = 200$)
+sets using deterministic seeding for reproducibility.
+
+Target values are computed per graph for the specified invariant (e.g.,
+\texttt{average\_shortest\_path\_length} or \texttt{algebraic\_connectivity}).
+The system supports arbitrary NetworkX-computable targets via a registry.
+
+\subsection{Island-Model LLM Evolution}
+
+We partition the search into $K = 4$ islands, each maintaining a subpopulation
+of $P = 5$ candidate formulas. Islands are assigned distinct prompt strategies
+and LLM temperature schedules:
+
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item \textbf{Islands 0--1} ($T = 0.3$, refinement/combination): Low
+    temperature for focused exploitation. The refinement strategy asks the LLM
+    to make small, targeted improvements to the best existing formula; the
+    combination strategy asks it to merge strengths from the top two formulas.
+  \item \textbf{Island 2} ($T = 0.8$, novel): Medium temperature for balanced
+    exploration. The LLM is prompted to invent a completely novel mathematical
+    formula, with target-specific context (e.g., ``think about density, degree
+    distribution, clustering'').
+  \item \textbf{Island 3} ($T = 1.2$, novel): High temperature for aggressive
+    exploration. Same prompt strategy as Island~2 but with higher stochasticity.
+\end{itemize}
+
+Each generation, every island queries the LLM with a prompt containing the
+island's strategy instruction, the top-$3$ candidates (as code), recent
+failures (up to $3$), anti-pattern warnings (e.g., ``do not return a single
+feature directly''), and example formulas. When MAP-Elites is enabled,
+prompts also include diverse exemplars sampled uniformly from the archive.
+
+\paragraph{Migration.}
+Every $M = 10$ generations, ring-topology migration copies the best candidate
+from each island to its successor (modulo $K$), replacing the worst candidate
+if the migrant is superior.
+
+\paragraph{Stagnation recovery.}
+If an island produces no valid candidates for $S = 5$ consecutive generations,
+it switches to a \emph{constrained} prompt mode that adds explicit structural
+constraints. After $R = 3$ constrained generations with a valid candidate, the
+island reverts to free mode.
+
+\subsection{Sandboxed Evaluation}
+
+Candidate code is evaluated in a security-constrained sandbox:
+
+\begin{enumerate}[leftmargin=1.5em,itemsep=2pt]
+  \item \textbf{Static analysis}: AST-level checks reject code containing
+    imports, \texttt{eval}/\texttt{exec}, file I/O, or forbidden builtins
+    (\texttt{getattr}, \texttt{globals}, etc.). A restricted call whitelist
+    permits only safe operations (\texttt{abs}, \texttt{min}, \texttt{max},
+    \texttt{sum}, \texttt{len}, \texttt{sorted}, etc.) plus NumPy functions
+    via a controlled namespace.
+  \item \textbf{Execution}: Code runs in a process pool with per-candidate
+    timeout ($\tau = 2$\,s) and memory limit ($256$\,MB), using
+    \texttt{resource.setrlimit} on Unix systems.
+  \item \textbf{Validation}: Results are checked for NaN, infinity, and
+    non-numeric values. Candidates must produce valid outputs on $\geq 30\%$ of
+    training graphs to be scored.
+\end{enumerate}
+
+\subsection{Composite Scoring}
+
+Each candidate formula $f$ is scored by a weighted objective:
+\begin{equation}
+  \text{Score}(f) = \alpha \cdot \rho_s(f) + \beta \cdot S(f) + \gamma \cdot N(f),
+  \label{eq:score}
+\end{equation}
+where $\alpha = 0.6$, $\beta = 0.2$, $\gamma = 0.2$ by default.
+
+\paragraph{Predictive accuracy $\rho_s(f)$.}
+The absolute Spearman rank correlation between the candidate's predictions and
+the target values on the validation set. For bounds mode (upper/lower bound),
+we instead use a bound score combining satisfaction rate and tightness.
+
+\paragraph{Simplicity $S(f)$.}
+Computed as $S(f) = \max(0, 1 - c / c_{\max})$ where $c$ is the number of AST
+nodes in the candidate function body and $c_{\max} = 50$. This penalizes
+complex expressions while remaining differentiable in candidate selection.
+
+\paragraph{Novelty $N(f)$.}
+A bootstrap confidence interval test compares the candidate's output vector to
+each of $13$ known graph invariants (diameter, radius, Wiener index, spectral
+radius, algebraic connectivity, etc.). The novelty bonus is
+$N(f) = \max(0, 1 - \max_i |\hat{\rho}_i^{\text{upper}}|)$ where
+$\hat{\rho}_i^{\text{upper}}$ is the upper bound of the 95\% CI of the
+Spearman correlation between $f$'s outputs and known invariant $i$. A novelty
+gate with threshold $\theta_{\text{gate}} = 0.15$ filters trivially redundant
+candidates before scoring.
+
+\subsection{MAP-Elites Quality-Diversity Archive}
+
+When enabled, a 2D behavioral archive with $B \times B$ cells ($B = 5$ by
+default) indexes candidates by their simplicity score $S(f)$ and novelty bonus
+$N(f)$. Each cell retains only the candidate with the highest raw fitness
+signal (Spearman $\rho$ or bound score). The archive provides:
+
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item \textbf{Diverse exemplars}: Each island's prompt includes candidates
+    sampled uniformly from the archive (excluding the island's own candidates),
+    promoting cross-pollination of diverse strategies.
+  \item \textbf{Coverage metric}: Archive coverage (number of occupied cells
+    out of $B^2 = 25$ total) tracks behavioral diversity over generations.
+\end{itemize}
+
+\subsection{LLM-Driven Self-Correction}
+
+When a candidate fails sandbox validation (static check failure, runtime error,
+or timeout), the system constructs a repair prompt containing the failed code,
+the error message, and the last $W = 3$ successful candidates as positive
+examples. The LLM is queried once ($R_{\max} = 1$ retry) to produce a corrected
+version. Self-correction enables recovery from syntax errors, forbidden
+patterns, and runtime exceptions without discarding the LLM's underlying
+mathematical insight.
+
+\subsection{Bounds Mode}
+
+In addition to correlation-maximizing search, the system supports
+\emph{upper bound} and \emph{lower bound} fitness modes. In bounds mode, the
+objective rewards formulas $f$ such that $f(G) \geq y(G)$ (upper bound) or
+$f(G) \leq y(G)$ (lower bound) for all graphs $G$, with tighter bounds scoring
+higher. The bound score combines a satisfaction rate (fraction of graphs where
+the bound holds) with a tightness penalty (average gap). This mode enables
+discovery of mathematical inequalities relating graph properties.

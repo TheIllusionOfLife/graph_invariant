@@ -1,0 +1,58 @@
+\section{Discussion}
+
+\paragraph{Interpretability--accuracy tradeoff.}
+Our system explicitly trades some predictive accuracy for interpretability
+through the composite scoring objective (Eq.~\ref{eq:score}). The simplicity
+term ($\beta = 0.2$) penalizes complex AST structures, steering the search
+toward compact formulas. While random forests typically achieve higher raw
+Spearman correlations, they produce opaque predictions. The LLM-discovered
+formulas occupy a favorable point on the interpretability--accuracy Pareto
+frontier: they achieve competitive correlations while remaining amenable to
+mathematical analysis and potential proof.
+
+\paragraph{Role of diversity mechanisms.}
+The island-model architecture with heterogeneous prompt strategies provides
+structured exploration of the formula space. Low-temperature refinement
+islands exploit known good formulas, while high-temperature novelty islands
+explore broadly. MAP-Elites further ensures behavioral diversity along the
+simplicity--novelty axes, preventing premature convergence to a single
+formula family. \textbf{[TBD: Quantify the impact of MAP-Elites on final
+quality and diversity by comparing Experiments 1 and 4.]}
+
+\paragraph{Self-correction as exploration.}
+The LLM-driven self-correction loop recovers mathematical intuition from
+failed candidates. Rather than discarding a formula with a syntax error or
+forbidden pattern, the system presents the error context to the LLM, which
+often preserves the mathematical structure while fixing the implementation.
+\textbf{[TBD: Report self-correction success rates.]}
+
+\paragraph{Bounds mode.}
+The upper-bound experiment demonstrates that the system can discover
+non-trivial mathematical inequalities, not just correlations. This opens the
+possibility of using LLMs to discover provable bounds on graph
+properties---a qualitatively different contribution from predictive modeling.
+\textbf{[TBD: Analyze the discovered upper bounds and their tightness.]}
+
+\subsection{Limitations}
+
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item \textbf{Compute cost}: Each experiment requires substantial LLM
+    inference time (hours to tens of hours with a 20B-parameter local model).
+    This limits the scale of hyperparameter search and ablation studies.
+  \item \textbf{Sandbox security}: The sandbox provides best-effort isolation
+    through static analysis and process-level resource limits, but is not a
+    production security boundary. Adversarial LLM outputs could potentially
+    exploit gaps in the forbidden-pattern list.
+  \item \textbf{Feature dependence}: Discovered formulas operate on
+    pre-computed graph features rather than raw adjacency matrices. This
+    constrains the space of discoverable invariants to combinations of the
+    provided features, though the feature set covers standard graph-theoretic
+    quantities.
+  \item \textbf{Novelty calibration}: The bootstrap CI-based novelty test
+    may be overly conservative for small feature vectors, potentially
+    rejecting candidates that are genuinely novel but happen to correlate
+    moderately with known invariants on the evaluation graphs.
+  \item \textbf{Single LLM}: All experiments use a single local model
+    (\texttt{gpt-oss:20b}). Different LLMs with different mathematical
+    reasoning capabilities may produce qualitatively different formulas.
+\end{itemize}

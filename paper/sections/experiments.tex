@@ -1,0 +1,71 @@
+\section{Experiments}
+
+We evaluate our system across four experiment configurations designed to test
+different aspects of the discovery pipeline. All experiments use a local
+\texttt{gpt-oss:20b} model served via Ollama, ensuring reproducibility without
+API cost constraints.
+
+\subsection{Experimental Setup}
+
+\paragraph{Graph datasets.}
+Training graphs ($n = 50$) and validation/test graphs ($n = 200$ each) are
+sampled from five generative families---ER, BA, WS, RGG, SBM---with node
+counts $n \in [30, 100]$ and deterministic seeding (seed $= 42$ unless
+otherwise noted).
+
+\paragraph{Baselines.}
+We compare against three baselines:
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item \textbf{Linear regression}: Ordinary least squares on the graph feature
+    vector (12 features excluding the target to prevent leakage).
+  \item \textbf{Random forest}: 100 trees with default scikit-learn parameters
+    on the same feature vector.
+  \item \textbf{PySR}: Symbolic regression~\citep{cranmer2023pysr} with 30
+    iterations, 8 populations, and a 60-second timeout. PySR searches over
+    the same feature set with standard unary/binary operators.
+\end{itemize}
+
+\paragraph{Out-of-distribution (OOD) validation.}
+Discovered formulas are evaluated on three OOD graph categories:
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item \textbf{Large random} ($n = 100$): Same five families but with
+    $n \in [200, 500]$.
+  \item \textbf{Extreme parameters} ($n = 50$): Extreme densities and degree
+    distributions with $n \in [50, 200]$.
+  \item \textbf{Special topology}: Deterministic structures---barbell, grid,
+    ladder, circulant, Petersen graph---plus NetworkX built-in graphs (Karate
+    club, Les Mis\'{e}rables, Florentine families).
+\end{itemize}
+
+\subsection{Experiment Configurations}
+
+\paragraph{Experiment 1: MAP-Elites ASPL.}
+Target: \texttt{average\_shortest\_path\_length}. 30 generations with
+MAP-Elites enabled ($5 \times 5$ archive). Tests whether quality-diversity
+search improves formula diversity and final quality compared to island-model
+evolution alone.
+
+\paragraph{Experiment 2: Algebraic connectivity.}
+Target: \texttt{algebraic\_connectivity} (Fiedler value, the second-smallest
+Laplacian eigenvalue). 20 generations. Tests generalization to a spectrally
+defined target that requires different mathematical intuition.
+
+\paragraph{Experiment 3: Upper bound ASPL.}
+Target: \texttt{average\_shortest\_path\_length} in upper-bound mode. 20
+generations. Tests the system's ability to discover valid mathematical
+inequalities $f(G) \geq \text{ASPL}(G)$ rather than correlations.
+
+\paragraph{Experiment 4: Multi-seed benchmark.}
+Target: \texttt{average\_shortest\_path\_length}. 5 seeds $\times$ 20
+generations with baselines enabled. Tests consistency across random
+initializations and provides confidence intervals for reported metrics.
+
+\subsection{Evaluation Metrics}
+
+We report Spearman rank correlation ($\rho$) on validation and test sets as
+the primary metric for correlation-mode experiments. For bounds-mode
+experiments, we report bound score (combining satisfaction rate and tightness)
+and satisfaction rate (fraction of graphs where the bound holds). For OOD
+evaluation, we report Spearman $\rho$ per OOD category with valid prediction
+counts. For the multi-seed benchmark, we report mean $\pm$ standard deviation
+across seeds.

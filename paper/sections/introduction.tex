@@ -1,0 +1,45 @@
+\section{Introduction}
+
+Graph invariants---functions that assign a numerical value to a graph
+independent of vertex labeling---are fundamental objects in network science,
+combinatorics, and theoretical computer science. Classical invariants such as
+the chromatic number, diameter, and algebraic connectivity encode structural
+information used in fields ranging from chemistry (molecular descriptors) to
+social network analysis. However, the discovery of \emph{new} invariants that
+capture previously unrecognized structural relationships remains a largely
+manual, expert-driven process.
+
+Recent work has demonstrated that large language models (LLMs) can generate
+executable mathematical programs when guided by evolutionary search.
+FunSearch~\citep{romeraparedes2024funsearch} showed that LLM-generated programs
+can match or exceed human-designed solutions for combinatorial problems,
+operating in a generate-evaluate loop rather than treating the LLM as an
+oracle. Independently, symbolic regression methods like
+PySR~\citep{cranmer2023pysr} have proven effective at discovering compact
+formulas from data, but produce expressions optimized purely for predictive
+accuracy without leveraging the mathematical reasoning capabilities of LLMs.
+
+We present a system that combines LLM-driven code generation with island-model
+evolution~\citep{whitley1999island} and MAP-Elites quality-diversity
+search~\citep{mouret2015mapelites} to discover interpretable graph invariants.
+Our approach occupies a unique position: unlike neural approaches that learn
+latent graph representations~\citep{kipf2017gcn, xu2019gin}, our system
+produces closed-form formulas that can be inspected, verified, and used in
+mathematical proofs. Unlike pure symbolic regression, our system leverages the
+LLM's prior knowledge of mathematics to navigate the search space more
+effectively.
+
+\paragraph{Contributions.}
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item An open-source framework for LLM-driven graph invariant discovery with
+    island-model evolution, MAP-Elites diversity archive, and an LLM-driven
+    self-correction loop. The system supports correlation and bounds
+    (upper/lower) fitness modes.
+  \item A composite scoring objective balancing predictive accuracy (Spearman
+    $\rho$), formula simplicity (AST node count), and novelty relative to known
+    graph invariants (bootstrap confidence interval test).
+  \item Systematic evaluation across four experiment configurations with
+    out-of-distribution validation on large-scale and extreme-topology graphs,
+    demonstrating that LLM-discovered formulas are competitive with statistical
+    and symbolic regression baselines while remaining interpretable.
+\end{itemize}

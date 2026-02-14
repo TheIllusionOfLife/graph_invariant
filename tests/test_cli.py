@@ -1070,6 +1070,61 @@ def test_generation_rejects_candidate_below_novelty_gate(monkeypatch, tmp_path):
     assert summary.get("success") is False
 
 
+def test_novelty_gate_rejection_triggers_self_correction(monkeypatch, tmp_path):
+    """When a candidate is novelty-gated, self-correction should be attempted."""
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        novelty_gate_threshold=0.15,
+        enable_self_correction=True,
+        self_correction_max_retries=1,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    generate_call_count = {"count": 0}
+
+    def _counting_generate(*_args, **_kwargs):
+        generate_call_count["count"] += 1
+        return "def new_invariant(s):\n    return float(s['n'])"
+
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        _counting_generate,
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    # Novelty below threshold → should trigger repair attempt
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.08)
+
+    assert run_phase1(cfg) == 0
+    # 4 islands × 1 candidate × 2 attempts (original + repair) = 8 generate calls.
+    # Without the fix, novelty gate has repairable=False so only 4 calls (no repairs).
+    assert generate_call_count["count"] == 8
+
+
 def test_generation_accepts_candidate_above_novelty_gate(monkeypatch, tmp_path):
     import networkx as nx
 

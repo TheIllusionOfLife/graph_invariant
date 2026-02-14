@@ -6,12 +6,18 @@ import numpy as np
 from ..scoring import compute_metrics
 from .features import FEATURE_ORDER, features_from_graphs
 
+# Features that can be targets — must be excluded from baseline inputs when used as targets.
+_LEAKABLE_FEATURES = frozenset(FEATURE_ORDER)
+
 # Backwards-compatible alias retained for existing tests and imports.
 _FEATURE_ORDER = FEATURE_ORDER
 
 
-def _features_from_graphs(graphs: list[nx.Graph]) -> np.ndarray:
-    return features_from_graphs(graphs)
+def _features_from_graphs(
+    graphs: list[nx.Graph],
+    exclude_features: tuple[str, ...] | None = None,
+) -> np.ndarray:
+    return features_from_graphs(graphs, exclude_features=exclude_features)
 
 
 def _metrics_dict(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float | int]:
@@ -90,10 +96,12 @@ def run_stat_baselines(
     y_train: list[float],
     y_val: list[float],
     y_test: list[float],
+    target_name: str | None = None,
 ) -> dict[str, object]:
-    x_train = _features_from_graphs(train_graphs)
-    x_val = _features_from_graphs(val_graphs)
-    x_test = _features_from_graphs(test_graphs)
+    exclude = (target_name,) if target_name and target_name in _LEAKABLE_FEATURES else None
+    x_train = _features_from_graphs(train_graphs, exclude)
+    x_val = _features_from_graphs(val_graphs, exclude)
+    x_test = _features_from_graphs(test_graphs, exclude)
     y_train_np = np.asarray(y_train, dtype=float)
     y_val_np = np.asarray(y_val, dtype=float)
     y_test_np = np.asarray(y_test, dtype=float)

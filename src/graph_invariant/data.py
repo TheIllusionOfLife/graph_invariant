@@ -14,7 +14,7 @@ class DatasetBundle:
     sanity: list[nx.Graph]
 
 
-def _connected_subgraph(graph: nx.Graph) -> nx.Graph:
+def connected_subgraph(graph: nx.Graph) -> nx.Graph:
     if len(graph) == 0:
         return nx.path_graph(2)
     if nx.is_connected(graph):
@@ -23,7 +23,7 @@ def _connected_subgraph(graph: nx.Graph) -> nx.Graph:
     return nx.convert_node_labels_to_integers(graph.subgraph(largest).copy())
 
 
-def _generate_graph(rng: np.random.Generator, n: int) -> nx.Graph:
+def generate_graph(rng: np.random.Generator, n: int) -> nx.Graph:
     kind = rng.choice(["ER", "BA", "WS", "RGG", "SBM"])
     if kind == "ER":
         g = nx.erdos_renyi_graph(n, float(rng.uniform(0.05, 0.3)), seed=rng)
@@ -45,15 +45,62 @@ def _generate_graph(rng: np.random.Generator, n: int) -> nx.Graph:
         sizes = [n // 3, n // 3, n - 2 * (n // 3)]
         probs = [[0.25, 0.05, 0.02], [0.05, 0.25, 0.05], [0.02, 0.05, 0.25]]
         g = nx.stochastic_block_model(sizes, probs, seed=rng)
-    return _connected_subgraph(g)
+    return connected_subgraph(g)
 
 
 def _sample_graphs(rng: np.random.Generator, count: int) -> list[nx.Graph]:
     out: list[nx.Graph] = []
     for _ in range(count):
         n = int(rng.integers(30, 101))
-        out.append(_generate_graph(rng, n))
+        out.append(generate_graph(rng, n))
     return out
+
+
+# ── OOD graph generation ──────────────────────────────────────────────
+
+
+def generate_ood_large_random(rng: np.random.Generator, count: int) -> list[nx.Graph]:
+    """Same graph types as training but with n in [200, 500]."""
+    graphs: list[nx.Graph] = []
+    for _ in range(count):
+        n = int(rng.integers(200, 501))
+        graphs.append(generate_graph(rng, n))
+    return graphs
+
+
+def generate_ood_extreme_params(rng: np.random.Generator, count: int) -> list[nx.Graph]:
+    """Graphs with extreme densities/degrees, n in [50, 200]."""
+    graphs: list[nx.Graph] = []
+    for _ in range(count):
+        n = int(rng.integers(50, 201))
+        kind = rng.choice(["dense_er", "sparse_er", "high_ba", "low_ws"])
+        if kind == "dense_er":
+            g = nx.erdos_renyi_graph(n, float(rng.uniform(0.4, 0.7)), seed=rng)
+        elif kind == "sparse_er":
+            g = nx.erdos_renyi_graph(n, float(rng.uniform(0.01, 0.04)), seed=rng)
+        elif kind == "high_ba":
+            m = int(rng.integers(8, min(15, n - 1) + 1))
+            g = nx.barabasi_albert_graph(n, m, seed=rng)
+        else:  # low_ws
+            k = 2
+            g = nx.watts_strogatz_graph(n, k, float(rng.uniform(0.01, 0.1)), seed=rng)
+        graphs.append(connected_subgraph(g))
+    return graphs
+
+
+def generate_ood_special_topology() -> list[nx.Graph]:
+    """Deterministic structures for structural generalization."""
+    graphs: list[nx.Graph] = []
+    graphs.append(nx.barbell_graph(20, 5))
+    graphs.append(nx.grid_2d_graph(8, 8))
+    graphs.append(nx.circular_ladder_graph(30))
+    graphs.append(nx.random_regular_graph(4, 50, seed=0))
+    graphs.append(nx.powerlaw_cluster_graph(100, 3, 0.5, seed=0))
+    graphs.append(nx.karate_club_graph())
+    graphs.append(nx.les_miserables_graph())
+    graphs.append(nx.florentine_families_graph())
+    # Ensure all connected and integer-labeled (e.g. grid_2d_graph uses tuple labels)
+    return [nx.convert_node_labels_to_integers(connected_subgraph(g)) for g in graphs]
 
 
 def generate_phase1_datasets(cfg: Phase1Config) -> DatasetBundle:

@@ -583,14 +583,14 @@ def test_constrained_mode_can_forbid_late_recovery():
 def test_target_values_handles_disconnected_graph():
     import networkx as nx
 
-    from graph_invariant.cli import _target_values
+    from graph_invariant.targets import target_values
 
     g = nx.Graph()
     g.add_nodes_from([0, 1, 2])
     g.add_edge(0, 1)
 
-    assert _target_values([g], "average_shortest_path_length") == [0.0]
-    assert _target_values([g], "diameter") == [0.0]
+    assert target_values([g], "average_shortest_path_length") == [0.0]
+    assert target_values([g], "diameter") == [0.0]
 
 
 def test_summarize_error_details_uses_detail_for_top_category():
@@ -1167,10 +1167,10 @@ def test_novelty_gate_disabled_when_zero(monkeypatch, tmp_path):
 def test_target_values_supports_algebraic_connectivity():
     import networkx as nx
 
-    from graph_invariant.cli import _target_values
+    from graph_invariant.targets import target_values
 
     g = nx.path_graph(5)
-    values = _target_values([g], "algebraic_connectivity")
+    values = target_values([g], "algebraic_connectivity")
     assert len(values) == 1
     assert values[0] > 0.0
 
@@ -1178,23 +1178,23 @@ def test_target_values_supports_algebraic_connectivity():
 def test_target_values_algebraic_connectivity_handles_disconnected():
     import networkx as nx
 
-    from graph_invariant.cli import _target_values
+    from graph_invariant.targets import target_values
 
     g = nx.Graph()
     g.add_nodes_from([0, 1, 2])
     g.add_edge(0, 1)
-    values = _target_values([g], "algebraic_connectivity")
+    values = target_values([g], "algebraic_connectivity")
     assert values == [0.0]
 
 
 def test_target_values_algebraic_connectivity_single_node():
     import networkx as nx
 
-    from graph_invariant.cli import _target_values
+    from graph_invariant.targets import target_values
 
     g = nx.Graph()
     g.add_node(0)
-    values = _target_values([g], "algebraic_connectivity")
+    values = target_values([g], "algebraic_connectivity")
     assert values == [0.0]
 
 
@@ -1202,11 +1202,11 @@ def test_safe_algebraic_connectivity_handles_eigenvalue_error(monkeypatch):
     """_safe_algebraic_connectivity should return 0.0 on eigenvalue computation errors."""
     import networkx as nx
 
-    from graph_invariant.cli import _safe_algebraic_connectivity
+    from graph_invariant.targets import _safe_algebraic_connectivity
 
     g = nx.path_graph(5)
     monkeypatch.setattr(
-        "graph_invariant.cli.nx.algebraic_connectivity",
+        "graph_invariant.targets.nx.algebraic_connectivity",
         lambda *_a, **_kw: (_ for _ in ()).throw(nx.NetworkXError("convergence failed")),
     )
     assert _safe_algebraic_connectivity(g) == 0.0
@@ -1381,3 +1381,234 @@ def test_run_phase1_persists_prompt_and_response_when_enabled(monkeypatch, tmp_p
     assert payload["prompt"] is not None
     assert payload["llm_response"] == "llm text"
     assert payload["extracted_code"].startswith("def new_invariant")
+
+
+# ── MAP-Elites integration tests ─────────────────────────────────────
+
+
+def test_run_phase1_with_map_elites_populates_archive(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        enable_map_elites=True,
+        map_elites_bins=3,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+
+    assert run_phase1(cfg) == 0
+
+    # Check that archive stats appear in generation_summary events
+    events_path = Path(cfg.artifacts_dir) / "logs" / "events.jsonl"
+    records = [json.loads(line) for line in events_path.read_text("utf-8").splitlines()]
+    gen_summaries = [r for r in records if r["event_type"] == "generation_summary"]
+    assert gen_summaries
+    assert "map_elites_stats" in gen_summaries[0]["payload"]
+    stats = gen_summaries[0]["payload"]["map_elites_stats"]
+    assert stats["coverage"] > 0
+
+
+def test_run_phase1_without_map_elites_omits_archive(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        enable_map_elites=False,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+
+    assert run_phase1(cfg) == 0
+
+    # No archive stats in generation_summary
+    events_path = Path(cfg.artifacts_dir) / "logs" / "events.jsonl"
+    records = [json.loads(line) for line in events_path.read_text("utf-8").splitlines()]
+    gen_summaries = [r for r in records if r["event_type"] == "generation_summary"]
+    assert gen_summaries
+    assert "map_elites_stats" not in gen_summaries[0]["payload"]
+
+
+def test_run_phase1_map_elites_checkpoint_roundtrip(monkeypatch, tmp_path):
+    import networkx as nx
+
+    cfg = Phase1Config(
+        artifacts_dir=str(tmp_path / "artifacts"),
+        max_generations=1,
+        population_size=1,
+        num_train_graphs=2,
+        num_val_graphs=2,
+        num_test_graphs=2,
+        run_baselines=False,
+        enable_map_elites=True,
+        map_elites_bins=3,
+    )
+    bundle = DatasetBundle(
+        train=[nx.path_graph(4), nx.path_graph(5)],
+        val=[nx.path_graph(4), nx.path_graph(5)],
+        test=[nx.path_graph(4), nx.path_graph(5)],
+        sanity=[nx.path_graph(4)],
+    )
+    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr(
+        "graph_invariant.cli.list_available_models",
+        lambda *_args, **_kwargs: ["gpt-oss:20b"],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.generate_candidate_code",
+        lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
+    )
+    _patch_sandbox_evaluator(
+        monkeypatch,
+        lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
+    )
+    monkeypatch.setattr(
+        "graph_invariant.cli.compute_metrics",
+        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
+    )
+    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+
+    assert run_phase1(cfg) == 0
+
+    # Verify checkpoint contains archive
+    ckpt_root = Path(cfg.artifacts_dir) / "checkpoints"
+    experiment_dir = next(ckpt_root.iterdir())
+    ckpt_path = sorted(experiment_dir.glob("gen_*.json"))[-1]
+    ckpt_data = json.loads(ckpt_path.read_text("utf-8"))
+    assert "map_elites_archive" in ckpt_data
+    assert ckpt_data["map_elites_archive"]["num_bins"] == 3
+
+
+def test_candidate_prompt_includes_archive_exemplars():
+    from graph_invariant.cli import _candidate_prompt
+
+    state = CheckpointState(
+        experiment_id="exp",
+        generation=0,
+        islands={0: [], 1: [], 2: [], 3: []},
+    )
+    exemplar_codes = ["def new_invariant(s): return s['n'] + 1"]
+    prompt = _candidate_prompt(
+        state,
+        island_id=1,
+        target_name="diameter",
+        archive_exemplars=exemplar_codes,
+    )
+    assert "s['n'] + 1" in prompt
+
+
+def test_report_includes_ood_validation(monkeypatch, tmp_path):
+    from graph_invariant.cli import write_report
+
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir()
+    (artifacts_dir / "phase1_summary.json").write_text(
+        json.dumps({"success": True, "best_candidate_id": "c1"}),
+        encoding="utf-8",
+    )
+    (artifacts_dir / "ood_validation.json").write_text(
+        json.dumps(
+            {
+                "large_random": {"spearman": 0.85, "valid_count": 90, "total_count": 100},
+                "extreme_params": {"spearman": 0.72, "valid_count": 45, "total_count": 50},
+                "special_topology": {"spearman": 0.91, "valid_count": 8, "total_count": 8},
+            }
+        ),
+        encoding="utf-8",
+    )
+    report_path = write_report(str(artifacts_dir))
+    report = report_path.read_text(encoding="utf-8")
+    assert "## OOD Validation" in report
+    assert "large_random" in report
+    assert "spearman=0.8500" in report
+
+
+def test_report_includes_map_elites_coverage(monkeypatch, tmp_path):
+    from graph_invariant.cli import write_report
+
+    artifacts_dir = tmp_path / "artifacts"
+    logs_dir = artifacts_dir / "logs"
+    logs_dir.mkdir(parents=True)
+    (artifacts_dir / "phase1_summary.json").write_text(
+        json.dumps({"success": True, "best_candidate_id": "c1"}),
+        encoding="utf-8",
+    )
+    events = [
+        json.dumps(
+            {
+                "event_type": "generation_summary",
+                "payload": {"map_elites_stats": {"coverage": 3}},
+            }
+        ),
+        json.dumps(
+            {
+                "event_type": "generation_summary",
+                "payload": {"map_elites_stats": {"coverage": 7}},
+            }
+        ),
+    ]
+    (logs_dir / "events.jsonl").write_text("\n".join(events) + "\n", encoding="utf-8")
+    report_path = write_report(str(artifacts_dir))
+    report = report_path.read_text(encoding="utf-8")
+    assert "## MAP-Elites Archive" in report
+    assert "Final coverage: 7 cells" in report
+    assert "3 -> 7" in report

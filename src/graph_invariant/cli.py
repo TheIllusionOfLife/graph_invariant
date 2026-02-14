@@ -28,6 +28,14 @@ from .logging_io import (
     save_checkpoint,
     write_json,
 )
+from .map_elites import (
+    MapElitesArchive,
+    archive_stats,
+    deserialize_archive,
+    sample_diverse_exemplars,
+    serialize_archive,
+    try_insert,
+)
 from .sandbox import SandboxEvaluator
 from .scoring import (
     compute_bound_metrics,
@@ -37,42 +45,8 @@ from .scoring import (
     compute_simplicity_score,
     compute_total_score,
 )
+from .targets import target_values
 from .types import Candidate, CheckpointState
-
-
-def _safe_average_shortest_path_length(graph: nx.Graph) -> float:
-    if len(graph) == 0 or not nx.is_connected(graph):
-        return 0.0
-    try:
-        return float(nx.average_shortest_path_length(graph))
-    except nx.NetworkXError:
-        return 0.0
-
-
-def _safe_algebraic_connectivity(graph: nx.Graph) -> float:
-    """Return the algebraic connectivity (Fiedler value), or 0.0 on failure."""
-    if len(graph) < 2 or not nx.is_connected(graph):
-        return 0.0
-    try:
-        return float(nx.algebraic_connectivity(graph))
-    except nx.NetworkXError:
-        return 0.0
-
-
-def _safe_diameter(graph: nx.Graph) -> float:
-    if len(graph) == 0 or not nx.is_connected(graph):
-        return 0.0
-    try:
-        return float(nx.diameter(graph))
-    except nx.NetworkXError:
-        return 0.0
-
-
-TARGET_FUNCTIONS = {
-    "average_shortest_path_length": _safe_average_shortest_path_length,
-    "algebraic_connectivity": _safe_algebraic_connectivity,
-    "diameter": _safe_diameter,
-}
 
 _CONSTRAINED_SUFFIX = (
     "\nConstrained mode is active. Use only these operators: +, -, *, /, log, sqrt, **, "
@@ -80,13 +54,6 @@ _CONSTRAINED_SUFFIX = (
     "def new_invariant(s): n = s['n']; m = s['m']; "
     "degrees = s['degrees']; return <expression using n,m,degrees>."
 )
-
-
-def _target_values(graphs: list[nx.Graph], target_name: str) -> list[float]:
-    target_fn = TARGET_FUNCTIONS.get(target_name)
-    if target_fn is None:
-        raise ValueError(f"unsupported target: {target_name}")
-    return [target_fn(graph) for graph in graphs]
 
 
 def _new_experiment_id() -> str:
@@ -139,12 +106,17 @@ def _state_defaults(state: CheckpointState) -> None:
         state.island_recent_failures.setdefault(island_id, [])
 
 
-_ISLAND_STRATEGIES: dict[int, IslandStrategy] = {
-    0: IslandStrategy.REFINEMENT,
-    1: IslandStrategy.COMBINATION,
-    2: IslandStrategy.REFINEMENT,
-    3: IslandStrategy.NOVEL,
-}
+_STRATEGY_CYCLE = [
+    IslandStrategy.REFINEMENT,
+    IslandStrategy.COMBINATION,
+    IslandStrategy.REFINEMENT,
+    IslandStrategy.NOVEL,
+]
+
+
+def _island_strategy(island_id: int) -> IslandStrategy:
+    """Return the strategy for a given island, cycling through the pattern."""
+    return _STRATEGY_CYCLE[island_id % len(_STRATEGY_CYCLE)]
 
 
 def _candidate_prompt(
@@ -152,6 +124,7 @@ def _candidate_prompt(
     island_id: int,
     target_name: str,
     fitness_mode: str = "correlation",
+    archive_exemplars: list[str] | None = None,
 ) -> str:
     """Build the LLM prompt for a candidate, applying the island's strategy."""
     top_candidates = [
@@ -160,12 +133,15 @@ def _candidate_prompt(
             state.islands.get(island_id, []), key=lambda c: c.val_score, reverse=True
         )
     ]
+    strategy = _island_strategy(island_id)
+    if archive_exemplars and strategy in (IslandStrategy.COMBINATION, IslandStrategy.NOVEL):
+        top_candidates = top_candidates + archive_exemplars
     prompt = build_prompt(
         island_mode=f"island_{island_id}_{state.island_prompt_mode.get(island_id, 'free')}",
         top_candidates=top_candidates,
         failures=state.island_recent_failures.get(island_id, []),
         target_name=target_name,
-        strategy=_ISLAND_STRATEGIES.get(island_id),
+        strategy=strategy,
         fitness_mode=fitness_mode,
     )
     if state.island_prompt_mode.get(island_id, "free") == "constrained":
@@ -312,6 +288,7 @@ def _run_one_generation(
     rng: np.random.Generator,
     log_path: Path,
     self_correction_stats: dict[str, Any],
+    archive: MapElitesArchive | None = None,
 ) -> None:
     failure_categories = self_correction_stats.setdefault("failure_categories", {})
 
@@ -395,11 +372,20 @@ def _run_one_generation(
 
     island_ids = sorted(state.islands.keys())
     for island_id in island_ids:
+        archive_exemplar_codes: list[str] | None = None
+        if archive is not None:
+            exemplars = sample_diverse_exemplars(archive, rng, count=3, exclude_island=island_id)
+            if exemplars:
+                archive_exemplar_codes = [c.code for c in exemplars]
         new_candidates: list[Candidate] = []
         had_valid_train_candidate = False
         for pop_idx in range(cfg.population_size):
             base_prompt = _candidate_prompt(
-                state, island_id, cfg.target_name, fitness_mode=cfg.fitness_mode
+                state,
+                island_id,
+                cfg.target_name,
+                fitness_mode=cfg.fitness_mode,
+                archive_exemplars=archive_exemplar_codes,
             )
             current_prompt = base_prompt
             max_attempts = 1 + (
@@ -539,6 +525,8 @@ def _run_one_generation(
                     novelty_bonus=novelty_bonus,
                 )
                 new_candidates.append(candidate)
+                if archive is not None:
+                    try_insert(archive, candidate, fitness_signal)
                 log_payload: dict[str, Any] = {
                     "candidate_id": candidate.id,
                     "generation": state.generation,
@@ -758,7 +746,7 @@ def _write_phase1_summary(
 
     known_val = compute_known_invariant_values(datasets_val)
     known_test = compute_known_invariant_values(datasets_test)
-    y_sanity = _target_values(datasets_sanity, cfg.target_name)
+    y_sanity = target_values(datasets_sanity, cfg.target_name)
     val_metrics = _evaluate_split(best.code, features_val, y_true_val, cfg, evaluator, known_val)
     test_metrics = _evaluate_split(
         best.code, features_test, y_true_test, cfg, evaluator, known_test
@@ -994,7 +982,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         state = CheckpointState(
             experiment_id=experiment_id,
             generation=0,
-            islands={i: [] for i in range(4)},
+            islands={i: [] for i in range(len(cfg.island_temperatures))},
             rng_seed=cfg.seed,
             rng_state=None,
             best_val_score=0.0,
@@ -1005,7 +993,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         state = CheckpointState(
             experiment_id=experiment_id,
             generation=0,
-            islands={i: [] for i in range(4)},
+            islands={i: [] for i in range(len(cfg.island_temperatures))},
             rng_seed=cfg.seed,
             rng_state=None,
             best_val_score=0.0,
@@ -1015,9 +1003,9 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
     _state_defaults(state)
     checkpoint_dir = _checkpoint_dir_for_experiment(artifacts_dir, experiment_id)
     rng = _restore_rng(state)
-    y_true_train = _target_values(datasets.train, cfg.target_name)
-    y_true_val = _target_values(datasets.val, cfg.target_name)
-    y_true_test = _target_values(datasets.test, cfg.target_name)
+    y_true_train = target_values(datasets.train, cfg.target_name)
+    y_true_val = target_values(datasets.val, cfg.target_name)
+    y_true_test = target_values(datasets.test, cfg.target_name)
     known_invariants_val = compute_known_invariant_values(datasets.val)
     features_train = compute_feature_dicts(datasets.train)
     features_val = compute_feature_dicts(datasets.val)
@@ -1054,6 +1042,12 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         "failed_repairs": 0,
         "failure_categories": {},
     }
+    archive: MapElitesArchive | None = None
+    if cfg.enable_map_elites:
+        if state.map_elites_archive is not None:
+            archive = deserialize_archive(state.map_elites_archive)
+        else:
+            archive = MapElitesArchive(num_bins=cfg.map_elites_bins, cells={})
     with SandboxEvaluator(
         timeout_sec=cfg.timeout_sec,
         memory_mb=cfg.memory_mb,
@@ -1072,6 +1066,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
                 rng=rng,
                 log_path=log_path,
                 self_correction_stats=self_correction_stats,
+                archive=archive,
             )
             current_best = _global_best_score(state)
             improved = current_best > state.best_val_score + 1e-12
@@ -1083,20 +1078,21 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
 
             state.generation += 1
             state.rng_state = rng.bit_generator.state
+            if archive is not None:
+                state.map_elites_archive = serialize_archive(archive)
             checkpoint_path = checkpoint_dir / f"gen_{state.generation}.json"
             save_checkpoint(state, checkpoint_path)
             rotate_generation_checkpoints(checkpoint_dir, cfg.checkpoint_keep_last)
-            append_jsonl(
-                "generation_summary",
-                {
-                    "experiment_id": experiment_id,
-                    "generation": state.generation,
-                    "model_name": cfg.model_name,
-                    "best_val_score": state.best_val_score,
-                    "no_improve_count": state.no_improve_count,
-                },
-                log_path,
-            )
+            gen_summary_payload: dict[str, Any] = {
+                "experiment_id": experiment_id,
+                "generation": state.generation,
+                "model_name": cfg.model_name,
+                "best_val_score": state.best_val_score,
+                "no_improve_count": state.no_improve_count,
+            }
+            if archive is not None:
+                gen_summary_payload["map_elites_stats"] = archive_stats(archive)
+            append_jsonl("generation_summary", gen_summary_payload, log_path)
             if state.no_improve_count >= cfg.early_stop_patience:
                 stop_reason = "early_stop"
                 break
@@ -1174,6 +1170,47 @@ def write_report(artifacts_dir: str | Path) -> Path:
         lines.append(f"- Successful repairs: {self_correction.get('successful_repairs', 0)}")
         lines.append(f"- Failed repairs: {self_correction.get('failed_repairs', 0)}")
 
+    ood_path = root / "ood_validation.json"
+    ood = _load_json_or_default(ood_path)
+    if ood:
+        lines.extend(["", "## OOD Validation", ""])
+        for category, metrics in ood.items():
+            if not isinstance(metrics, dict):
+                continue
+            valid = metrics.get("valid_count", 0)
+            total = metrics.get("total_count", 0)
+            spearman = metrics.get("spearman")
+            bound_score = metrics.get("bound_score")
+            if spearman is not None:
+                score_str = f"spearman={spearman:.4f}"
+            elif bound_score is not None:
+                score_str = f"bound_score={bound_score:.4f}"
+            else:
+                score_str = "no valid predictions"
+            lines.append(f"- {category}: {score_str} ({valid}/{total} valid)")
+
+    # MAP-Elites archive coverage from generation logs
+    events_path = root / "logs" / "events.jsonl"
+    if events_path.exists():
+        try:
+            archive_coverages: list[int] = []
+            with events_path.open("r", encoding="utf-8") as f:
+                for line in f:
+                    if '"generation_summary"' not in line:
+                        continue
+                    event = json.loads(line)
+                    payload = event.get("payload", {})
+                    if "map_elites_stats" in payload:
+                        archive_coverages.append(payload["map_elites_stats"]["coverage"])
+            if archive_coverages:
+                lines.extend(["", "## MAP-Elites Archive", ""])
+                lines.append(f"- Final coverage: {archive_coverages[-1]} cells")
+                lines.append(
+                    f"- Coverage progression: {' -> '.join(str(c) for c in archive_coverages)}"
+                )
+        except (json.JSONDecodeError, OSError, KeyError):
+            pass
+
     report_path = root / "report.md"
     report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return report_path
@@ -1193,6 +1230,13 @@ def main() -> int:
     benchmark = sub.add_parser("benchmark")
     benchmark.add_argument("--config", type=str, default=None)
 
+    ood = sub.add_parser("ood-validate")
+    ood.add_argument("--summary", type=str, required=True)
+    ood.add_argument("--output", type=str, required=True)
+    ood.add_argument("--seed", type=int, default=42)
+    ood.add_argument("--num-large", type=int, default=100)
+    ood.add_argument("--num-extreme", type=int, default=50)
+
     args = parser.parse_args()
 
     if args.command == "phase1":
@@ -1207,6 +1251,16 @@ def main() -> int:
 
         cfg = Phase1Config.from_json(args.config) if args.config else Phase1Config()
         return run_benchmark(cfg)
+    if args.command == "ood-validate":
+        from .ood_validation import run_ood_validation
+
+        return run_ood_validation(
+            summary_path=args.summary,
+            output_dir=args.output,
+            seed=args.seed,
+            num_large=args.num_large,
+            num_extreme=args.num_extreme,
+        )
     return 1
 
 

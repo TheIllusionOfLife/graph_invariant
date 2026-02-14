@@ -24,3 +24,5 @@ dist/
 artifacts/
 artifacts_*/
 artifacts_smoke/
+outputs/
+experiment_log.txt

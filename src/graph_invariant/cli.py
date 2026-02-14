@@ -1206,6 +1206,45 @@ def write_report(artifacts_dir: str | Path) -> Path:
         lines.append(f"- Successful repairs: {self_correction.get('successful_repairs', 0)}")
         lines.append(f"- Failed repairs: {self_correction.get('failed_repairs', 0)}")
 
+    ood_path = root / "ood_validation.json"
+    ood = _load_json_or_default(ood_path)
+    if ood:
+        lines.extend(["", "## OOD Validation", ""])
+        for category, metrics in ood.items():
+            if not isinstance(metrics, dict):
+                continue
+            valid = metrics.get("valid_count", 0)
+            total = metrics.get("total_count", 0)
+            spearman = metrics.get("spearman")
+            bound_score = metrics.get("bound_score")
+            score_str = (
+                f"spearman={spearman:.4f}" if spearman is not None else f"bound_score={bound_score}"
+            )
+            lines.append(f"- {category}: {score_str} ({valid}/{total} valid)")
+
+    # MAP-Elites archive coverage from generation logs
+    events_path = root / "logs" / "events.jsonl"
+    if events_path.exists():
+        try:
+            gen_events = [
+                json.loads(line)
+                for line in events_path.read_text(encoding="utf-8").splitlines()
+                if '"generation_summary"' in line
+            ]
+            archive_coverages = [
+                e["payload"]["map_elites_stats"]["coverage"]
+                for e in gen_events
+                if "map_elites_stats" in e.get("payload", {})
+            ]
+            if archive_coverages:
+                lines.extend(["", "## MAP-Elites Archive", ""])
+                lines.append(f"- Final coverage: {archive_coverages[-1]} cells")
+                lines.append(
+                    f"- Coverage progression: {' -> '.join(str(c) for c in archive_coverages)}"
+                )
+        except (json.JSONDecodeError, OSError, KeyError):
+            pass
+
     report_path = root / "report.md"
     report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return report_path

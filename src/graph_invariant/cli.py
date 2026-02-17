@@ -939,6 +939,7 @@ def _collect_baseline_results(
     if not cfg.run_baselines:
         return None
 
+    print("📉 Running statistical baselines...")
     stat = run_stat_baselines(
         train_graphs=datasets_train,
         val_graphs=datasets_val,
@@ -948,6 +949,7 @@ def _collect_baseline_results(
         y_test=y_true_test,
         target_name=cfg.target_name,
     )
+    print(f"📉 Running PySR baseline (niterations={cfg.pysr_niterations})...")
     pysr = run_pysr_baseline(
         train_graphs=datasets_train,
         val_graphs=datasets_val,
@@ -971,7 +973,11 @@ def _collect_baseline_results(
 
 def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
     _require_model_available(cfg)
+    print("📦 Generating datasets...")
     datasets = generate_phase1_datasets(cfg)
+    print(
+        f"✅ Datasets generated (Train: {len(datasets.train)}, Val: {len(datasets.val)}, Test: {len(datasets.test)})"
+    )
     artifacts_dir = Path(cfg.artifacts_dir)
     log_path = artifacts_dir / "logs" / "events.jsonl"
 
@@ -1007,6 +1013,10 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
 
     _state_defaults(state)
     checkpoint_dir = _checkpoint_dir_for_experiment(artifacts_dir, experiment_id)
+
+    print(f"🚀 Starting Phase 1 experiment: {experiment_id}")
+    print(f"🎯 Target: {cfg.target_name} | Model: {cfg.model_name}")
+
     rng = _restore_rng(state)
     y_true_train = target_values(datasets.train, cfg.target_name)
     y_true_val = target_values(datasets.val, cfg.target_name)
@@ -1059,6 +1069,8 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         max_workers=cfg.sandbox_max_workers,
     ) as evaluator:
         for _ in range(state.generation, cfg.max_generations):
+            current_gen = state.generation + 1
+            print(f"🧬 Gen {current_gen}/{cfg.max_generations} ...", end="\r", flush=True)
             _run_one_generation(
                 cfg=cfg,
                 state=state,
@@ -1081,6 +1093,9 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
             else:
                 state.no_improve_count += 1
 
+            print(
+                f"🧬 Gen {current_gen}/{cfg.max_generations} | 🏆 Best: {state.best_val_score:.4f} | ⏳ Stagnation: {state.no_improve_count}"
+            )
             state.generation += 1
             state.rng_state = rng.bit_generator.state
             if archive is not None:
@@ -1125,6 +1140,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         payload=baseline_results,
         artifacts_dir=artifacts_dir,
     )
+    print(f"✅ Phase 1 Complete! Report written to {artifacts_dir}")
     return 0
 
 

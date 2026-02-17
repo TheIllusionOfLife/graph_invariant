@@ -15,6 +15,9 @@ try:
 except ImportError:  # pragma: no cover - unavailable on Windows.
     resource = None
 
+MAX_CODE_LENGTH = 100_000
+MAX_AST_NODES = 5_000
+
 FORBIDDEN_PATTERNS = [
     "import ",
     "__import__",
@@ -308,7 +311,12 @@ def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
     if len(fn_defs) != 1 or fn_defs[0].name != "new_invariant":
         return False, "code must define exactly one function named `new_invariant`"
 
+    node_count = 0
     for node in ast.walk(tree):
+        node_count += 1
+        if node_count > MAX_AST_NODES:
+            return False, f"AST complexity exceeds limit: {node_count} > {MAX_AST_NODES}"
+
         if not isinstance(node, ALLOWED_AST_NODES):
             return False, f"disallowed syntax: {type(node).__name__}"
 
@@ -337,6 +345,9 @@ def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
 def validate_code_static(code: str) -> tuple[bool, str | None]:
     # Best-effort defense for research use only.
     # Running fully untrusted code safely requires stronger isolation (e.g., containers/jails).
+    if len(code) > MAX_CODE_LENGTH:
+        return False, f"code too long: {len(code)} > {MAX_CODE_LENGTH}"
+
     for token in FORBIDDEN_PATTERNS:
         if token in code:
             return False, f"forbidden token detected: {token}"
@@ -346,6 +357,8 @@ def validate_code_static(code: str) -> tuple[bool, str | None]:
         tree = ast.parse(code)
     except SyntaxError as exc:
         return False, f"invalid syntax: {exc.msg}"
+    except (RecursionError, MemoryError):
+        return False, "code complexity exceeds limits (recursion depth or memory)"
     return _validate_ast(tree)
 
 

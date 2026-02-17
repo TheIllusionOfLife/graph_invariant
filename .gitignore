@@ -40,7 +40,6 @@ paper/*.out
 paper/*.fls
 paper/*.fdb_latexmk
 paper/sections/*.aux
-paper/main.pdf
 
 # Analysis outputs
 analysis/results/

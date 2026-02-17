@@ -405,10 +405,6 @@ def _run_candidate(code: str, features: dict[str, Any]) -> float | None:
     return _run_candidate_detailed(code, features).get("value")
 
 
-def _run_candidate_with_queue_result(code: str, features: dict[str, Any]) -> float | None:
-    return _run_candidate(code, features)
-
-
 def _run_candidate_detailed(code: str, features: dict[str, Any]) -> dict[str, Any]:
     safe_globals = _safe_globals()
     safe_locals: dict[str, Any] = {}
@@ -444,12 +440,6 @@ def _run_candidate_detailed(code: str, features: dict[str, Any]) -> dict[str, An
     finally:
         if hasattr(signal, "setitimer"):
             signal.setitimer(signal.ITIMER_REAL, 0.0)
-
-
-def _run_candidate_with_queue_result_detailed(
-    code: str, features: dict[str, Any]
-) -> dict[str, Any]:
-    return _run_candidate_detailed(code, features)
 
 
 class SandboxEvaluator:
@@ -501,7 +491,7 @@ class SandboxEvaluator:
             raise RuntimeError("sandbox pool is not initialized")
         tasks = [(code, features) for features in features_list]
         # Keep chunksize small for fairness; tune upward if IPC becomes dominant.
-        return self._pool.starmap(_run_candidate_with_queue_result, tasks, chunksize=1)
+        return self._pool.starmap(_run_candidate, tasks, chunksize=1)
 
     def _evaluate_once_detailed(
         self, code: str, features_list: list[dict[str, Any]]
@@ -509,7 +499,7 @@ class SandboxEvaluator:
         if self._pool is None:
             raise RuntimeError("sandbox pool is not initialized")
         tasks = [(code, features) for features in features_list]
-        return self._pool.starmap(_run_candidate_with_queue_result_detailed, tasks, chunksize=1)
+        return self._pool.starmap(_run_candidate_detailed, tasks, chunksize=1)
 
     def evaluate(self, code: str, features_list: list[dict[str, Any]]) -> list[float | None]:
         ok, _ = validate_code_static(code)

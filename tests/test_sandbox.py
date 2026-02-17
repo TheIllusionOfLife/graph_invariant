@@ -63,6 +63,13 @@ def test_validate_code_static_rejects_nx_attr():
     assert reason is not None
 
 
+def test_validate_code_static_rejects_nx_name_binding():
+    code = "def new_invariant(s):\n    alias = nx\n    return 1"
+    ok, reason = validate_code_static(code)
+    assert not ok
+    assert reason is not None
+
+
 def test_validate_code_static_allows_np_calls():
     code = "def new_invariant(s):\n    return np.mean(s['degrees'])"
     ok, reason = validate_code_static(code)

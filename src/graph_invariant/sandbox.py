@@ -34,6 +34,8 @@ FORBIDDEN_NAMES = {
     "locals",
     "vars",
     "breakpoint",
+    "nx",
+    "G",
 }
 ALLOWED_CALLS = {
     "abs",
@@ -310,7 +312,11 @@ def _initialize_worker(memory_mb: int, timeout_sec: float) -> None:
 
 
 def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
+    fn_defs: list[ast.FunctionDef] = []
     for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            fn_defs.append(node)
+
         if not isinstance(node, ALLOWED_AST_NODES):
             return False, f"forbidden syntax detected: {type(node).__name__}"
 
@@ -338,7 +344,6 @@ def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
             else:
                 return False, "disallowed call expression"
 
-    fn_defs = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
     if len(fn_defs) != 1 or fn_defs[0].name != "new_invariant":
         return False, "code must define exactly one function named `new_invariant`"
 

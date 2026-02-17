@@ -36,7 +36,9 @@ def _nan_to_zero(value: float) -> float:
     return float(value)
 
 
-def compute_metrics(y_true: list[float], y_pred: list[float]) -> EvaluationResult:
+def compute_metrics(
+    y_true: list[float] | np.ndarray, y_pred: list[float] | np.ndarray
+) -> EvaluationResult:
     true_arr = np.asarray(y_true, dtype=float)
     pred_arr = np.asarray(y_pred, dtype=float)
     if true_arr.shape != pred_arr.shape:
@@ -119,6 +121,8 @@ def compute_bound_metrics(
 
 
 def _extract_return_expression(code: str) -> str:
+    # Used for testing or backward compatibility if needed, but compute_simplicity_score
+    # now avoids parsing code twice.
     try:
         module = ast.parse(code)
         for node in ast.walk(module):
@@ -163,16 +167,52 @@ def _can_safely_simplify_expression(expr: str) -> bool:
 
 
 def compute_simplicity_score(code: str, w1: float = 0.5, w2: float = 0.5) -> float:
-    ast_nodes = max(1, len(list(ast.walk(ast.parse(code)))))
-    expr = _extract_return_expression(code)
-    if _can_safely_simplify_expression(expr):
-        try:
-            simplified = sympy.simplify(expr)
-            expr_len = max(1, len(str(simplified)))
-        except Exception:
-            expr_len = max(1, len(expr))
-    else:
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        # If code cannot be parsed, treat it as a single node/string
+        ast_nodes = 1
+        expr = code
         expr_len = max(1, len(expr))
+        ast_term = 1.0 / (1.0 + math.log2(ast_nodes))
+        expr_term = 1.0 / (1.0 + math.log2(expr_len))
+        return (w1 * ast_term) + (w2 * expr_term)
+
+    ast_nodes = 0
+    return_node_value = None
+    for node in ast.walk(tree):
+        ast_nodes += 1
+        # Find the first return statement with a value
+        if return_node_value is None and isinstance(node, ast.Return) and node.value is not None:
+            return_node_value = node.value
+
+    ast_nodes = max(1, ast_nodes)
+
+    if return_node_value is not None:
+        if _is_sympy_safe_expression(return_node_value):
+            try:
+                # Only unparse if safe, for simplification
+                expr_str = ast.unparse(return_node_value)
+                simplified = sympy.simplify(expr_str)
+                expr_len = max(1, len(str(simplified)))
+            except Exception:
+                # Fallback to unparsed length
+                expr_str = ast.unparse(return_node_value)
+                expr_len = max(1, len(expr_str))
+        else:
+            expr_str = ast.unparse(return_node_value)
+            expr_len = max(1, len(expr_str))
+    else:
+        # Fallback if no return node found
+        expr = code
+        if _can_safely_simplify_expression(expr):
+            try:
+                simplified = sympy.simplify(expr)
+                expr_len = max(1, len(str(simplified)))
+            except Exception:
+                expr_len = max(1, len(expr))
+        else:
+            expr_len = max(1, len(expr))
 
     ast_term = 1.0 / (1.0 + math.log2(ast_nodes))
     expr_term = 1.0 / (1.0 + math.log2(expr_len))

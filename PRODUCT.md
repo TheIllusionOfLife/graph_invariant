@@ -38,14 +38,15 @@ It aims to help researchers generate, evaluate, and compare candidate formulas a
 ## Product Objectives
 
 - Short term:
-  - Complete Phase 2 readiness: multiple targets, OOD validation, diversity-driven search.
+  - Run full experiment suite and analyze results for main-conference paper.
   - Provide a reliable research loop with reproducible outputs and automated experiment orchestration.
   - Make experiment outcomes auditable through structured artifacts.
 - Medium term:
+  - Phase 2: extend to `algebraic_connectivity` target with multi-target discovery.
   - Improve discovery quality under fixed compute budgets.
-  - Improve reliability of novelty and baseline comparisons.
 - Long term:
-  - Support publication-quality experiments and OSS reuse.
+  - Publication at NeurIPS/ICML/ICLR with open-source reproducibility artifacts.
+  - Support community reuse for other graph property discovery tasks.
 
 ## Non-Goals (Current Scope)
 

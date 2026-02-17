@@ -1,0 +1,27 @@
+\begin{abstract}
+We introduce an open-source framework that uses large language models (LLMs) to
+discover closed-form, interpretable graph invariants through island-model
+evolutionary search. Discovering compact formulas that predict structural graph
+properties---such as average shortest-path length or algebraic
+connectivity---remains challenging because the space of symbolic expressions is
+vast and existing approaches sacrifice interpretability for accuracy. Our system
+addresses this by orchestrating four islands with distinct prompt strategies
+(refinement, combination, novelty) and temperature schedules, augmented with a
+MAP-Elites quality-diversity archive that maintains behaviorally diverse
+candidates along simplicity and novelty axes. Candidates are evaluated in a
+sandboxed execution environment with static analysis guards, scored by a
+composite objective combining Spearman correlation, formula simplicity, and
+novelty relative to known invariants, and subjected to an LLM-driven
+self-correction loop that repairs failing candidates. We evaluate on synthetic
+graph datasets spanning five generative families (Erd\H{o}s--R\'{e}nyi,
+Barab\'{a}si--Albert, Watts--Strogatz, random geometric, stochastic block
+model), with out-of-distribution validation on large-scale and extreme-topology
+graphs. Across four experiment configurations---correlation-mode ASPL with
+MAP-Elites, algebraic connectivity, upper-bound ASPL, and a multi-seed
+benchmark---our LLM-discovered formulas achieve validation Spearman correlations
+competitive with PySR symbolic regression and random forest baselines
+(test Spearman $\rho = 0.947$ for MAP-Elites ASPL; $\rho = 0.921 \pm 0.027$
+across 5 benchmark seeds) while producing interpretable expressions amenable
+to mathematical analysis.
+Code is available at \url{https://github.com/yuyamukai/graph_invariant}.
+\end{abstract}

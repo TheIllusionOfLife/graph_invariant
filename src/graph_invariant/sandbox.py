@@ -16,7 +16,7 @@ except ImportError:  # pragma: no cover - unavailable on Windows.
     resource = None
 
 MAX_CODE_LENGTH = 100_000  # 100KB limit for source code
-MAX_AST_NODES = 5_000      # Prevent complex ASTs
+MAX_AST_NODES = 5_000  # Prevent complex ASTs
 
 FORBIDDEN_CALLS = {"getattr", "setattr", "delattr", "globals", "locals", "vars"}
 ALLOWED_CALLS = {

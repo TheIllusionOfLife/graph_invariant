@@ -1,7 +1,7 @@
-
-import ast
 import unittest
-from graph_invariant.sandbox import validate_code_static, MAX_CODE_LENGTH, MAX_AST_NODES
+
+from graph_invariant.sandbox import MAX_CODE_LENGTH, validate_code_static
+
 
 class TestSandboxSecurity(unittest.TestCase):
     def test_max_code_length(self):
@@ -112,5 +112,6 @@ def new_invariant(s):
         self.assertFalse(ok)
         self.assertIn("disallowed syntax: Import", reason)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

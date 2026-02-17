@@ -80,16 +80,8 @@ _BOUNDS_INSTRUCTIONS: dict[str, str] = {
 }
 
 
-def _extract_code_block(text: str) -> str:
-    match = re.search(r"```python\s+(.*?)```", text, flags=re.DOTALL)
-    if match:
-        return match.group(1).strip()
-    return text.strip()
-
-
 def _sanitize_llm_output(text: str) -> str:
     """Strip code fences from LLM-generated text to prevent prompt injection."""
-    text = _extract_code_block(text)
     return text.replace("```", "")
 
 
@@ -109,17 +101,12 @@ def build_prompt(
     ``lower_bound``, the prompt asks the LLM to produce an inequality
     rather than a correlation-maximizing formula.
     """
-    if top_candidates:
-        sanitized = [_sanitize_llm_output(c) for c in top_candidates[:3]]
-        top_block = "```python\n" + "\n\n".join(sanitized) + "\n```"
-    else:
-        top_block = "None yet."
-
-    if failures:
-        sanitized_fails = [_sanitize_llm_output(f) for f in failures[:3]]
-        fail_block = "```text\n" + "\n".join(sanitized_fails) + "\n```"
-    else:
-        fail_block = "None."
+    top_block = (
+        "\n\n".join(_sanitize_llm_output(c) for c in top_candidates[:3])
+        if top_candidates
+        else "None yet."
+    )
+    fail_block = "\n".join(_sanitize_llm_output(f) for f in failures[:3]) if failures else "None."
 
     is_bounds = fitness_mode in ("upper_bound", "lower_bound")
     strategy_table = (
@@ -159,6 +146,13 @@ def build_prompt(
         f"{_FORMULA_EXAMPLES}"
         f"{bounds_block}"
     )
+
+
+def _extract_code_block(text: str) -> str:
+    match = re.search(r"```python\s+(.*?)```", text, flags=re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return text.strip()
 
 
 def generate_candidate_code(

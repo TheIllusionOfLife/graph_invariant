@@ -80,11 +80,11 @@ def extract_convergence_data(events: list[dict]) -> dict[str, list]:
     coverages: list[int] = []
 
     for event in events:
-        if event.get("event") != "generation_summary":
+        if event.get("event_type") != "generation_summary":
             continue
         payload = event.get("payload", {})
         gen = payload.get("generation")
-        score = payload.get("best_score")
+        score = payload.get("best_val_score")
         if gen is not None and score is not None:
             generations.append(gen)
             best_scores.append(score)
@@ -340,6 +340,11 @@ def write_figure_data_json(experiments: dict[str, dict], output_path: Path) -> N
         sc = summary.get("self_correction_stats")
         if sc:
             entry["self_correction_stats"] = sc
+
+        # Include benchmark runs for boxplot
+        runs = summary.get("runs")
+        if runs:
+            entry["runs"] = runs
 
         figure_data[name] = entry
 

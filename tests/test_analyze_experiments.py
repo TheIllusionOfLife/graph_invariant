@@ -146,10 +146,10 @@ def mock_events():
     for gen in range(5):
         events.append(
             {
-                "event": "generation_summary",
+                "event_type": "generation_summary",
                 "payload": {
                     "generation": gen,
-                    "best_score": 0.5 + gen * 0.1,
+                    "best_val_score": 0.5 + gen * 0.1,
                     "map_elites_stats": {"coverage": 5 + gen * 3},
                 },
             }
@@ -230,7 +230,7 @@ def test_load_event_log(artifacts_dir):
     events = load_event_log(artifacts_dir / "experiment_map_elites_aspl")
     assert isinstance(events, list)
     assert len(events) == 5
-    assert events[0]["event"] == "generation_summary"
+    assert events[0]["event_type"] == "generation_summary"
 
 
 def test_load_event_log_missing_file(tmp_path):

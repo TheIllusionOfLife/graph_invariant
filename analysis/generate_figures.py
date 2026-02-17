@@ -30,7 +30,7 @@ plt.rcParams.update(
         "savefig.dpi": 300,
         "savefig.bbox": "tight",
         "font.family": "serif",
-        "font.serif": ["Computer Modern Roman"],
+        "font.serif": ["DejaVu Serif", "Times New Roman", "Computer Modern Roman"],
         "text.usetex": False,  # Set True if LaTeX is available
     }
 )
@@ -272,7 +272,7 @@ def plot_benchmark_boxplot(data: dict, output_path: Path) -> None:
                     if test_scores:
                         plot_data.append(test_scores)
                         labels.append("Test")
-                    ax.boxplot(plot_data, labels=labels)
+                    ax.boxplot(plot_data, tick_labels=labels)
                     ax.set_ylabel("Spearman Correlation")
                     ax.set_title("Multi-Seed Benchmark Consistency")
                     fig.tight_layout()
@@ -288,13 +288,22 @@ def plot_benchmark_boxplot(data: dict, output_path: Path) -> None:
     val_scores = []
     test_scores = []
     for info in benchmark_data.values():
-        summary = info.get("summary", {})
-        val_s = summary.get("val_spearman") or info.get("val_spearman")
-        test_s = summary.get("test_spearman") or info.get("test_spearman")
-        if val_s is not None:
-            val_scores.append(val_s)
-        if test_s is not None:
-            test_scores.append(test_s)
+        # Check for runs array (from benchmark_summary.json)
+        runs = info.get("runs", [])
+        if runs:
+            for r in runs:
+                if r.get("val_spearman") is not None:
+                    val_scores.append(r["val_spearman"])
+                if r.get("test_spearman") is not None:
+                    test_scores.append(r["test_spearman"])
+        else:
+            summary = info.get("summary", {})
+            val_s = summary.get("val_spearman") or info.get("val_spearman")
+            test_s = summary.get("test_spearman") or info.get("test_spearman")
+            if val_s is not None:
+                val_scores.append(val_s)
+            if test_s is not None:
+                test_scores.append(test_s)
 
     if not val_scores and not test_scores:
         print("  No benchmark scores available, skipping benchmark_boxplot.pdf")
@@ -309,7 +318,7 @@ def plot_benchmark_boxplot(data: dict, output_path: Path) -> None:
     if test_scores:
         plot_data.append(test_scores)
         labels.append("Test")
-    ax.boxplot(plot_data, labels=labels)
+    ax.boxplot(plot_data, tick_labels=labels)
     ax.set_ylabel("Spearman Correlation")
     ax.set_title("Multi-Seed Benchmark Consistency")
 

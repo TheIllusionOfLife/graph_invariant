@@ -1,0 +1,26 @@
+{
+  "large_random": {
+    "valid_count": 100,
+    "total_count": 100,
+    "spearman": 0.9567716771677167,
+    "pearson": 0.879449155270321,
+    "rmse": 173.63589734914635,
+    "mae": 106.44799901242519
+  },
+  "extreme_params": {
+    "valid_count": 50,
+    "total_count": 50,
+    "spearman": 0.9263385354141656,
+    "pearson": 0.7968516408355883,
+    "rmse": 69.66856844929649,
+    "mae": 47.472437810232734
+  },
+  "special_topology": {
+    "valid_count": 8,
+    "total_count": 8,
+    "spearman": 0.5000000000000001,
+    "pearson": 0.49594060917527083,
+    "rmse": 36.097999583169106,
+    "mae": 31.375335206678354
+  }
+}

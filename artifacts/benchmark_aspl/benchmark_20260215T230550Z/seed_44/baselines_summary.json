@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "target_name": "average_shortest_path_length",
+  "stat_baselines": {
+    "linear_regression": {
+      "status": "ok",
+      "val_metrics": {
+        "spearman": 0.9621060526513164,
+        "pearson": 0.9814770497674735,
+        "rmse": 0.1699079754900221,
+        "mae": 0.11489252194822858,
+        "valid_count": 200
+      },
+      "test_metrics": {
+        "spearman": 0.9538033450836272,
+        "pearson": 0.970585178190631,
+        "rmse": 0.17988330151170662,
+        "mae": 0.12774392678947735,
+        "valid_count": 200
+      }
+    },
+    "random_forest": {
+      "status": "ok",
+      "val_metrics": {
+        "spearman": 0.9693328468210565,
+        "pearson": 0.9443540576879632,
+        "rmse": 0.33584058450984194,
+        "mae": 0.146508020011706,
+        "valid_count": 200
+      },
+      "test_metrics": {
+        "spearman": 0.965595139878497,
+        "pearson": 0.9572972301997151,
+        "rmse": 0.24312555944241843,
+        "mae": 0.1303810380826807,
+        "valid_count": 200
+      }
+    }
+  },
+  "pysr_baseline": {
+    "status": "ok",
+    "model": "pysr",
+    "val_metrics": {
+      "spearman": 0.9723603090077254,
+      "pearson": 0.9818394511461248,
+      "rmse": 0.25382366508901266,
+      "mae": 0.1326388864666812,
+      "valid_count": 200
+    },
+    "test_metrics": {
+      "spearman": 0.9631065776644419,
+      "pearson": 0.9780390350346417,
+      "rmse": 0.1910628754885685,
+      "mae": 0.11092011342841143,
+      "valid_count": 200
+    }
+  }
+}

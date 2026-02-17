@@ -61,15 +61,33 @@ class Phase1Config:
     map_elites_bins: int = 5
 
     def __post_init__(self) -> None:
+        self._validate_island_config()
+        self._validate_stagnation_config()
+        self._validate_sandbox_config()
+        self._validate_weights_config()
+        self._validate_pysr_config()
+        self._validate_benchmark_config()
+        self._validate_novelty_config()
+        self._validate_llm_config()
+        self._validate_fitness_config()
+        self._validate_map_elites_config()
+
+    def _validate_island_config(self) -> None:
         self.island_temperatures = tuple(float(x) for x in self.island_temperatures)
         if len(self.island_temperatures) < 1:
             raise ValueError("island_temperatures must contain at least 1 value")
+
+    def _validate_stagnation_config(self) -> None:
         if self.stagnation_trigger_generations < 1:
             raise ValueError("stagnation_trigger_generations must be >= 1")
         if self.constrained_recovery_generations < 1:
             raise ValueError("constrained_recovery_generations must be >= 1")
+
+    def _validate_sandbox_config(self) -> None:
         if self.sandbox_max_workers is not None and self.sandbox_max_workers < 1:
             raise ValueError("sandbox_max_workers must be >= 1")
+
+    def _validate_weights_config(self) -> None:
         if not (0.0 <= self.success_spearman_threshold <= 1.0):
             raise ValueError("success_spearman_threshold must be between 0.0 and 1.0")
         if self.alpha < 0.0 or self.beta < 0.0 or self.gamma < 0.0:
@@ -85,6 +103,8 @@ class Phase1Config:
             self.alpha /= total
             self.beta /= total
             self.gamma /= total
+
+    def _validate_pysr_config(self) -> None:
         if self.pysr_niterations < 1:
             raise ValueError("pysr_niterations must be >= 1")
         if self.pysr_populations < 1:
@@ -93,23 +113,31 @@ class Phase1Config:
             raise ValueError("pysr_procs must be >= 0")
         if self.pysr_timeout_in_seconds is not None and self.pysr_timeout_in_seconds <= 0.0:
             raise ValueError("pysr_timeout_in_seconds must be > 0.0")
+        if self.pysr_parity_epsilon < 0.0:
+            raise ValueError("pysr_parity_epsilon must be >= 0.0")
+
+    def _validate_benchmark_config(self) -> None:
         self.benchmark_seeds = tuple(int(seed) for seed in self.benchmark_seeds)
         if not self.benchmark_seeds:
             raise ValueError("benchmark_seeds must contain at least one seed")
+
+    def _validate_novelty_config(self) -> None:
         if self.novelty_bootstrap_samples < 1:
             raise ValueError("novelty_bootstrap_samples must be >= 1")
         if not (0.0 <= self.novelty_threshold <= 1.0):
             raise ValueError("novelty_threshold must be between 0.0 and 1.0")
-        if self.pysr_parity_epsilon < 0.0:
-            raise ValueError("pysr_parity_epsilon must be >= 0.0")
+        if not (0.0 <= self.novelty_gate_threshold <= 1.0):
+            raise ValueError("novelty_gate_threshold must be between 0.0 and 1.0")
+
+    def _validate_llm_config(self) -> None:
         if self.llm_timeout_sec <= 0.0:
             raise ValueError("llm_timeout_sec must be > 0.0")
         if self.self_correction_max_retries < 0:
             raise ValueError("self_correction_max_retries must be >= 0")
         if self.self_correction_feedback_window < 1:
             raise ValueError("self_correction_feedback_window must be >= 1")
-        if not (0.0 <= self.novelty_gate_threshold <= 1.0):
-            raise ValueError("novelty_gate_threshold must be between 0.0 and 1.0")
+
+    def _validate_fitness_config(self) -> None:
         if self.fitness_mode not in {"correlation", "upper_bound", "lower_bound"}:
             raise ValueError("fitness_mode must be 'correlation', 'upper_bound', or 'lower_bound'")
         if self.bound_tolerance < 0.0:
@@ -118,6 +146,8 @@ class Phase1Config:
             raise ValueError("success_bound_score_threshold must be between 0.0 and 1.0")
         if not (0.0 <= self.success_satisfaction_threshold <= 1.0):
             raise ValueError("success_satisfaction_threshold must be between 0.0 and 1.0")
+
+    def _validate_map_elites_config(self) -> None:
         if self.map_elites_bins < 2:
             raise ValueError("map_elites_bins must be >= 2")
 

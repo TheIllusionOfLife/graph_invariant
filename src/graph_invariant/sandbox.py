@@ -15,19 +15,9 @@ try:
 except ImportError:  # pragma: no cover - unavailable on Windows.
     resource = None
 
-FORBIDDEN_PATTERNS = [
-    "import ",
-    "__import__",
-    "eval(",
-    "exec(",
-    "open(",
-    "os.",
-    "sys.",
-    "subprocess",
-    "__class__",
-    "__subclasses__",
-    "__globals__",
-]
+MAX_CODE_LENGTH = 100_000  # 100KB limit for source code
+MAX_AST_NODES = 5_000      # Prevent complex ASTs
+
 FORBIDDEN_CALLS = {"getattr", "setattr", "delattr", "globals", "locals", "vars"}
 ALLOWED_CALLS = {
     "abs",
@@ -304,6 +294,15 @@ def _initialize_worker(memory_mb: int, timeout_sec: float) -> None:
 
 
 def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
+    # Check complexity (number of nodes)
+    try:
+        node_count = sum(1 for _ in ast.walk(tree))
+    except (RecursionError, MemoryError) as e:
+        return False, f"AST traversal failed: {type(e).__name__}"
+
+    if node_count > MAX_AST_NODES:
+        return False, f"code too complex: {node_count} AST nodes (max {MAX_AST_NODES})"
+
     fn_defs = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
     if len(fn_defs) != 1 or fn_defs[0].name != "new_invariant":
         return False, "code must define exactly one function named `new_invariant`"
@@ -337,15 +336,24 @@ def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
 def validate_code_static(code: str) -> tuple[bool, str | None]:
     # Best-effort defense for research use only.
     # Running fully untrusted code safely requires stronger isolation (e.g., containers/jails).
-    for token in FORBIDDEN_PATTERNS:
-        if token in code:
-            return False, f"forbidden token detected: {token}"
+
+    if len(code) > MAX_CODE_LENGTH:
+        return False, f"code too long: {len(code)} chars (max {MAX_CODE_LENGTH})"
+
     if "def new_invariant(" not in code:
         return False, "missing `new_invariant` function"
+
     try:
         tree = ast.parse(code)
     except SyntaxError as exc:
         return False, f"invalid syntax: {exc.msg}"
+    except RecursionError:
+        return False, "code too complex: recursion limit exceeded during parsing"
+    except MemoryError:
+        return False, "code too complex: memory limit exceeded during parsing"
+    except Exception as e:
+        return False, f"parser error: {type(e).__name__}"
+
     return _validate_ast(tree)
 
 

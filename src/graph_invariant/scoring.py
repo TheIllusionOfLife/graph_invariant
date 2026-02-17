@@ -36,7 +36,9 @@ def _nan_to_zero(value: float) -> float:
     return float(value)
 
 
-def compute_metrics(y_true: list[float], y_pred: list[float]) -> EvaluationResult:
+def compute_metrics(
+    y_true: list[float] | np.ndarray, y_pred: list[float] | np.ndarray
+) -> EvaluationResult:
     true_arr = np.asarray(y_true, dtype=float)
     pred_arr = np.asarray(y_pred, dtype=float)
     if true_arr.shape != pred_arr.shape:

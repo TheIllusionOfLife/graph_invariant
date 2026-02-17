@@ -503,9 +503,7 @@ class SandboxEvaluator:
         # Batch tasks to reduce IPC overhead (pickling, context switching).
         # We target ~4 chunks per worker to balance load vs overhead.
         chunksize = max(1, len(tasks) // (self._worker_count * 4))
-        return self._pool.starmap(
-            _run_candidate_with_queue_result, tasks, chunksize=chunksize
-        )
+        return self._pool.starmap(_run_candidate_with_queue_result, tasks, chunksize=chunksize)
 
     def _evaluate_once_detailed(
         self, code: str, features_list: list[dict[str, Any]]

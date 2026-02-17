@@ -56,6 +56,17 @@ def _sample_graphs(rng: np.random.Generator, count: int) -> list[nx.Graph]:
     return out
 
 
+def _sample_special_topology_graphs(
+    rng: np.random.Generator,
+    count: int,
+) -> list[nx.Graph]:
+    if count <= 0:
+        return []
+    pool = generate_ood_special_topology()
+    indices = rng.integers(0, len(pool), size=count)
+    return [pool[int(idx)].copy() for idx in indices]
+
+
 # ── OOD graph generation ──────────────────────────────────────────────
 
 
@@ -108,6 +119,21 @@ def generate_phase1_datasets(cfg: Phase1Config) -> DatasetBundle:
     train = _sample_graphs(rng, cfg.num_train_graphs)
     val = _sample_graphs(rng, cfg.num_val_graphs)
     test = _sample_graphs(rng, cfg.num_test_graphs)
+
+    train_special_count = min(
+        cfg.num_train_graphs,
+        int(round(cfg.ood_train_special_topology_ratio * cfg.num_train_graphs)),
+    )
+    if train_special_count > 0:
+        train[:train_special_count] = _sample_special_topology_graphs(rng, train_special_count)
+
+    val_special_count = min(
+        cfg.num_val_graphs,
+        int(round(cfg.ood_val_special_topology_ratio * cfg.num_val_graphs)),
+    )
+    if val_special_count > 0:
+        val[:val_special_count] = _sample_special_topology_graphs(rng, val_special_count)
+
     sanity = [
         nx.karate_club_graph(),
         nx.les_miserables_graph(),

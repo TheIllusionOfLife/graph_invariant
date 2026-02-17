@@ -6,6 +6,7 @@
 - `tests/`: test suite
 - `configs/`: pre-built experiment configurations (quick and full profiles)
 - `docs/`: historical and reference documents
+  - `docs/DATA_POLICY.md`: Zenodo archival and dataset citation policy
 - `analysis/`: experiment analysis scripts and notes
   - `analysis/analyze_experiments.py`: cross-experiment analysis and report generation
   - `analysis/generate_figures.py`: publication-quality figure generation (PDF)
@@ -38,13 +39,13 @@
 - `src/graph_invariant/scoring.py`
   - metrics, simplicity, novelty, total score, bound metrics
 - `src/graph_invariant/map_elites.py`
-  - MAP-Elites diversity archive (grid-based behavioral mapping)
+  - MAP-Elites diversity archives (primary + optional topology-behavior mapping)
 - `src/graph_invariant/ood_validation.py`
   - out-of-distribution validation on large-scale and extreme-topology graphs
 - `src/graph_invariant/evolution.py`
   - island migration logic
 - `src/graph_invariant/known_invariants.py`
-  - known graph invariant calculations
+  - known graph invariant calculations (including optional spectral feature pack)
 - `src/graph_invariant/logging_io.py`
   - JSON/JSONL writes, checkpoint persistence helpers
 - `src/graph_invariant/benchmark.py`
@@ -85,11 +86,14 @@
 
 ## Artifact Structure (Runtime Output)
 
+Heavy/raw outputs are archived on Zenodo for long-term storage and citation.
+
 - Phase 1:
   - `<artifacts_dir>/logs/events.jsonl`
   - `<artifacts_dir>/checkpoints/<experiment_id>/gen_<N>.json`
   - `<artifacts_dir>/phase1_summary.json`
   - `<artifacts_dir>/baselines_summary.json` (optional)
+  - Checkpoints may contain both `map_elites_archive` (legacy alias) and `map_elites_archives` (primary/topology)
 - OOD Validation:
   - `<artifacts_dir>/ood/ood_validation.json`
 - Benchmark:

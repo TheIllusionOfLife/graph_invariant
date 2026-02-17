@@ -161,6 +161,15 @@ def test_features_from_graphs_no_exclusion_returns_all():
     np.testing.assert_allclose(full, no_exclude, atol=1e-12)
 
 
+def test_features_from_graphs_can_disable_spectral_pack():
+    graphs = [nx.path_graph(5), nx.cycle_graph(6)]
+    full = features_from_graphs(graphs, enable_spectral_feature_pack=True)
+    base_only = features_from_graphs(graphs, enable_spectral_feature_pack=False)
+    assert full.shape[1] == len(FEATURE_ORDER)
+    assert base_only.shape[1] == len(FEATURE_ORDER) - 5
+    assert full.shape[0] == base_only.shape[0]
+
+
 def test_run_stat_baselines_accepts_target_name():
     """run_stat_baselines with target_name filters leaking features."""
     graphs = [nx.path_graph(5), nx.cycle_graph(6)]

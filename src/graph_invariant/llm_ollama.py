@@ -17,7 +17,9 @@ class IslandStrategy(StrEnum):
 _FEATURE_KEYS_DOC = (
     "Available keys in s: n (node count), m (edge count), density, avg_degree, "
     "max_degree, min_degree, std_degree, avg_clustering, transitivity, "
-    "degree_assortativity, num_triangles, degrees (sorted degree list)."
+    "degree_assortativity, num_triangles, degrees (sorted degree list), "
+    "laplacian_lambda2, laplacian_lambda_max, laplacian_spectral_gap, "
+    "normalized_laplacian_lambda2, laplacian_energy_ratio."
 )
 
 _ANTI_PATTERNS = (

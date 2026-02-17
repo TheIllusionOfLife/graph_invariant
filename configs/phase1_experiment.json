@@ -33,5 +33,10 @@
   "llm_timeout_sec": 600.0,
   "enable_self_correction": true,
   "self_correction_max_retries": 1,
-  "self_correction_feedback_window": 3
+  "self_correction_feedback_window": 3,
+  "enable_spectral_feature_pack": true,
+  "ood_train_special_topology_ratio": 0.1,
+  "ood_val_special_topology_ratio": 0.1,
+  "enable_dual_map_elites": true,
+  "map_elites_topology_bins": 5
 }

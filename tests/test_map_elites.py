@@ -171,6 +171,7 @@ def test_archive_stats_empty():
 
     archive = MapElitesArchive(num_bins=5, cells={})
     stats = archive_stats(archive)
+    assert stats["archive_id"] == "primary"
     assert stats["coverage"] == 0
     assert stats["total_cells"] == 25
     assert stats["best_fitness"] == 0.0
@@ -186,6 +187,7 @@ def test_archive_stats_populated():
     try_insert(archive, c1, fitness_signal=0.4)
     try_insert(archive, c2, fitness_signal=0.8)
     stats = archive_stats(archive)
+    assert stats["archive_id"] == "primary"
     assert stats["coverage"] == 2
     assert stats["total_cells"] == 25
     assert stats["best_fitness"] == pytest.approx(0.8)
@@ -203,7 +205,7 @@ def test_serialize_deserialize_roundtrip():
         try_insert,
     )
 
-    archive = MapElitesArchive(num_bins=5, cells={})
+    archive = MapElitesArchive(num_bins=5, archive_id="topology", cells={})
     c1 = _make_candidate(simplicity=0.3, novelty=0.7, cid="c1")
     c2 = _make_candidate(simplicity=0.8, novelty=0.2, cid="c2")
     try_insert(archive, c1, fitness_signal=0.6)
@@ -213,6 +215,7 @@ def test_serialize_deserialize_roundtrip():
     restored = deserialize_archive(data)
 
     assert restored.num_bins == archive.num_bins
+    assert restored.archive_id == "topology"
     assert len(restored.cells) == len(archive.cells)
     for key, cell in archive.cells.items():
         assert key in restored.cells
@@ -260,6 +263,17 @@ def test_deserialize_archive_skips_malformed_cells():
     archive = deserialize_archive(data)
     assert len(archive.cells) == 1
     assert archive.cells[(0, 0)].candidate.id == "good"
+
+
+def test_try_insert_uses_descriptor_when_provided():
+    from graph_invariant.map_elites import MapElitesArchive, try_insert
+
+    archive = MapElitesArchive(num_bins=5, archive_id="topology", cells={})
+    candidate = _make_candidate(simplicity=0.1, novelty=0.9, cid="c1")
+    inserted = try_insert(archive, candidate, fitness_signal=0.7, descriptor=(0.8, 0.2))
+    assert inserted is True
+    assert (4, 1) in archive.cells
+    assert archive.cells[(4, 1)].candidate.id == "c1"
 
 
 def test_serialize_is_json_safe():

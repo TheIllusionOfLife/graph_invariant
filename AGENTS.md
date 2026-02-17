@@ -92,7 +92,8 @@ Repository-specific instructions for coding agents and contributors.
 
 - Sandbox security is best-effort research isolation, not a hard production boundary.
 - `persist_prompt_and_response_logs=true` stores raw model I/O in artifacts logs; avoid on sensitive prompts/data.
-- Artifact directories can become large; keep them untracked and under ignored paths.
+- Heavy/raw artifact directories must remain untracked in Git and be archived on Zenodo.
+- When a dataset is published, record DOI/URL and checksum metadata in docs for paper citation.
 - Changing scoring weights (`alpha`, `beta`, `gamma`) triggers normalization if they do not sum to 1.0.
 
 ## Document Sync Policy
@@ -100,6 +101,7 @@ Repository-specific instructions for coding agents and contributors.
 - Keep cross-document consistency when changing behavior:
   - `README.md` (usage)
   - `docs/SPEC.md` (implementation spec)
+  - `docs/DATA_POLICY.md` (data archival/citation policy)
   - `TECH.md` / `STRUCTURE.md` (architecture and stack)
 
 ## Lessons from Past Reviews

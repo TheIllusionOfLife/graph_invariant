@@ -276,6 +276,34 @@ def _update_prompt_mode_after_generation(
         )
 
 
+def _corr_abs(x: list[float], y: list[float]) -> float:
+    if len(x) < 2 or len(y) < 2:
+        return 0.0
+    x_arr = np.asarray(x, dtype=float)
+    y_arr = np.asarray(y, dtype=float)
+    if x_arr.shape != y_arr.shape:
+        return 0.0
+    corr = np.corrcoef(x_arr, y_arr)[0, 1]
+    if np.isnan(corr) or np.isinf(corr):
+        return 0.0
+    return float(abs(corr))
+
+
+def _topology_descriptor(
+    y_pred_valid: list[float],
+    features_val: list[dict[str, Any]],
+    valid_indices: tuple[int, ...],
+) -> tuple[float, float]:
+    density = [float(features_val[idx]["density"]) for idx in valid_indices]
+    clustering = [float(features_val[idx]["avg_clustering"]) for idx in valid_indices]
+    transitivity = [float(features_val[idx]["transitivity"]) for idx in valid_indices]
+    axis_density = _corr_abs(y_pred_valid, density)
+    axis_cluster = (
+        _corr_abs(y_pred_valid, clustering) + _corr_abs(y_pred_valid, transitivity)
+    ) / 2.0
+    return max(0.0, min(1.0, axis_density)), max(0.0, min(1.0, axis_cluster))
+
+
 def _run_one_generation(
     cfg: Phase1Config,
     state: CheckpointState,
@@ -288,7 +316,8 @@ def _run_one_generation(
     rng: np.random.Generator,
     log_path: Path,
     self_correction_stats: dict[str, Any],
-    archive: MapElitesArchive | None = None,
+    primary_archive: MapElitesArchive | None = None,
+    topology_archive: MapElitesArchive | None = None,
 ) -> None:
     failure_categories = self_correction_stats.setdefault("failure_categories", {})
 
@@ -373,10 +402,24 @@ def _run_one_generation(
     island_ids = sorted(state.islands.keys())
     for island_id in island_ids:
         archive_exemplar_codes: list[str] | None = None
-        if archive is not None:
-            exemplars = sample_diverse_exemplars(archive, rng, count=3, exclude_island=island_id)
-            if exemplars:
-                archive_exemplar_codes = [c.code for c in exemplars]
+        exemplar_pool: list[Candidate] = []
+        if primary_archive is not None:
+            exemplar_pool.extend(
+                sample_diverse_exemplars(primary_archive, rng, count=2, exclude_island=island_id)
+            )
+        if topology_archive is not None:
+            exemplar_pool.extend(
+                sample_diverse_exemplars(topology_archive, rng, count=2, exclude_island=island_id)
+            )
+        if exemplar_pool:
+            seen_ids: set[str] = set()
+            deduped: list[Candidate] = []
+            for exemplar in exemplar_pool:
+                if exemplar.id in seen_ids:
+                    continue
+                seen_ids.add(exemplar.id)
+                deduped.append(exemplar)
+            archive_exemplar_codes = [candidate.code for candidate in deduped]
         new_candidates: list[Candidate] = []
         had_valid_train_candidate = False
         for pop_idx in range(cfg.population_size):
@@ -528,8 +571,20 @@ def _run_one_generation(
                     novelty_bonus=novelty_bonus,
                 )
                 new_candidates.append(candidate)
-                if archive is not None:
-                    try_insert(archive, candidate, fitness_signal)
+                if primary_archive is not None:
+                    try_insert(primary_archive, candidate, fitness_signal)
+                if topology_archive is not None:
+                    descriptor = _topology_descriptor(
+                        y_pred_valid=list(y_p_val),
+                        features_val=features_val,
+                        valid_indices=valid_indices,
+                    )
+                    try_insert(
+                        topology_archive,
+                        candidate,
+                        fitness_signal,
+                        descriptor=descriptor,
+                    )
                 log_payload: dict[str, Any] = {
                     "candidate_id": candidate.id,
                     "generation": state.generation,
@@ -747,8 +802,14 @@ def _write_phase1_summary(
         write_json(payload, summary_path)
         return
 
-    known_val = compute_known_invariant_values(datasets_val)
-    known_test = compute_known_invariant_values(datasets_test)
+    known_val = compute_known_invariant_values(
+        datasets_val,
+        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
+    )
+    known_test = compute_known_invariant_values(
+        datasets_test,
+        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
+    )
     y_sanity = target_values(datasets_sanity, cfg.target_name)
     val_metrics = _evaluate_split(best.code, features_val, y_true_val, cfg, evaluator, known_val)
     test_metrics = _evaluate_split(
@@ -935,6 +996,7 @@ def _collect_baseline_results(
     y_true_train: list[float],
     y_true_val: list[float],
     y_true_test: list[float],
+    enable_spectral_feature_pack: bool,
 ) -> dict[str, object] | None:
     if not cfg.run_baselines:
         return None
@@ -947,6 +1009,7 @@ def _collect_baseline_results(
         y_val=y_true_val,
         y_test=y_true_test,
         target_name=cfg.target_name,
+        enable_spectral_feature_pack=enable_spectral_feature_pack,
     )
     pysr = run_pysr_baseline(
         train_graphs=datasets_train,
@@ -960,6 +1023,7 @@ def _collect_baseline_results(
         procs=cfg.pysr_procs,
         timeout_in_seconds=cfg.pysr_timeout_in_seconds,
         target_name=cfg.target_name,
+        enable_spectral_feature_pack=enable_spectral_feature_pack,
     )
     return {
         "schema_version": 1,
@@ -1011,11 +1075,26 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
     y_true_train = target_values(datasets.train, cfg.target_name)
     y_true_val = target_values(datasets.val, cfg.target_name)
     y_true_test = target_values(datasets.test, cfg.target_name)
-    known_invariants_val = compute_known_invariant_values(datasets.val)
-    features_train = compute_feature_dicts(datasets.train)
-    features_val = compute_feature_dicts(datasets.val)
-    features_test = compute_feature_dicts(datasets.test)
-    features_sanity = compute_feature_dicts(datasets.sanity)
+    known_invariants_val = compute_known_invariant_values(
+        datasets.val,
+        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
+    )
+    features_train = compute_feature_dicts(
+        datasets.train,
+        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
+    )
+    features_val = compute_feature_dicts(
+        datasets.val,
+        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
+    )
+    features_test = compute_feature_dicts(
+        datasets.test,
+        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
+    )
+    features_sanity = compute_feature_dicts(
+        datasets.sanity,
+        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
+    )
 
     append_jsonl(
         "phase1_started",
@@ -1037,6 +1116,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         y_true_train=y_true_train,
         y_true_val=y_true_val,
         y_true_test=y_true_test,
+        enable_spectral_feature_pack=cfg.enable_spectral_feature_pack,
     )
     self_correction_stats: dict[str, Any] = {
         "enabled": cfg.enable_self_correction,
@@ -1047,12 +1127,36 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         "failed_repairs": 0,
         "failure_categories": {},
     }
-    archive: MapElitesArchive | None = None
+    primary_archive: MapElitesArchive | None = None
+    topology_archive: MapElitesArchive | None = None
     if cfg.enable_map_elites:
-        if state.map_elites_archive is not None:
-            archive = deserialize_archive(state.map_elites_archive)
+        primary_raw = None
+        topology_raw = None
+        if state.map_elites_archives is not None:
+            primary_raw = state.map_elites_archives.get("primary")
+            topology_raw = state.map_elites_archives.get("topology")
+        if primary_raw is None and state.map_elites_archive is not None:
+            primary_raw = state.map_elites_archive
+
+        if isinstance(primary_raw, dict):
+            primary_archive = deserialize_archive(primary_raw)
+            primary_archive.archive_id = "primary"
         else:
-            archive = MapElitesArchive(num_bins=cfg.map_elites_bins, cells={})
+            primary_archive = MapElitesArchive(
+                num_bins=cfg.map_elites_bins,
+                archive_id="primary",
+                cells={},
+            )
+        if cfg.enable_dual_map_elites:
+            if isinstance(topology_raw, dict):
+                topology_archive = deserialize_archive(topology_raw)
+                topology_archive.archive_id = "topology"
+            else:
+                topology_archive = MapElitesArchive(
+                    num_bins=cfg.map_elites_topology_bins,
+                    archive_id="topology",
+                    cells={},
+                )
     with SandboxEvaluator(
         timeout_sec=cfg.timeout_sec,
         memory_mb=cfg.memory_mb,
@@ -1071,7 +1175,8 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
                 rng=rng,
                 log_path=log_path,
                 self_correction_stats=self_correction_stats,
-                archive=archive,
+                primary_archive=primary_archive,
+                topology_archive=topology_archive,
             )
             current_best = _global_best_score(state)
             improved = current_best > state.best_val_score + 1e-12
@@ -1083,8 +1188,14 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
 
             state.generation += 1
             state.rng_state = rng.bit_generator.state
-            if archive is not None:
-                state.map_elites_archive = serialize_archive(archive)
+            if primary_archive is not None:
+                serialized_primary = serialize_archive(primary_archive)
+                serialized_archives = {"primary": serialized_primary}
+                if topology_archive is not None:
+                    serialized_archives["topology"] = serialize_archive(topology_archive)
+                state.map_elites_archives = serialized_archives
+                # Keep legacy field for backward-compatible readers.
+                state.map_elites_archive = serialized_primary
             checkpoint_path = checkpoint_dir / f"gen_{state.generation}.json"
             save_checkpoint(state, checkpoint_path)
             rotate_generation_checkpoints(checkpoint_dir, cfg.checkpoint_keep_last)
@@ -1095,8 +1206,14 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
                 "best_val_score": state.best_val_score,
                 "no_improve_count": state.no_improve_count,
             }
-            if archive is not None:
-                gen_summary_payload["map_elites_stats"] = archive_stats(archive)
+            if primary_archive is not None:
+                primary_stats = archive_stats(primary_archive)
+                gen_summary_payload["map_elites_stats"] = primary_stats
+                gen_summary_payload["map_elites_stats_primary"] = primary_stats
+                if topology_archive is not None:
+                    gen_summary_payload["map_elites_stats_topology"] = archive_stats(
+                        topology_archive
+                    )
             append_jsonl("generation_summary", gen_summary_payload, log_path)
             if state.no_improve_count >= cfg.early_stop_patience:
                 stop_reason = "early_stop"
@@ -1198,21 +1315,33 @@ def write_report(artifacts_dir: str | Path) -> Path:
     events_path = root / "logs" / "events.jsonl"
     if events_path.exists():
         try:
-            archive_coverages: list[int] = []
+            primary_coverages: list[int] = []
+            topology_coverages: list[int] = []
             with events_path.open("r", encoding="utf-8") as f:
                 for line in f:
                     if '"generation_summary"' not in line:
                         continue
                     event = json.loads(line)
                     payload = event.get("payload", {})
-                    if "map_elites_stats" in payload:
-                        archive_coverages.append(payload["map_elites_stats"]["coverage"])
-            if archive_coverages:
+                    primary_stats = payload.get("map_elites_stats_primary") or payload.get(
+                        "map_elites_stats"
+                    )
+                    topology_stats = payload.get("map_elites_stats_topology")
+                    if isinstance(primary_stats, dict) and "coverage" in primary_stats:
+                        primary_coverages.append(int(primary_stats["coverage"]))
+                    if isinstance(topology_stats, dict) and "coverage" in topology_stats:
+                        topology_coverages.append(int(topology_stats["coverage"]))
+            if primary_coverages:
                 lines.extend(["", "## MAP-Elites Archive", ""])
-                lines.append(f"- Final coverage: {archive_coverages[-1]} cells")
+                lines.append(f"- Final coverage: {primary_coverages[-1]} cells")
                 lines.append(
-                    f"- Coverage progression: {' -> '.join(str(c) for c in archive_coverages)}"
+                    f"- Coverage progression: {' -> '.join(str(c) for c in primary_coverages)}"
                 )
+                if topology_coverages:
+                    lines.append(f"- Topology final coverage: {topology_coverages[-1]} cells")
+                    lines.append(
+                        f"- Topology progression: {' -> '.join(str(c) for c in topology_coverages)}"
+                    )
         except (json.JSONDecodeError, OSError, KeyError):
             pass
 

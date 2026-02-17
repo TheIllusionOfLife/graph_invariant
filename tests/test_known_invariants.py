@@ -21,6 +21,11 @@ EXPECTED_KEYS = {
     "degree_assortativity",
     "num_triangles",
     "degrees",
+    "laplacian_lambda2",
+    "laplacian_lambda_max",
+    "laplacian_spectral_gap",
+    "normalized_laplacian_lambda2",
+    "laplacian_energy_ratio",
 }
 
 
@@ -81,6 +86,11 @@ EXPECTED_INVARIANT_KEYS = {
     "spectral_radius",
     "diameter",
     "algebraic_connectivity",
+    "laplacian_lambda2",
+    "laplacian_lambda_max",
+    "laplacian_spectral_gap",
+    "normalized_laplacian_lambda2",
+    "laplacian_energy_ratio",
 }
 
 
@@ -144,3 +154,15 @@ def test_compute_known_invariant_values_single_node():
     assert result["spectral_radius"][0] == 0.0
     assert result["algebraic_connectivity"][0] == 0.0
     assert result["diameter"][0] == 0.0
+
+
+def test_compute_known_invariant_values_spectral_pack_disabled():
+    result = compute_known_invariant_values(
+        [nx.path_graph(5)],
+        include_spectral_feature_pack=False,
+    )
+    assert "laplacian_lambda2" not in result
+    assert "laplacian_lambda_max" not in result
+    assert "laplacian_spectral_gap" not in result
+    assert "normalized_laplacian_lambda2" not in result
+    assert "laplacian_energy_ratio" not in result

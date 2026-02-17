@@ -79,6 +79,8 @@ def test_checkpoint_roundtrip_with_map_elites_archive(tmp_path):
     assert loaded.map_elites_archive is not None
     assert loaded.map_elites_archive["num_bins"] == 5
     assert len(loaded.map_elites_archive["cells"]) == 1
+    assert loaded.map_elites_archives is not None
+    assert loaded.map_elites_archives["primary"]["num_bins"] == 5
 
 
 def test_checkpoint_roundtrip_without_map_elites_archive(tmp_path):
@@ -93,6 +95,26 @@ def test_checkpoint_roundtrip_without_map_elites_archive(tmp_path):
     ckpt_path.write_text(json.dumps(payload), encoding="utf-8")
     loaded = load_checkpoint(ckpt_path)
     assert loaded.map_elites_archive is None
+
+
+def test_checkpoint_roundtrip_with_map_elites_archives(tmp_path):
+    ckpt_path = tmp_path / "state.json"
+    state = CheckpointState(
+        experiment_id="exp",
+        generation=2,
+        islands={0: []},
+        rng_seed=42,
+        map_elites_archives={
+            "primary": {"num_bins": 3, "cells": {}},
+            "topology": {"num_bins": 4, "cells": {}},
+        },
+        map_elites_archive={"num_bins": 3, "cells": {}},
+    )
+    save_checkpoint(state, ckpt_path)
+    loaded = load_checkpoint(ckpt_path)
+    assert loaded.map_elites_archives is not None
+    assert loaded.map_elites_archives["primary"]["num_bins"] == 3
+    assert loaded.map_elites_archives["topology"]["num_bins"] == 4
 
 
 def test_rotate_generation_checkpoints_uses_numeric_generation_order(tmp_path):

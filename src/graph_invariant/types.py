@@ -48,4 +48,5 @@ class CheckpointState:
     island_prompt_mode: dict[int, str] = field(default_factory=dict)
     island_constrained_generations: dict[int, int] = field(default_factory=dict)
     island_recent_failures: dict[int, list[str]] = field(default_factory=dict)
+    map_elites_archives: dict[str, dict[str, Any]] | None = None
     map_elites_archive: dict[str, Any] | None = None

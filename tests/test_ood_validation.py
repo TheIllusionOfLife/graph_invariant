@@ -115,6 +115,34 @@ def test_evaluate_ood_split_bounds_mode():
     assert "satisfaction_rate" in result
 
 
+def test_evaluate_ood_split_passes_spectral_toggle(monkeypatch):
+    from graph_invariant.ood_validation import _evaluate_ood_split
+
+    calls: list[bool] = []
+
+    def fake_compute_feature_dicts(graphs, include_spectral_feature_pack=True):  # noqa: ANN001
+        calls.append(include_spectral_feature_pack)
+        return [{"n": float(g.number_of_nodes())} for g in graphs]
+
+    class FakeEvaluator:
+        def evaluate(self, _code, features_list):
+            return [payload["n"] for payload in features_list]
+
+    monkeypatch.setattr(
+        "graph_invariant.ood_validation.compute_feature_dicts", fake_compute_feature_dicts
+    )
+    result = _evaluate_ood_split(
+        code="def new_invariant(s): return float(s['n'])",
+        graphs=[nx.path_graph(4)],
+        target_name="average_shortest_path_length",
+        evaluator=FakeEvaluator(),
+        fitness_mode="correlation",
+        enable_spectral_feature_pack=False,
+    )
+    assert result["valid_count"] == 1
+    assert calls == [False]
+
+
 # ── End-to-end run_ood_validation ────────────────────────────────────
 
 

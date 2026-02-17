@@ -1,4 +1,5 @@
 import ast
+from functools import lru_cache
 import logging
 import math
 import multiprocessing as mp
@@ -358,6 +359,7 @@ def _compiled_candidate_code(code: str) -> Any:
     return compiled
 
 
+@lru_cache(maxsize=1)
 def _safe_numpy() -> types.SimpleNamespace:
     """Return a restricted numpy namespace exposing only safe numerical functions."""
     attrs = {}

@@ -35,15 +35,15 @@ def test_build_prompt_sanitization_and_fencing():
     # ```python
     # <content>
     # ```
-    assert (
-        "Best formulas:\n```python\n" in prompt
-    ), "Top candidates should be wrapped in ```python block"
+    assert "Best formulas:\n```python\n" in prompt, (
+        "Top candidates should be wrapped in ```python block"
+    )
 
     # 2. Verify that Recent failures section is wrapped in text/code blocks
     # We decided to use ```text (or just ```) for failures
-    assert (
-        "Recent failures:\n```text\n" in prompt or "Recent failures:\n```\n" in prompt
-    ), "Failures should be wrapped in code block"
+    assert "Recent failures:\n```text\n" in prompt or "Recent failures:\n```\n" in prompt, (
+        "Failures should be wrapped in code block"
+    )
 
     # 3. Verify that inner backticks are removed from the content to prevent breaking out
     # The malicious candidate had ```python ... ```. These fences should be stripped.

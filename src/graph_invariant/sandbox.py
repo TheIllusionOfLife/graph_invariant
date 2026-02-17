@@ -15,20 +15,26 @@ try:
 except ImportError:  # pragma: no cover - unavailable on Windows.
     resource = None
 
-FORBIDDEN_PATTERNS = [
-    "import ",
+FORBIDDEN_NAMES = {
+    "eval",
+    "exec",
+    "open",
     "__import__",
-    "eval(",
-    "exec(",
-    "open(",
-    "os.",
-    "sys.",
+    "os",
+    "sys",
     "subprocess",
-    "__class__",
-    "__subclasses__",
-    "__globals__",
-]
-FORBIDDEN_CALLS = {"getattr", "setattr", "delattr", "globals", "locals", "vars"}
+    "shutil",
+    "socket",
+    "http",
+    "urllib",
+    "getattr",
+    "setattr",
+    "delattr",
+    "globals",
+    "locals",
+    "vars",
+    "breakpoint",
+}
 ALLOWED_CALLS = {
     "abs",
     "min",
@@ -304,48 +310,49 @@ def _initialize_worker(memory_mb: int, timeout_sec: float) -> None:
 
 
 def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
-    fn_defs = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
-    if len(fn_defs) != 1 or fn_defs[0].name != "new_invariant":
-        return False, "code must define exactly one function named `new_invariant`"
-
     for node in ast.walk(tree):
         if not isinstance(node, ALLOWED_AST_NODES):
-            return False, f"disallowed syntax: {type(node).__name__}"
+            return False, f"forbidden syntax detected: {type(node).__name__}"
 
-        if isinstance(node, ast.Name) and node.id.startswith("__"):
-            return False, f"forbidden name detected: {node.id}"
+        if isinstance(node, ast.Name):
+            if node.id.startswith("__") or node.id in FORBIDDEN_NAMES:
+                return False, f"forbidden name detected: {node.id}"
 
         if isinstance(node, ast.Attribute):
             if node.attr.startswith("__"):
                 return False, f"forbidden attribute detected: {node.attr}"
+            # Check the root of the attribute chain
+            curr = node.value
+            while isinstance(curr, ast.Attribute):
+                curr = curr.value
+            if isinstance(curr, ast.Name) and curr.id in FORBIDDEN_ATTR_BASES:
+                return False, f"forbidden attribute base: {curr.id}"
 
         if isinstance(node, ast.Call):
             if isinstance(node.func, ast.Name):
-                if node.func.id in FORBIDDEN_CALLS:
-                    return False, f"forbidden call detected: {node.func.id}"
                 if node.func.id not in ALLOWED_CALLS:
                     return False, f"non-whitelisted call detected: {node.func.id}"
             elif isinstance(node.func, ast.Attribute):
-                if isinstance(node.func.value, ast.Name):
-                    if node.func.value.id in FORBIDDEN_ATTR_BASES:
-                        return False, f"forbidden call base: {node.func.value.id}"
+                # Base is already checked by ast.Attribute handler
+                pass
             else:
                 return False, "disallowed call expression"
+
+    fn_defs = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
+    if len(fn_defs) != 1 or fn_defs[0].name != "new_invariant":
+        return False, "code must define exactly one function named `new_invariant`"
+
     return True, None
 
 
 def validate_code_static(code: str) -> tuple[bool, str | None]:
     # Best-effort defense for research use only.
     # Running fully untrusted code safely requires stronger isolation (e.g., containers/jails).
-    for token in FORBIDDEN_PATTERNS:
-        if token in code:
-            return False, f"forbidden token detected: {token}"
-    if "def new_invariant(" not in code:
-        return False, "missing `new_invariant` function"
     try:
         tree = ast.parse(code)
     except SyntaxError as exc:
         return False, f"invalid syntax: {exc.msg}"
+
     return _validate_ast(tree)
 
 

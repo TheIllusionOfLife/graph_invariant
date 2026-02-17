@@ -21,7 +21,7 @@ def _features_from_graphs(
 
 
 def _metrics_dict(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float | int]:
-    metrics = compute_metrics(y_true.tolist(), y_pred.tolist())
+    metrics = compute_metrics(y_true, y_pred)
     return {
         "spearman": metrics.rho_spearman,
         "pearson": metrics.r_pearson,

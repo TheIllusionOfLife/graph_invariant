@@ -161,7 +161,7 @@ The paper source is in `paper/` (NeurIPS format). Analysis scripts are in `analy
 To compile the paper (requires [tectonic](https://tectonic-typesetting.github.io/)):
 
 ```bash
-cd paper && tectonic main.tex
+cd paper && tectonic -r 2 main.tex
 ```
 
 To regenerate analysis and figures from experiment artifacts:

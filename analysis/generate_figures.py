@@ -15,11 +15,12 @@ import json
 from pathlib import Path
 
 import matplotlib
+
+matplotlib.use("Agg")  # Non-interactive backend for CI/headless (must precede pyplot import)
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-
-matplotlib.use("Agg")  # Non-interactive backend for CI/headless
 
 # ── Style setup ──────────────────────────────────────────────────────
 
@@ -34,6 +35,25 @@ plt.rcParams.update(
         "text.usetex": False,  # Set True if LaTeX is available
     }
 )
+
+
+# ── Helpers ──────────────────────────────────────────────────────────
+
+
+def _annotate_bars(bars, ax) -> None:
+    """Add value labels above each bar in a bar chart."""
+    for bar in bars:
+        height = bar.get_height()
+        if height > 0:
+            ax.annotate(
+                f"{height:.2f}",
+                xy=(bar.get_x() + bar.get_width() / 2, height),
+                xytext=(0, 3),
+                textcoords="offset points",
+                ha="center",
+                va="bottom",
+                fontsize=7,
+            )
 
 
 # ── Figure generators ────────────────────────────────────────────────
@@ -80,7 +100,7 @@ def plot_convergence(data: dict, output_path: Path) -> None:
     print(f"  Saved {output_path}")
 
 
-def plot_map_elites_heatmap(data: dict, output_path: Path) -> None:
+def plot_map_elites_coverage(data: dict, output_path: Path) -> None:
     """Plot MAP-Elites archive coverage heatmap.
 
     If full archive data isn't available, creates a summary visualization
@@ -113,6 +133,7 @@ def plot_baseline_comparison(data: dict, output_path: Path) -> None:
     methods: list[str] = []
     val_scores: list[float] = []
     test_scores: list[float] = []
+    baselines_collected = False
 
     for name, info in data.items():
         val_s = info.get("val_spearman")
@@ -124,36 +145,37 @@ def plot_baseline_comparison(data: dict, output_path: Path) -> None:
         val_scores.append(val_s)
         test_scores.append(test_s if test_s is not None else 0.0)
 
-        # Add baselines from this experiment
-        baselines = info.get("baselines", {})
-        stat = baselines.get("stat_baselines", {})
-        if isinstance(stat, dict):
-            for bl_name, bl_data in stat.items():
-                if not isinstance(bl_data, dict) or bl_data.get("status") != "ok":
-                    continue
-                bl_val = bl_data.get("val_metrics", {})
-                bl_test = bl_data.get("test_metrics", {})
-                bl_val_s = bl_val.get("spearman") if isinstance(bl_val, dict) else None
-                bl_test_s = bl_test.get("spearman") if isinstance(bl_test, dict) else None
-                label = bl_name.replace("_", " ").title()
-                if label not in methods:
-                    methods.append(label)
-                    val_scores.append(bl_val_s if bl_val_s is not None else 0.0)
-                    test_scores.append(bl_test_s if bl_test_s is not None else 0.0)
+        # Add baselines from first experiment that has them (avoid duplication)
+        if not baselines_collected:
+            baselines = info.get("baselines", {})
+            stat = baselines.get("stat_baselines", {})
+            if isinstance(stat, dict):
+                for bl_name, bl_data in stat.items():
+                    if not isinstance(bl_data, dict) or bl_data.get("status") != "ok":
+                        continue
+                    bl_val = bl_data.get("val_metrics", {})
+                    bl_test = bl_data.get("test_metrics", {})
+                    bl_val_s = bl_val.get("spearman") if isinstance(bl_val, dict) else None
+                    bl_test_s = bl_test.get("spearman") if isinstance(bl_test, dict) else None
+                    label = bl_name.replace("_", " ").title()
+                    if label not in methods:
+                        methods.append(label)
+                        val_scores.append(bl_val_s if bl_val_s is not None else 0.0)
+                        test_scores.append(bl_test_s if bl_test_s is not None else 0.0)
 
-        pysr = baselines.get("pysr_baseline", {})
-        if isinstance(pysr, dict) and pysr.get("status") == "ok":
-            pysr_val = pysr.get("val_metrics", {})
-            pysr_test = pysr.get("test_metrics", {})
-            if "PySR" not in methods:
-                methods.append("PySR")
-                val_scores.append(
-                    pysr_val.get("spearman", 0.0) if isinstance(pysr_val, dict) else 0.0
-                )
-                test_scores.append(
-                    pysr_test.get("spearman", 0.0) if isinstance(pysr_test, dict) else 0.0
-                )
-        break  # Only use first experiment's baselines to avoid duplication
+            pysr = baselines.get("pysr_baseline", {})
+            if isinstance(pysr, dict) and pysr.get("status") == "ok":
+                pysr_val = pysr.get("val_metrics", {})
+                pysr_test = pysr.get("test_metrics", {})
+                if "PySR" not in methods:
+                    methods.append("PySR")
+                    val_scores.append(
+                        pysr_val.get("spearman", 0.0) if isinstance(pysr_val, dict) else 0.0
+                    )
+                    test_scores.append(
+                        pysr_test.get("spearman", 0.0) if isinstance(pysr_test, dict) else 0.0
+                    )
+            baselines_collected = True
 
     if not methods:
         print("  No baseline data available, skipping baseline_comparison.pdf")
@@ -175,30 +197,8 @@ def plot_baseline_comparison(data: dict, output_path: Path) -> None:
     ax.set_ylim(0, 1.05)
 
     # Add value labels
-    for bar in bars1:
-        height = bar.get_height()
-        if height > 0:
-            ax.annotate(
-                f"{height:.2f}",
-                xy=(bar.get_x() + bar.get_width() / 2, height),
-                xytext=(0, 3),
-                textcoords="offset points",
-                ha="center",
-                va="bottom",
-                fontsize=7,
-            )
-    for bar in bars2:
-        height = bar.get_height()
-        if height > 0:
-            ax.annotate(
-                f"{height:.2f}",
-                xy=(bar.get_x() + bar.get_width() / 2, height),
-                xytext=(0, 3),
-                textcoords="offset points",
-                ha="center",
-                va="bottom",
-                fontsize=7,
-            )
+    _annotate_bars(bars1, ax)
+    _annotate_bars(bars2, ax)
 
     fig.tight_layout()
     fig.savefig(output_path)
@@ -298,8 +298,12 @@ def plot_benchmark_boxplot(data: dict, output_path: Path) -> None:
                     test_scores.append(r["test_spearman"])
         else:
             summary = info.get("summary", {})
-            val_s = summary.get("val_spearman") or info.get("val_spearman")
-            test_s = summary.get("test_spearman") or info.get("test_spearman")
+            val_s = summary.get("val_spearman")
+            if val_s is None:
+                val_s = info.get("val_spearman")
+            test_s = summary.get("test_spearman")
+            if test_s is None:
+                test_s = info.get("test_spearman")
             if val_s is not None:
                 val_scores.append(val_s)
             if test_s is not None:
@@ -360,7 +364,7 @@ def main() -> None:
 
     print("\nGenerating figures...")
     plot_convergence(data, output_dir / "convergence.pdf")
-    plot_map_elites_heatmap(data, output_dir / "map_elites_heatmap.pdf")
+    plot_map_elites_coverage(data, output_dir / "map_elites_heatmap.pdf")
     plot_baseline_comparison(data, output_dir / "baseline_comparison.pdf")
     plot_ood_generalization(data, output_dir / "ood_generalization.pdf")
     plot_benchmark_boxplot(data, output_dir / "benchmark_boxplot.pdf")

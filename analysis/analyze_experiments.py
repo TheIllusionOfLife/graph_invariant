@@ -58,8 +58,11 @@ def load_event_log(experiment_dir: Path) -> list[dict]:
             for line in f:
                 line = line.strip()
                 if line:
-                    events.append(json.loads(line))
-    except (json.JSONDecodeError, OSError):
+                    try:
+                        events.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+    except OSError:
         pass
     return events
 
@@ -141,11 +144,9 @@ def build_comparison_table(experiments: dict[str, dict]) -> list[dict[str, Any]]
         if isinstance(bounds, dict) and bounds:
             val_bounds = bounds.get("val", {})
             test_bounds = bounds.get("test", {})
-            row["val_bound_score"] = val_bounds.get("bound_score") if val_bounds else None
-            row["test_bound_score"] = test_bounds.get("bound_score") if test_bounds else None
-            row["val_satisfaction_rate"] = (
-                val_bounds.get("satisfaction_rate") if val_bounds else None
-            )
+            row["val_bound_score"] = val_bounds.get("bound_score")
+            row["test_bound_score"] = test_bounds.get("bound_score")
+            row["val_satisfaction_rate"] = val_bounds.get("satisfaction_rate")
 
         # Baseline comparison
         bc = summary.get("baseline_comparison", {})

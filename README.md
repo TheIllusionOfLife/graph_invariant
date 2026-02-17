@@ -23,6 +23,7 @@ This repository contains a Phase 1 implementation (data generation, candidate se
 - `uv` for environment/dependency management
 - Optional: local Ollama model for candidate generation (default model: `gpt-oss:20b`)
 - Optional: Julia runtime for PySR symbolic regression baseline
+- Optional: [tectonic](https://tectonic-typesetting.github.io/) for compiling the paper
 
 ## Quickstart
 

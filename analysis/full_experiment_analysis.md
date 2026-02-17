@@ -13,7 +13,7 @@
 |---|---|---|---|---|---|
 | MAP-Elites ASPL | correlation | 30 | 0.935 | 0.947 | Yes |
 | Algebraic Connectivity | correlation | 20 | 0.765 | 0.778 | No |
-| Upper Bound ASPL | upper_bound | 20 | 0.423 | 0.359 | No |
+| Upper Bound ASPL | upper_bound | 20 | BS=0.514, SR=87% | BS=0.499, SR=84% | No |
 | experiment_v2 (legacy) | correlation | 12 | 0.937 | 0.922 | Yes |
 | Benchmark (5 seeds) | correlation | 20 | 0.927±0.011 | 0.921±0.027 | 1/5 |
 
@@ -45,7 +45,7 @@
   search space may need richer features or more generations
 
 ### Upper Bound ASPL (20 generations)
-- Best score: 0.228 → 0.453 (steepest relative improvement)
+- Best composite score: 0.228 → 0.453 (steepest relative improvement; composite fitness, not raw bound score)
 - Convergence driven primarily by improving satisfaction rate
 - The LLM progressively discovered tighter bounds by combining known
   graph-theoretic inequalities (path bound, Moore bounds)
@@ -123,8 +123,8 @@ Five seeds with 20 generations each:
 
 | Metric | Mean | Std | Min | Max |
 |---|---|---|---|---|
-| Val ρ | 0.927 | 0.011 | ~0.91 | ~0.94 |
-| Test ρ | 0.921 | 0.027 | ~0.88 | 0.953 |
+| Val ρ | 0.927 | 0.011 | 0.909 | 0.940 |
+| Test ρ | 0.921 | 0.027 | 0.873 | 0.953 |
 
 - Low standard deviation indicates reproducible formula discovery
 - One seed (seed 55) meets the success threshold (test ρ = 0.953)
@@ -168,15 +168,18 @@ for extrapolation.
 
 ### Upper Bound OOD
 
-| OOD Category | Valid Count | Notes |
-|---|---|---|
-| Large random | 97/100 | 3 violations on extreme graphs |
-| Extreme parameters | 49/50 | 1 violation |
-| Special topologies | 8/8 | All satisfied |
+| OOD Category | Valid Predictions | Satisfaction Rate | Bound Score |
+|---|---|---|---|
+| Large random | 97/100 | 78% | 0.447 |
+| Extreme parameters | 49/50 | 59% | 0.303 |
+| Special topologies | 8/8 | 63% | 0.392 |
 
-The upper bound maintains high satisfaction rates OOD (97%+ for random, 100%
-for special topologies), demonstrating that the discovered bounds are
-mathematically valid beyond the training distribution.
+Satisfaction rates degrade substantially OOD compared to the validation set
+(87%). The bound was optimized for the training distribution's graph families
+at $|V| \in [30, 100]$; larger graphs and extreme topologies produce more
+violations. All 97–100% valid prediction counts indicate the formula executes
+correctly, but the bounds themselves are violated more frequently out of
+distribution.
 
 ---
 

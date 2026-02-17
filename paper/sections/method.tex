@@ -12,7 +12,6 @@ quality-diversity archiving. Figure~\ref{fig:architecture} provides an overview.
     Sandbox Evaluation $\rightarrow$ Composite Scoring $\rightarrow$
     MAP-Elites Archive $\rightarrow$ Migration $\rightarrow$ Self-Correction
     \\[2pt]
-    \textit{[Placeholder: will be replaced with vector diagram from results]}
   }}
   \caption{Overview of the LLM-driven graph invariant discovery pipeline.
     Four islands with distinct prompt strategies generate candidate formulas,
@@ -27,12 +26,12 @@ quality-diversity archiving. Figure~\ref{fig:architecture} provides an overview.
 We generate synthetic graph datasets from five generative
 families---Erd\H{o}s--R\'{e}nyi (ER), Barab\'{a}si--Albert (BA),
 Watts--Strogatz (WS), random geometric graphs (RGG), and stochastic block
-models (SBM)---with node counts $n \in [30, 100]$. Each graph is augmented with
+models (SBM)---with node counts $|V| \in [30, 100]$. Each graph is augmented with
 a feature dictionary containing pre-computed structural properties: node count
-$n$, edge count $m$, density, degree statistics (mean, max, min, std), average
+$|V|$, edge count $|E|$, density, degree statistics (mean, max, min, std), average
 clustering coefficient, transitivity, degree assortativity, triangle count, and
-the sorted degree sequence. The dataset is split into train ($n_{\text{train}}
-= 50$), validation ($n_{\text{val}} = 200$), and test ($n_{\text{test}} = 200$)
+the sorted degree sequence. The dataset is split into train ($m_{\text{train}}
+= 50$), validation ($m_{\text{val}} = 200$), and test ($m_{\text{test}} = 200$)
 sets using deterministic seeding for reproducibility.
 
 Target values are computed per graph for the specified invariant (e.g.,
@@ -110,8 +109,8 @@ we instead use a bound score combining satisfaction rate and tightness.
 
 \paragraph{Simplicity $S(f)$.}
 Computed as $S(f) = \max(0, 1 - c / c_{\max})$ where $c$ is the number of AST
-nodes in the candidate function body and $c_{\max} = 50$. This penalizes
-complex expressions while remaining differentiable in candidate selection.
+nodes in the candidate function body and $c_{\max} = 50$. This provides a gradual penalty that degrades gracefully with increasing
+complexity.
 
 \paragraph{Novelty $N(f)$.}
 A bootstrap confidence interval test compares the candidate's output vector to

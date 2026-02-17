@@ -34,10 +34,14 @@ mathematical inequalities.
 
 Table~\ref{tab:baselines} compares LLM-discovered formulas against statistical
 and symbolic regression baselines on the ASPL target. The LLM formulas achieve
-$\rho = 0.947$ on the test set, competitive with PySR ($\rho = 0.975$) and
-random forest ($\rho = 0.951$), while providing interpretable closed-form
-expressions. Linear regression achieves $\rho = 0.975$, indicating that ASPL
-is well-approximated by linear combinations of graph statistics.
+$\rho = 0.947$ on the test set, which trails PySR ($\rho = 0.975$),
+linear regression ($\rho = 0.975$), and random forest ($\rho = 0.951$) by
+2--3 percentage points. This gap reflects the cost of our composite objective,
+which penalizes complexity and rewards novelty rather than optimizing
+correlation alone. The strong linear regression performance ($\rho = 0.975$)
+indicates that ASPL is well-approximated by linear combinations of graph
+statistics; the LLM formulas trade predictive accuracy for interpretability
+and structural insight.
 
 \begin{table}[t]
   \centering
@@ -65,9 +69,11 @@ in generations 0--1, where most candidates are rejected by the novelty gate
 or sandbox. Acceptance rates increase from 5\% in generation~0 to over 74\%
 by generation~4 in the MAP-Elites ASPL experiment, as the LLM learns the
 sandbox constraints through the self-correction feedback loop. The MAP-Elites
-ASPL experiment converges from a best score of 0.426 to 0.553 over 30
-generations, while the upper-bound experiment shows the steepest improvement
-(0.228 $\to$ 0.453).
+ASPL experiment converges from a composite fitness score of 0.426 to 0.553
+over 30 generations (note: these are weighted scores from Eq.~\ref{eq:score},
+not raw Spearman $\rho$; the final validation $\rho = 0.935$ appears in
+Table~\ref{tab:main_results}). The upper-bound experiment shows the steepest
+relative improvement (0.228 $\to$ 0.453 composite score).
 
 \begin{figure}[t]
   \centering

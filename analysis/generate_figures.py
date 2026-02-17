@@ -147,6 +147,7 @@ def plot_baseline_comparison(data: dict, output_path: Path) -> None:
 
         # Add baselines from first experiment that has them (avoid duplication)
         if not baselines_collected:
+            added_any_baseline = False
             baselines = info.get("baselines", {})
             stat = baselines.get("stat_baselines", {})
             if isinstance(stat, dict):
@@ -162,6 +163,7 @@ def plot_baseline_comparison(data: dict, output_path: Path) -> None:
                         methods.append(label)
                         val_scores.append(bl_val_s if bl_val_s is not None else 0.0)
                         test_scores.append(bl_test_s if bl_test_s is not None else 0.0)
+                        added_any_baseline = True
 
             pysr = baselines.get("pysr_baseline", {})
             if isinstance(pysr, dict) and pysr.get("status") == "ok":
@@ -175,7 +177,9 @@ def plot_baseline_comparison(data: dict, output_path: Path) -> None:
                     test_scores.append(
                         pysr_test.get("spearman", 0.0) if isinstance(pysr_test, dict) else 0.0
                     )
-            baselines_collected = True
+                    added_any_baseline = True
+            if added_any_baseline:
+                baselines_collected = True
 
     if not methods:
         print("  No baseline data available, skipping baseline_comparison.pdf")
@@ -359,7 +363,11 @@ def main() -> None:
         print(f"Error: {data_path} not found. Run analyze_experiments.py first.")
         return
 
-    data = json.loads(data_path.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(data_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        print(f"Error: failed to read {data_path}: {exc}")
+        return
     print(f"Loaded data for {len(data)} experiments")
 
     print("\nGenerating figures...")

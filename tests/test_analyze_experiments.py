@@ -4,14 +4,22 @@ Follows test_ood_validation.py patterns: tmp_path fixtures with minimal mock
 JSON data, asserting output shapes and key presence rather than exact values.
 """
 
+import importlib.util
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
-# Make analysis/ importable
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "analysis"))
+
+@pytest.fixture(scope="module")
+def analyze_module():
+    analysis_path = Path(__file__).resolve().parent.parent / "analysis" / "analyze_experiments.py"
+    spec = importlib.util.spec_from_file_location("analyze_experiments", analysis_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Failed to load analyze_experiments module spec")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 # ── Fixtures ─────────────────────────────────────────────────────────
@@ -188,66 +196,52 @@ def artifacts_dir(
 # ── Data loading tests ───────────────────────────────────────────────
 
 
-def test_load_experiment_summary(artifacts_dir):
-    from analyze_experiments import load_experiment_summary
-
-    summary = load_experiment_summary(artifacts_dir / "experiment_map_elites_aspl")
+def test_load_experiment_summary(artifacts_dir, analyze_module):
+    summary = analyze_module.load_experiment_summary(artifacts_dir / "experiment_map_elites_aspl")
     assert isinstance(summary, dict)
     assert summary["experiment_id"] == "test_exp"
     assert "val_metrics" in summary
     assert "test_metrics" in summary
 
 
-def test_load_experiment_summary_missing_file(tmp_path):
-    from analyze_experiments import load_experiment_summary
-
-    summary = load_experiment_summary(tmp_path / "nonexistent")
+def test_load_experiment_summary_missing_file(tmp_path, analyze_module):
+    summary = analyze_module.load_experiment_summary(tmp_path / "nonexistent")
     assert summary == {}
 
 
-def test_load_baselines_summary(artifacts_dir):
-    from analyze_experiments import load_baselines_summary
-
-    baselines = load_baselines_summary(artifacts_dir / "experiment_map_elites_aspl")
+def test_load_baselines_summary(artifacts_dir, analyze_module):
+    baselines = analyze_module.load_baselines_summary(artifacts_dir / "experiment_map_elites_aspl")
     assert isinstance(baselines, dict)
     assert "stat_baselines" in baselines
     assert "pysr_baseline" in baselines
 
 
-def test_load_ood_results(artifacts_dir):
-    from analyze_experiments import load_ood_results
-
-    ood = load_ood_results(artifacts_dir / "experiment_map_elites_aspl")
+def test_load_ood_results(artifacts_dir, analyze_module):
+    ood = analyze_module.load_ood_results(artifacts_dir / "experiment_map_elites_aspl")
     assert isinstance(ood, dict)
     assert "large_random" in ood
     assert "extreme_params" in ood
     assert "special_topology" in ood
 
 
-def test_load_event_log(artifacts_dir):
-    from analyze_experiments import load_event_log
-
-    events = load_event_log(artifacts_dir / "experiment_map_elites_aspl")
+def test_load_event_log(artifacts_dir, analyze_module):
+    events = analyze_module.load_event_log(artifacts_dir / "experiment_map_elites_aspl")
     assert isinstance(events, list)
     assert len(events) == 5
     assert events[0]["event_type"] == "generation_summary"
 
 
-def test_load_event_log_missing_file(tmp_path):
-    from analyze_experiments import load_event_log
-
-    events = load_event_log(tmp_path / "nonexistent")
+def test_load_event_log_missing_file(tmp_path, analyze_module):
+    events = analyze_module.load_event_log(tmp_path / "nonexistent")
     assert events == []
 
 
 # ── Analysis function tests ──────────────────────────────────────────
 
 
-def test_extract_convergence_data(artifacts_dir):
-    from analyze_experiments import extract_convergence_data, load_event_log
-
-    events = load_event_log(artifacts_dir / "experiment_map_elites_aspl")
-    convergence = extract_convergence_data(events)
+def test_extract_convergence_data(artifacts_dir, analyze_module):
+    events = analyze_module.load_event_log(artifacts_dir / "experiment_map_elites_aspl")
+    convergence = analyze_module.extract_convergence_data(events)
     assert isinstance(convergence, dict)
     assert "generations" in convergence
     assert "best_scores" in convergence
@@ -258,18 +252,14 @@ def test_extract_convergence_data(artifacts_dir):
         assert convergence["best_scores"][i] >= convergence["best_scores"][i - 1]
 
 
-def test_extract_convergence_data_includes_coverage(artifacts_dir):
-    from analyze_experiments import extract_convergence_data, load_event_log
-
-    events = load_event_log(artifacts_dir / "experiment_map_elites_aspl")
-    convergence = extract_convergence_data(events)
+def test_extract_convergence_data_includes_coverage(artifacts_dir, analyze_module):
+    events = analyze_module.load_event_log(artifacts_dir / "experiment_map_elites_aspl")
+    convergence = analyze_module.extract_convergence_data(events)
     assert "map_elites_coverage" in convergence
     assert len(convergence["map_elites_coverage"]) == 5
 
 
-def test_build_comparison_table(artifacts_dir, mock_phase1_summary):
-    from analyze_experiments import build_comparison_table
-
+def test_build_comparison_table(artifacts_dir, mock_phase1_summary, analyze_module):
     experiments = {
         "map_elites_aspl": {
             "summary": mock_phase1_summary,
@@ -294,7 +284,7 @@ def test_build_comparison_table(artifacts_dir, mock_phase1_summary):
             },
         },
     }
-    table = build_comparison_table(experiments)
+    table = analyze_module.build_comparison_table(experiments)
     assert isinstance(table, list)
     assert len(table) == 1
     row = table[0]
@@ -304,32 +294,30 @@ def test_build_comparison_table(artifacts_dir, mock_phase1_summary):
     assert "success" in row
 
 
-def test_build_comparison_table_multiple_experiments(mock_phase1_summary, mock_bounds_summary):
-    from analyze_experiments import build_comparison_table
-
+def test_build_comparison_table_multiple_experiments(
+    mock_phase1_summary, mock_bounds_summary, analyze_module
+):
     experiments = {
         "map_elites_aspl": {"summary": mock_phase1_summary, "baselines": {}, "ood": {}},
         "upper_bound_aspl": {"summary": mock_bounds_summary, "baselines": {}, "ood": {}},
     }
-    table = build_comparison_table(experiments)
+    table = analyze_module.build_comparison_table(experiments)
     assert len(table) == 2
     names = {row["experiment"] for row in table}
     assert names == {"map_elites_aspl", "upper_bound_aspl"}
 
 
-def test_build_comparison_table_empty_experiments():
-    from analyze_experiments import build_comparison_table
-
-    table = build_comparison_table({})
+def test_build_comparison_table_empty_experiments(analyze_module):
+    table = analyze_module.build_comparison_table({})
     assert table == []
 
 
 # ── Output tests ─────────────────────────────────────────────────────
 
 
-def test_write_analysis_report(tmp_path, mock_phase1_summary, mock_baselines_summary):
-    from analyze_experiments import write_analysis_report
-
+def test_write_analysis_report(
+    tmp_path, mock_phase1_summary, mock_baselines_summary, analyze_module
+):
     experiments = {
         "map_elites_aspl": {
             "summary": mock_phase1_summary,
@@ -342,16 +330,14 @@ def test_write_analysis_report(tmp_path, mock_phase1_summary, mock_baselines_sum
         },
     }
     output_path = tmp_path / "report.md"
-    write_analysis_report(experiments, output_path)
+    analyze_module.write_analysis_report(experiments, output_path)
     assert output_path.exists()
     content = output_path.read_text()
     assert "map_elites_aspl" in content
     assert "val" in content.lower() or "validation" in content.lower()
 
 
-def test_write_figure_data_json(tmp_path, mock_phase1_summary):
-    from analyze_experiments import write_figure_data_json
-
+def test_write_figure_data_json(tmp_path, mock_phase1_summary, analyze_module):
     experiments = {
         "map_elites_aspl": {
             "summary": mock_phase1_summary,
@@ -364,8 +350,63 @@ def test_write_figure_data_json(tmp_path, mock_phase1_summary):
         },
     }
     output_path = tmp_path / "figure_data.json"
-    write_figure_data_json(experiments, output_path)
+    analyze_module.write_figure_data_json(experiments, output_path)
     assert output_path.exists()
     data = json.loads(output_path.read_text())
     assert isinstance(data, dict)
     assert "map_elites_aspl" in data
+
+
+def test_extract_convergence_data_from_log_file_streaming(artifacts_dir, analyze_module):
+    events_path = artifacts_dir / "experiment_map_elites_aspl" / "logs" / "events.jsonl"
+    convergence = analyze_module.extract_convergence_data_from_log_file(events_path)
+    assert convergence["generations"] == [0, 1, 2, 3, 4]
+    assert len(convergence["best_scores"]) == 5
+    assert convergence["map_elites_coverage"] == [5, 8, 11, 14, 17]
+
+
+def test_build_comparison_table_extracts_pysr_val_spearman(mock_phase1_summary, analyze_module):
+    experiments = {
+        "map_elites_aspl": {
+            "summary": mock_phase1_summary,
+            "baselines": {},
+            "ood": {},
+        }
+    }
+    table = analyze_module.build_comparison_table(experiments)
+    assert table[0]["pysr_val_spearman"] == 0.88
+
+
+def test_discover_experiments_reads_benchmark_and_streams_convergence(tmp_path, analyze_module):
+    exp_dir = tmp_path / "experiment_map_elites_aspl"
+    exp_dir.mkdir()
+    summary = {"fitness_mode": "correlation", "success": True, "val_metrics": {"spearman": 0.1}}
+    (exp_dir / "phase1_summary.json").write_text(json.dumps(summary), encoding="utf-8")
+    logs_dir = exp_dir / "logs"
+    logs_dir.mkdir()
+    (logs_dir / "events.jsonl").write_text(
+        json.dumps(
+            {
+                "event_type": "generation_summary",
+                "payload": {
+                    "generation": 1,
+                    "best_val_score": 0.1,
+                    "map_elites_stats": {"coverage": 2},
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    bench_dir = tmp_path / "benchmark_aspl" / "benchmark_20260101T000000Z"
+    bench_dir.mkdir(parents=True)
+    (bench_dir / "benchmark_summary.json").write_text(
+        json.dumps({"runs": [{"seed": 1, "val_spearman": 0.2, "test_spearman": 0.3}]}),
+        encoding="utf-8",
+    )
+
+    experiments = analyze_module.discover_experiments(tmp_path)
+    assert "experiment_map_elites_aspl" in experiments
+    assert experiments["experiment_map_elites_aspl"]["convergence"]["best_scores"] == [0.1]
+    assert "benchmark/benchmark_20260101T000000Z" in experiments

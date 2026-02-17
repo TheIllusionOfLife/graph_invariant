@@ -104,6 +104,49 @@ def extract_convergence_data(events: list[dict]) -> dict[str, list]:
     return result
 
 
+def extract_convergence_data_from_log_file(events_path: Path) -> dict[str, list]:
+    """Extract convergence data from a JSONL log file without loading all events."""
+    if not events_path.exists():
+        return {"generations": [], "best_scores": []}
+
+    generations: list[int] = []
+    best_scores: list[float] = []
+    coverages: list[int] = []
+
+    try:
+        with events_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if event.get("event_type") != "generation_summary":
+                    continue
+                payload = event.get("payload", {})
+                gen = payload.get("generation")
+                score = payload.get("best_val_score")
+                if gen is None or score is None:
+                    continue
+                generations.append(gen)
+                best_scores.append(score)
+                me_stats = payload.get("map_elites_stats", {})
+                if "coverage" in me_stats:
+                    coverages.append(me_stats["coverage"])
+    except OSError:
+        return {"generations": [], "best_scores": []}
+
+    result: dict[str, list] = {
+        "generations": generations,
+        "best_scores": best_scores,
+    }
+    if coverages:
+        result["map_elites_coverage"] = coverages
+    return result
+
+
 def _get_spearman(metrics: dict | None) -> float | None:
     """Safely extract spearman from a metrics dict."""
     if not isinstance(metrics, dict):
@@ -152,7 +195,13 @@ def build_comparison_table(experiments: dict[str, dict]) -> list[dict[str, Any]]
         bc = summary.get("baseline_comparison", {})
         if isinstance(bc, dict) and bc:
             pysr = bc.get("pysr", {})
-            row["pysr_val_spearman"] = _get_spearman(pysr) if isinstance(pysr, dict) else None
+            if isinstance(pysr, dict):
+                pysr_val = pysr.get("val_spearman")
+                row["pysr_val_spearman"] = (
+                    float(pysr_val) if isinstance(pysr_val, (int, float)) else None
+                )
+            else:
+                row["pysr_val_spearman"] = None
 
         # Statistical baselines
         stat = baselines.get("stat_baselines", {})
@@ -382,8 +431,8 @@ def discover_experiments(artifacts_root: Path) -> dict[str, dict]:
 
         baselines = load_baselines_summary(exp_dir)
         ood = load_ood_results(exp_dir)
-        events = load_event_log(exp_dir)
-        convergence = extract_convergence_data(events)
+        events_path = exp_dir / "logs" / "events.jsonl"
+        convergence = extract_convergence_data_from_log_file(events_path)
 
         experiments[exp_name] = {
             "summary": summary,

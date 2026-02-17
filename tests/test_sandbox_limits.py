@@ -1,8 +1,10 @@
 
 import ast
 import sys
+
 import pytest
-from graph_invariant.sandbox import validate_code_static, MAX_CODE_LENGTH, MAX_AST_NODES
+
+from graph_invariant.sandbox import MAX_AST_NODES, MAX_CODE_LENGTH, validate_code_static
 
 # Increase recursion limit slightly to allow test setup if needed,
 # though we rely on flat structures mostly
@@ -42,7 +44,8 @@ def test_recursion_error_check():
         # It might be caught as RecursionError (our new handler)
         # OR as SyntaxError (Python parser limit)
         # OR "complexity" generic message if we caught RecursionError
-        assert "complexity" in str(reason) or "recursion" in str(reason) or "invalid syntax" in str(reason)
+        msg = str(reason)
+        assert "complexity" in msg or "recursion" in msg or "invalid syntax" in msg
     except RecursionError:
         pytest.fail("RecursionError propagated out of validate_code_static")
 

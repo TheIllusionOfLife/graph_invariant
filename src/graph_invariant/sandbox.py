@@ -5,6 +5,7 @@ import multiprocessing as mp
 import os
 import signal
 import types
+from functools import lru_cache
 from multiprocessing.pool import Pool
 from typing import Any
 
@@ -423,6 +424,7 @@ def _compiled_candidate_code(code: str) -> Any:
     return compiled
 
 
+@lru_cache(maxsize=1)
 def _safe_numpy() -> types.SimpleNamespace:
     """Return a restricted numpy namespace exposing only safe numerical functions."""
     return types.SimpleNamespace(**_SAFE_NP_ATTRS_DICT)

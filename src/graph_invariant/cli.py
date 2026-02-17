@@ -276,6 +276,88 @@ def _update_prompt_mode_after_generation(
         )
 
 
+def _handle_rejection(
+    *,
+    cfg: Phase1Config,
+    state: CheckpointState,
+    log_path: Path,
+    self_correction_stats: dict[str, Any],
+    island_id: int,
+    pop_idx: int,
+    attempt_idx: int,
+    rejection_reason: str,
+    failure_feedback: str | None,
+    base_prompt: str,
+    code: str,
+    max_attempts: int,
+    repairable: bool,
+    train_signal: float | None = None,
+) -> tuple[bool, str | None]:
+    failure_categories = self_correction_stats.setdefault("failure_categories", {})
+    failure_categories[rejection_reason] = int(failure_categories.get(rejection_reason, 0)) + 1
+
+    _record_recent_failure(
+        state,
+        island_id=island_id,
+        failure_text=f"{rejection_reason}: {failure_feedback}",
+        max_items=cfg.self_correction_feedback_window,
+    )
+    rejected_payload: dict[str, Any] = {
+        "generation": state.generation,
+        "island_id": island_id,
+        "population_idx": pop_idx,
+        "attempt_index": attempt_idx,
+        "reason": rejection_reason,
+        "failure_feedback": failure_feedback,
+        "model_name": cfg.model_name,
+    }
+    if train_signal is not None:
+        rejected_payload["train_signal"] = train_signal
+    append_jsonl("candidate_rejected", rejected_payload, log_path)
+
+    if repairable and attempt_idx + 1 < max_attempts:
+        self_correction_stats["attempted_repairs"] = (
+            int(self_correction_stats.get("attempted_repairs", 0)) + 1
+        )
+        append_jsonl(
+            "candidate_repair_attempted",
+            {
+                "generation": state.generation,
+                "island_id": island_id,
+                "population_idx": pop_idx,
+                "attempt_index": attempt_idx,
+                "reason": rejection_reason,
+                "failure_feedback": failure_feedback,
+                "model_name": cfg.model_name,
+            },
+            log_path,
+        )
+        next_prompt = _build_repair_prompt(
+            original_prompt=base_prompt,
+            candidate_code=code,
+            failure_feedback=failure_feedback or rejection_reason,
+        )
+        return True, next_prompt
+
+    if attempt_idx > 0:
+        self_correction_stats["failed_repairs"] = (
+            int(self_correction_stats.get("failed_repairs", 0)) + 1
+        )
+        append_jsonl(
+            "candidate_repair_result",
+            {
+                "generation": state.generation,
+                "island_id": island_id,
+                "population_idx": pop_idx,
+                "status": "failed",
+                "reason": rejection_reason,
+                "model_name": cfg.model_name,
+            },
+            log_path,
+        )
+    return False, None
+
+
 def _run_one_generation(
     cfg: Phase1Config,
     state: CheckpointState,
@@ -290,86 +372,6 @@ def _run_one_generation(
     self_correction_stats: dict[str, Any],
     archive: MapElitesArchive | None = None,
 ) -> None:
-    failure_categories = self_correction_stats.setdefault("failure_categories", {})
-
-    def _count_failure(reason: str) -> None:
-        failure_categories[reason] = int(failure_categories.get(reason, 0)) + 1
-
-    def _handle_rejection(
-        *,
-        island_id: int,
-        pop_idx: int,
-        attempt_idx: int,
-        rejection_reason: str,
-        failure_feedback: str | None,
-        base_prompt: str,
-        code: str,
-        max_attempts: int,
-        repairable: bool,
-        train_signal: float | None = None,
-    ) -> tuple[bool, str | None]:
-        _count_failure(rejection_reason)
-        _record_recent_failure(
-            state,
-            island_id=island_id,
-            failure_text=f"{rejection_reason}: {failure_feedback}",
-            max_items=cfg.self_correction_feedback_window,
-        )
-        rejected_payload: dict[str, Any] = {
-            "generation": state.generation,
-            "island_id": island_id,
-            "population_idx": pop_idx,
-            "attempt_index": attempt_idx,
-            "reason": rejection_reason,
-            "failure_feedback": failure_feedback,
-            "model_name": cfg.model_name,
-        }
-        if train_signal is not None:
-            rejected_payload["train_signal"] = train_signal
-        append_jsonl("candidate_rejected", rejected_payload, log_path)
-
-        if repairable and attempt_idx + 1 < max_attempts:
-            self_correction_stats["attempted_repairs"] = (
-                int(self_correction_stats.get("attempted_repairs", 0)) + 1
-            )
-            append_jsonl(
-                "candidate_repair_attempted",
-                {
-                    "generation": state.generation,
-                    "island_id": island_id,
-                    "population_idx": pop_idx,
-                    "attempt_index": attempt_idx,
-                    "reason": rejection_reason,
-                    "failure_feedback": failure_feedback,
-                    "model_name": cfg.model_name,
-                },
-                log_path,
-            )
-            next_prompt = _build_repair_prompt(
-                original_prompt=base_prompt,
-                candidate_code=code,
-                failure_feedback=failure_feedback or rejection_reason,
-            )
-            return True, next_prompt
-
-        if attempt_idx > 0:
-            self_correction_stats["failed_repairs"] = (
-                int(self_correction_stats.get("failed_repairs", 0)) + 1
-            )
-            append_jsonl(
-                "candidate_repair_result",
-                {
-                    "generation": state.generation,
-                    "island_id": island_id,
-                    "population_idx": pop_idx,
-                    "status": "failed",
-                    "reason": rejection_reason,
-                    "model_name": cfg.model_name,
-                },
-                log_path,
-            )
-        return False, None
-
     island_ids = sorted(state.islands.keys())
     for island_id in island_ids:
         archive_exemplar_codes: list[str] | None = None
@@ -432,6 +434,10 @@ def _run_one_generation(
 
                 if rejection_reason is not None:
                     should_retry, next_prompt = _handle_rejection(
+                        cfg=cfg,
+                        state=state,
+                        log_path=log_path,
+                        self_correction_stats=self_correction_stats,
                         island_id=island_id,
                         pop_idx=pop_idx,
                         attempt_idx=attempt_idx,
@@ -460,6 +466,10 @@ def _run_one_generation(
                     rejection_reason = "no_valid_val_predictions"
                     failure_feedback = _summarize_error_details(val_details)
                     should_retry, next_prompt = _handle_rejection(
+                        cfg=cfg,
+                        state=state,
+                        log_path=log_path,
+                        self_correction_stats=self_correction_stats,
                         island_id=island_id,
                         pop_idx=pop_idx,
                         attempt_idx=attempt_idx,
@@ -484,6 +494,10 @@ def _run_one_generation(
                 novelty_bonus = compute_novelty_bonus(list(y_p_val), known_subset)
                 if cfg.novelty_gate_threshold > 0 and novelty_bonus < cfg.novelty_gate_threshold:
                     should_retry, next_prompt = _handle_rejection(
+                        cfg=cfg,
+                        state=state,
+                        log_path=log_path,
+                        self_correction_stats=self_correction_stats,
                         island_id=island_id,
                         pop_idx=pop_idx,
                         attempt_idx=attempt_idx,

@@ -24,6 +24,10 @@ Repository-specific instructions for coding agents and contributors.
   - Quick profile (default): `bash run_all_experiments.sh`
   - Full profile: `PROFILE=full bash run_all_experiments.sh`
   - Override model: `MODEL=gemma3:4b bash run_all_experiments.sh`
+- Compile paper: `cd paper && tectonic main.tex`
+- Run analysis pipeline:
+  - `uv run python analysis/analyze_experiments.py --artifacts-root artifacts/ --output analysis/results/`
+  - `uv run python analysis/generate_figures.py --data analysis/results/ --output paper/figures/`
 
 ## Code Style and Architecture Rules
 

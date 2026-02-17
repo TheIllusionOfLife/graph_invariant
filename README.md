@@ -157,6 +157,19 @@ This repository accompanies the paper:
 
 The paper source is in `paper/` (NeurIPS format). Analysis scripts are in `analysis/`.
 
+To compile the paper (requires [tectonic](https://tectonic-typesetting.github.io/)):
+
+```bash
+cd paper && tectonic main.tex
+```
+
+To regenerate analysis and figures from experiment artifacts:
+
+```bash
+uv run python analysis/analyze_experiments.py --artifacts-root artifacts/ --output analysis/results/
+uv run python analysis/generate_figures.py --data analysis/results/ --output paper/figures/
+```
+
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

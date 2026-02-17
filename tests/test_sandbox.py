@@ -168,7 +168,8 @@ def test_sandbox_evaluate_detailed_reports_static_invalid_without_pool():
     details = evaluator.evaluate_detailed("import os\n", [object()])
     assert details[0]["value"] is None
     assert details[0]["error_type"] == "static_invalid"
-    assert "forbidden token" in str(details[0]["error_detail"])
+    # Previously "forbidden token", but now checked via AST/structure:
+    assert "missing `new_invariant` function" in str(details[0]["error_detail"])
 
 
 def test_sandbox_evaluate_detailed_reports_runtime_exception():

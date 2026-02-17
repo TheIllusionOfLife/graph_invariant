@@ -5,6 +5,7 @@ import multiprocessing as mp
 import os
 import signal
 import types
+from functools import lru_cache
 from multiprocessing.pool import Pool
 from typing import Any
 
@@ -15,22 +16,9 @@ try:
 except ImportError:  # pragma: no cover - unavailable on Windows.
     resource = None
 
-MAX_CODE_LENGTH = 100_000
-MAX_AST_NODES = 5_000
+MAX_CODE_LENGTH = 100_000  # 100KB limit for source code
+MAX_AST_NODES = 5_000  # Prevent complex ASTs
 
-FORBIDDEN_PATTERNS = [
-    "import ",
-    "__import__",
-    "eval(",
-    "exec(",
-    "open(",
-    "os.",
-    "sys.",
-    "subprocess",
-    "__class__",
-    "__subclasses__",
-    "__globals__",
-]
 FORBIDDEN_CALLS = {"getattr", "setattr", "delattr", "globals", "locals", "vars"}
 ALLOWED_CALLS = {
     "abs",
@@ -67,6 +55,29 @@ FORBIDDEN_ATTR_BASES = {
     "urllib",
     "nx",
     "G",
+}
+FORBIDDEN_ATTRS: set[str] = {
+    # Generator / Coroutine / Async Generator introspection
+    "gi_frame",
+    "gi_code",
+    "gi_yieldfrom",
+    "cr_frame",
+    "cr_code",
+    "cr_await",
+    "cr_origin",
+    "ag_frame",
+    "ag_code",
+    "ag_await",
+    # Traceback introspection
+    "tb_frame",
+    "tb_next",
+    # Frame introspection
+    "f_back",
+    "f_builtins",
+    "f_code",
+    "f_globals",
+    "f_locals",
+    "f_trace",
 }
 ALLOWED_AST_NODES: tuple[type[ast.AST], ...] = (
     ast.Module,
@@ -275,6 +286,38 @@ _SAFE_NP_ATTRS: set[str] = {
     "polyval",
 }
 
+_SAFE_BUILTINS = {
+    "abs": abs,
+    "min": min,
+    "max": max,
+    "sum": sum,
+    "len": len,
+    "sorted": sorted,
+    "range": range,
+    "enumerate": enumerate,
+    "float": float,
+    "int": int,
+    "list": list,
+    "tuple": tuple,
+    "dict": dict,
+    "set": set,
+    "zip": zip,
+    "map": map,
+    "round": round,
+    "bool": bool,
+    "str": str,
+    "pow": pow,
+    "any": any,
+    "all": all,
+    "reversed": reversed,
+}
+
+_SAFE_NP_ATTRS_DICT: dict[str, Any] = {}
+for name in _SAFE_NP_ATTRS:
+    val = getattr(np, name, None)
+    if val is not None:
+        _SAFE_NP_ATTRS_DICT[name] = val
+
 LOGGER = logging.getLogger(__name__)
 _TASK_TIMEOUT_SEC = 0.0
 _COMPILED_CODE_CACHE: dict[str, Any] = {}
@@ -307,16 +350,20 @@ def _initialize_worker(memory_mb: int, timeout_sec: float) -> None:
 
 
 def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
+    # Check complexity (number of nodes)
+    try:
+        node_count = sum(1 for _ in ast.walk(tree))
+    except (RecursionError, MemoryError) as e:
+        return False, f"AST traversal failed: {type(e).__name__}"
+
+    if node_count > MAX_AST_NODES:
+        return False, f"code too complex: {node_count} AST nodes (max {MAX_AST_NODES})"
+
     fn_defs = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
     if len(fn_defs) != 1 or fn_defs[0].name != "new_invariant":
         return False, "code must define exactly one function named `new_invariant`"
 
-    node_count = 0
     for node in ast.walk(tree):
-        node_count += 1
-        if node_count > MAX_AST_NODES:
-            return False, f"AST complexity exceeds limit: {node_count} > {MAX_AST_NODES}"
-
         if not isinstance(node, ALLOWED_AST_NODES):
             return False, f"disallowed syntax: {type(node).__name__}"
 
@@ -325,6 +372,8 @@ def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
 
         if isinstance(node, ast.Attribute):
             if node.attr.startswith("__"):
+                return False, f"forbidden attribute detected: {node.attr}"
+            if node.attr in FORBIDDEN_ATTRS:
                 return False, f"forbidden attribute detected: {node.attr}"
 
         if isinstance(node, ast.Call):
@@ -345,20 +394,24 @@ def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
 def validate_code_static(code: str) -> tuple[bool, str | None]:
     # Best-effort defense for research use only.
     # Running fully untrusted code safely requires stronger isolation (e.g., containers/jails).
-    if len(code) > MAX_CODE_LENGTH:
-        return False, f"code too long: {len(code)} > {MAX_CODE_LENGTH}"
 
-    for token in FORBIDDEN_PATTERNS:
-        if token in code:
-            return False, f"forbidden token detected: {token}"
+    if len(code) > MAX_CODE_LENGTH:
+        return False, f"code too long: {len(code)} chars (max {MAX_CODE_LENGTH})"
+
     if "def new_invariant(" not in code:
         return False, "missing `new_invariant` function"
+
     try:
         tree = ast.parse(code)
     except SyntaxError as exc:
         return False, f"invalid syntax: {exc.msg}"
-    except (RecursionError, MemoryError):
-        return False, "code complexity exceeds limits (recursion depth or memory)"
+    except RecursionError:
+        return False, "code too complex: recursion limit exceeded during parsing"
+    except MemoryError:
+        return False, "code too complex: memory limit exceeded during parsing"
+    except Exception as e:
+        return False, f"parser error: {type(e).__name__}"
+
     return _validate_ast(tree)
 
 
@@ -371,44 +424,15 @@ def _compiled_candidate_code(code: str) -> Any:
     return compiled
 
 
+@lru_cache(maxsize=1)
 def _safe_numpy() -> types.SimpleNamespace:
     """Return a restricted numpy namespace exposing only safe numerical functions."""
-    attrs = {}
-    for name in _SAFE_NP_ATTRS:
-        val = getattr(np, name, None)
-        if val is not None:
-            attrs[name] = val
-    return types.SimpleNamespace(**attrs)
+    return types.SimpleNamespace(**_SAFE_NP_ATTRS_DICT)
 
 
 def _safe_globals() -> dict[str, Any]:
-    safe_builtins = {
-        "abs": abs,
-        "min": min,
-        "max": max,
-        "sum": sum,
-        "len": len,
-        "sorted": sorted,
-        "range": range,
-        "enumerate": enumerate,
-        "float": float,
-        "int": int,
-        "list": list,
-        "tuple": tuple,
-        "dict": dict,
-        "set": set,
-        "zip": zip,
-        "map": map,
-        "round": round,
-        "bool": bool,
-        "str": str,
-        "pow": pow,
-        "any": any,
-        "all": all,
-        "reversed": reversed,
-    }
     return {
-        "__builtins__": safe_builtins,
+        "__builtins__": _SAFE_BUILTINS.copy(),
         "math": math,
         "np": _safe_numpy(),
     }
@@ -416,10 +440,6 @@ def _safe_globals() -> dict[str, Any]:
 
 def _run_candidate(code: str, features: dict[str, Any]) -> float | None:
     return _run_candidate_detailed(code, features).get("value")
-
-
-def _run_candidate_with_queue_result(code: str, features: dict[str, Any]) -> float | None:
-    return _run_candidate(code, features)
 
 
 def _run_candidate_detailed(code: str, features: dict[str, Any]) -> dict[str, Any]:
@@ -457,12 +477,6 @@ def _run_candidate_detailed(code: str, features: dict[str, Any]) -> dict[str, An
     finally:
         if hasattr(signal, "setitimer"):
             signal.setitimer(signal.ITIMER_REAL, 0.0)
-
-
-def _run_candidate_with_queue_result_detailed(
-    code: str, features: dict[str, Any]
-) -> dict[str, Any]:
-    return _run_candidate_detailed(code, features)
 
 
 class SandboxEvaluator:
@@ -514,7 +528,7 @@ class SandboxEvaluator:
             raise RuntimeError("sandbox pool is not initialized")
         tasks = [(code, features) for features in features_list]
         # Keep chunksize small for fairness; tune upward if IPC becomes dominant.
-        return self._pool.starmap(_run_candidate_with_queue_result, tasks, chunksize=1)
+        return self._pool.starmap(_run_candidate, tasks, chunksize=1)
 
     def _evaluate_once_detailed(
         self, code: str, features_list: list[dict[str, Any]]
@@ -522,7 +536,7 @@ class SandboxEvaluator:
         if self._pool is None:
             raise RuntimeError("sandbox pool is not initialized")
         tasks = [(code, features) for features in features_list]
-        return self._pool.starmap(_run_candidate_with_queue_result_detailed, tasks, chunksize=1)
+        return self._pool.starmap(_run_candidate_detailed, tasks, chunksize=1)
 
     def evaluate(self, code: str, features_list: list[dict[str, Any]]) -> list[float | None]:
         ok, _ = validate_code_static(code)

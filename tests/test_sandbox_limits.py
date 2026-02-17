@@ -1,4 +1,3 @@
-
 import ast
 import sys
 
@@ -9,6 +8,7 @@ from graph_invariant.sandbox import MAX_AST_NODES, MAX_CODE_LENGTH, validate_cod
 # Increase recursion limit slightly to allow test setup if needed,
 # though we rely on flat structures mostly
 sys.setrecursionlimit(2000)
+
 
 def test_large_code_check():
     """Verify that code exceeding MAX_CODE_LENGTH is rejected."""
@@ -24,6 +24,7 @@ def test_large_code_check():
 
     assert not ok
     assert "code too long" in str(reason)
+
 
 def test_recursion_error_check():
     """Verify that deep recursion (stack overflow in parsing) is caught."""
@@ -48,6 +49,7 @@ def test_recursion_error_check():
         assert "complexity" in msg or "recursion" in msg or "invalid syntax" in msg
     except RecursionError:
         pytest.fail("RecursionError propagated out of validate_code_static")
+
 
 def test_large_ast_check():
     """Verify that AST with too many nodes is rejected."""

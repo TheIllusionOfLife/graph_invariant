@@ -272,6 +272,38 @@ _SAFE_NP_ATTRS: set[str] = {
     "polyval",
 }
 
+_SAFE_BUILTINS = {
+    "abs": abs,
+    "min": min,
+    "max": max,
+    "sum": sum,
+    "len": len,
+    "sorted": sorted,
+    "range": range,
+    "enumerate": enumerate,
+    "float": float,
+    "int": int,
+    "list": list,
+    "tuple": tuple,
+    "dict": dict,
+    "set": set,
+    "zip": zip,
+    "map": map,
+    "round": round,
+    "bool": bool,
+    "str": str,
+    "pow": pow,
+    "any": any,
+    "all": all,
+    "reversed": reversed,
+}
+
+_SAFE_NP_ATTRS_DICT: dict[str, Any] = {}
+for name in _SAFE_NP_ATTRS:
+    val = getattr(np, name, None)
+    if val is not None:
+        _SAFE_NP_ATTRS_DICT[name] = val
+
 LOGGER = logging.getLogger(__name__)
 _TASK_TIMEOUT_SEC = 0.0
 _COMPILED_CODE_CACHE: dict[str, Any] = {}
@@ -360,42 +392,12 @@ def _compiled_candidate_code(code: str) -> Any:
 
 def _safe_numpy() -> types.SimpleNamespace:
     """Return a restricted numpy namespace exposing only safe numerical functions."""
-    attrs = {}
-    for name in _SAFE_NP_ATTRS:
-        val = getattr(np, name, None)
-        if val is not None:
-            attrs[name] = val
-    return types.SimpleNamespace(**attrs)
+    return types.SimpleNamespace(**_SAFE_NP_ATTRS_DICT)
 
 
 def _safe_globals() -> dict[str, Any]:
-    safe_builtins = {
-        "abs": abs,
-        "min": min,
-        "max": max,
-        "sum": sum,
-        "len": len,
-        "sorted": sorted,
-        "range": range,
-        "enumerate": enumerate,
-        "float": float,
-        "int": int,
-        "list": list,
-        "tuple": tuple,
-        "dict": dict,
-        "set": set,
-        "zip": zip,
-        "map": map,
-        "round": round,
-        "bool": bool,
-        "str": str,
-        "pow": pow,
-        "any": any,
-        "all": all,
-        "reversed": reversed,
-    }
     return {
-        "__builtins__": safe_builtins,
+        "__builtins__": _SAFE_BUILTINS.copy(),
         "math": math,
         "np": _safe_numpy(),
     }

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "target_name": "algebraic_connectivity",
+  "stat_baselines": {
+    "linear_regression": {
+      "status": "ok",
+      "val_metrics": {
+        "spearman": 0.8576914422860573,
+        "pearson": 0.8646270915121714,
+        "rmse": 1.1193757446577839,
+        "mae": 0.6842785259157925,
+        "valid_count": 200
+      },
+      "test_metrics": {
+        "spearman": 0.8662866571664293,
+        "pearson": 0.879800847248962,
+        "rmse": 1.1809968929359471,
+        "mae": 0.684851325168426,
+        "valid_count": 200
+      }
+    },
+    "random_forest": {
+      "status": "ok",
+      "val_metrics": {
+        "spearman": 0.9296845907465556,
+        "pearson": 0.9203186033455948,
+        "rmse": 1.0140462928909235,
+        "mae": 0.4821210363040867,
+        "valid_count": 200
+      },
+      "test_metrics": {
+        "spearman": 0.9299718480357093,
+        "pearson": 0.9211866551295733,
+        "rmse": 1.1436533715458286,
+        "mae": 0.5208860313613835,
+        "valid_count": 200
+      }
+    }
+  },
+  "pysr_baseline": {
+    "status": "ok",
+    "model": "pysr",
+    "val_metrics": {
+      "spearman": 0.9408895222380561,
+      "pearson": 0.8621011168329483,
+      "rmse": 1.548626345994599,
+      "mae": 0.6085926384978064,
+      "valid_count": 200
+    },
+    "test_metrics": {
+      "spearman": 0.9375039375984401,
+      "pearson": 0.36048853687062055,
+      "rmse": 59.243007025577086,
+      "mae": 4.694237448159129,
+      "valid_count": 200
+    }
+  }
+}

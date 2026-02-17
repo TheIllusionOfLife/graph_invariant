@@ -1,0 +1,207 @@
+{
+  "experiment_id": "phase1_20260214T021916Z",
+  "generation": 4,
+  "rng_seed": 42,
+  "rng_state": {
+    "bit_generator": "PCG64",
+    "state": {
+      "state": 203402365959428326827059050328429986447,
+      "inc": 332724090758049132448979897138935081983
+    },
+    "has_uint32": 1,
+    "uinteger": 550243862
+  },
+  "best_val_score": 0.50897863629964,
+  "no_improve_count": 0,
+  "island_stagnation": {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 0
+  },
+  "island_prompt_mode": {
+    "0": "free",
+    "1": "free",
+    "2": "free",
+    "3": "free"
+  },
+  "island_constrained_generations": {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 0
+  },
+  "island_recent_failures": {
+    "0": [
+      "no_valid_train_predictions: static_invalid: forbidden token detected: import ",
+      "below_novelty_threshold: novelty_bonus=0.042796",
+      "below_novelty_threshold: novelty_bonus=0.063348"
+    ],
+    "1": [
+      "below_novelty_threshold: novelty_bonus=0.114872",
+      "no_valid_train_predictions: static_invalid: forbidden token detected: import ",
+      "below_novelty_threshold: novelty_bonus=0.084558"
+    ],
+    "2": [
+      "below_novelty_threshold: novelty_bonus=0.005376",
+      "below_novelty_threshold: novelty_bonus=0.076454",
+      "below_novelty_threshold: novelty_bonus=0.039757"
+    ],
+    "3": [
+      "below_novelty_threshold: novelty_bonus=0.011929",
+      "below_novelty_threshold: novelty_bonus=0.002133",
+      "below_novelty_threshold: novelty_bonus=0.075009"
+    ]
+  },
+  "islands": {
+    "0": [
+      {
+        "id": "g2_i0_p2_89250953",
+        "code": "def new_invariant(s):\n    \"\"\"\n    An attempt to estimate average shortest path length based on graph features.\n    This formula combines the number of nodes, average degree, and transitivity.\n    \"\"\"\n    n = s['n']\n    avg_degree = s['avg_degree']\n    transitivity = s['transitivity']\n\n    return n / (1 + avg_degree * (1 - transitivity))",
+        "island_id": 0,
+        "generation": 2,
+        "train_score": 0.7837214885954381,
+        "val_score": 0.4991106431234202,
+        "simplicity_score": 0.15630897192799031,
+        "novelty_bonus": 0.21450078320156385
+      },
+      {
+        "id": "g3_i0_p0_433015235",
+        "code": "def new_invariant(s):\n    \"\"\"\n    An attempt to estimate average shortest path length based on graph features.\n    This formula combines the number of nodes, average degree, and transitivity.\n    \"\"\"\n    n = s['n']\n    avg_degree = s['avg_degree']\n    transitivity = s['transitivity']\n\n    return n / (1 + avg_degree * (1 - transitivity) * 0.8)",
+        "island_id": 0,
+        "generation": 3,
+        "train_score": 0.7616326530612244,
+        "val_score": 0.4908877925692412,
+        "simplicity_score": 0.15347639308703107,
+        "novelty_bonus": 0.22153299328892373
+      },
+      {
+        "id": "g3_i0_p1_858597919",
+        "code": "def new_invariant(s):\n    \"\"\"\n    An attempt to estimate average shortest path length based on graph features.\n    This formula combines the number of nodes, average degree, and transitivity.\n    \"\"\"\n    n = s['n']\n    avg_degree = s['avg_degree']\n    transitivity = s['transitivity']\n\n    return n / (1 + avg_degree * (1 - transitivity) * 0.8)",
+        "island_id": 0,
+        "generation": 3,
+        "train_score": 0.7616326530612244,
+        "val_score": 0.4908877925692412,
+        "simplicity_score": 0.15347639308703107,
+        "novelty_bonus": 0.22153299328892373
+      }
+    ],
+    "1": [
+      {
+        "id": "g2_i1_p0_773956048",
+        "code": "def new_invariant(s):\n    \"\"\"\n    An attempt to estimate average shortest path length based on graph features.\n    This formula combines the number of nodes, average degree, and transitivity.\n    \"\"\"\n    n = s['n']\n    avg_degree = s['avg_degree']\n    transitivity = s['transitivity']\n\n    return n / (1 + avg_degree * (1 - transitivity))",
+        "island_id": 1,
+        "generation": 2,
+        "train_score": 0.7837214885954381,
+        "val_score": 0.4991106431234202,
+        "simplicity_score": 0.15630897192799031,
+        "novelty_bonus": 0.21450078320156385
+      },
+      {
+        "id": "g2_i1_p1_654571518",
+        "code": "def new_invariant(s):\n    \"\"\"\n    An attempt to estimate average shortest path length based on graph features.\n    This formula combines the number of nodes, average degree, and transitivity.\n    \"\"\"\n    n = s['n']\n    avg_degree = s['avg_degree']\n    transitivity = s['transitivity']\n\n    return n / (1 + avg_degree * (1 - transitivity))",
+        "island_id": 1,
+        "generation": 2,
+        "train_score": 0.7837214885954381,
+        "val_score": 0.4991106431234202,
+        "simplicity_score": 0.15630897192799031,
+        "novelty_bonus": 0.21450078320156385
+      },
+      {
+        "id": "g2_i1_p2_438878439",
+        "code": "def new_invariant(s):\n    \"\"\"\n    An attempt to estimate average shortest path length based on graph features.\n    This formula combines the number of nodes, average degree, and transitivity.\n    \"\"\"\n    n = s['n']\n    avg_degree = s['avg_degree']\n    transitivity = s['transitivity']\n\n    return n / (1 + avg_degree * (1 - transitivity))",
+        "island_id": 1,
+        "generation": 2,
+        "train_score": 0.7837214885954381,
+        "val_score": 0.4991106431234202,
+        "simplicity_score": 0.15630897192799031,
+        "novelty_bonus": 0.21450078320156385
+      }
+    ],
+    "2": [
+      {
+        "id": "g2_i1_p0_773956048",
+        "code": "def new_invariant(s):\n    \"\"\"\n    An attempt to estimate average shortest path length based on graph features.\n    This formula combines the number of nodes, average degree, and transitivity.\n    \"\"\"\n    n = s['n']\n    avg_degree = s['avg_degree']\n    transitivity = s['transitivity']\n\n    return n / (1 + avg_degree * (1 - transitivity))",
+        "island_id": 1,
+        "generation": 2,
+        "train_score": 0.7837214885954381,
+        "val_score": 0.4991106431234202,
+        "simplicity_score": 0.15630897192799031,
+        "novelty_bonus": 0.21450078320156385
+      },
+      {
+        "id": "g3_i2_p0_735752370",
+        "code": "def new_invariant(s):\n    \"\"\"\n    An attempt to estimate average shortest path length based on graph features.\n    This formula combines the number of nodes, average degree, and transitivity.\n    \"\"\"\n    n = s['n']\n    avg_degree = s['avg_degree']\n    transitivity = s['transitivity']\n\n    return n / (1 + 0.8 * avg_degree * (1 - transitivity))",
+        "island_id": 2,
+        "generation": 3,
+        "train_score": 0.7616326530612244,
+        "val_score": 0.4908877925692412,
+        "simplicity_score": 0.15347639308703107,
+        "novelty_bonus": 0.22153299328892373
+      },
+      {
+        "id": "g3_i2_p1_761139701",
+        "code": "def new_invariant(s):\n    \"\"\"\n    An attempt to estimate average shortest path length based on graph features.\n    This formula combines the number of nodes, average degree, and transitivity.\n    \"\"\"\n    n = s['n']\n    avg_degree = s['avg_degree']\n    transitivity = s['transitivity']\n\n    return n / (1 + avg_degree * (1 - transitivity) * 0.8)",
+        "island_id": 2,
+        "generation": 3,
+        "train_score": 0.7616326530612244,
+        "val_score": 0.4908877925692412,
+        "simplicity_score": 0.15347639308703107,
+        "novelty_bonus": 0.22153299328892373
+      }
+    ],
+    "3": [
+      {
+        "id": "g3_i3_p1_786064305",
+        "code": "def new_invariant(s):\n    \"\"\"\n    An attempt to estimate average shortest path length based on graph features.\n    This formula combines the number of nodes, average degree, transitivity,\n    and a correction factor based on degree standard deviation.\n    \"\"\"\n    n = s['n']\n    avg_degree = s['avg_degree']\n    transitivity = s['transitivity']\n    std_degree = s['std_degree']\n\n    return n / (1 + avg_degree * (1 - transitivity) * (1 + std_degree / avg_degree))",
+        "island_id": 3,
+        "generation": 3,
+        "train_score": 0.7622088835534212,
+        "val_score": 0.50897863629964,
+        "simplicity_score": 0.14529559383257518,
+        "novelty_bonus": 0.27931696958590235
+      },
+      {
+        "id": "g3_i3_p2_513226573",
+        "code": "def new_invariant(s):\n    \"\"\"\n    An attempt to estimate average shortest path length based on graph features.\n    This formula combines graph size, average degree, transitivity, and degree variance.\n    It attempts to account for how well-connected the graph is and the spread of node degrees.\n    \"\"\"\n    n = s['n']\n    avg_degree = s['avg_degree']\n    transitivity = s['transitivity']\n    std_degree = s['std_degree']\n\n    return n / (1 + avg_degree * (1 - transitivity) + 0.1 * std_degree)",
+        "island_id": 3,
+        "generation": 3,
+        "train_score": 0.7788235294117648,
+        "val_score": 0.49402337668286067,
+        "simplicity_score": 0.14563056043180833,
+        "novelty_bonus": 0.18913427537684113
+      }
+    ]
+  },
+  "map_elites_archive": {
+    "num_bins": 5,
+    "cells": {
+      "0,1": {
+        "candidate": {
+          "id": "g2_i0_p2_89250953",
+          "code": "def new_invariant(s):\n    \"\"\"\n    An attempt to estimate average shortest path length based on graph features.\n    This formula combines the number of nodes, average degree, and transitivity.\n    \"\"\"\n    n = s['n']\n    avg_degree = s['avg_degree']\n    transitivity = s['transitivity']\n\n    return n / (1 + avg_degree * (1 - transitivity))",
+          "island_id": 0,
+          "generation": 2,
+          "train_score": 0.7837214885954381,
+          "val_score": 0.4991106431234202,
+          "simplicity_score": 0.15630897192799031,
+          "novelty_bonus": 0.21450078320156385
+        },
+        "fitness_signal": 0.8069972275547059
+      },
+      "0,0": {
+        "candidate": {
+          "id": "g3_i1_p0_94177347",
+          "code": "def new_invariant(s):\n    \"\"\"\n    An attempt to estimate average shortest path length based on graph features.\n    This formula combines the number of nodes, average degree, and transitivity,\n    with an added scaling factor based on graph density.\n    \"\"\"\n    n = s['n']\n    avg_degree = s['avg_degree']\n    transitivity = s['transitivity']\n    density = s['density']\n\n    return n / (1 + avg_degree * (1 - transitivity) * (1 + density))",
+          "island_id": 1,
+          "generation": 3,
+          "train_score": 0.8077310924369748,
+          "val_score": 0.4974901076451262,
+          "simplicity_score": 0.1465210027003948,
+          "novelty_bonus": 0.15880786937510138
+        },
+        "fitness_signal": 0.8410870925850336
+      }
+    }
+  }
+}

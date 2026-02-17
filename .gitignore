@@ -23,9 +23,19 @@ build/
 dist/
 *.egg-info/
 
-# Experiment outputs
-artifacts/
-artifacts_*/
+# Experiment outputs (scratch/smoke runs only; main artifacts are tracked)
 artifacts_smoke/
 outputs/
-experiment_log.txt
+
+# LaTeX build artifacts
+paper/*.aux
+paper/*.log
+paper/*.synctex*
+paper/*.bbl
+paper/*.blg
+paper/*.out
+paper/*.fls
+paper/*.fdb_latexmk
+paper/sections/*.aux
+
+# Analysis outputs are tracked for backup

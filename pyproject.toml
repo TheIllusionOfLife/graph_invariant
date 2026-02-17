@@ -17,6 +17,8 @@ dependencies = [
 dev = [
   "pytest>=8.3",
   "ruff>=0.9",
+  "matplotlib>=3.9",
+  "seaborn>=0.13",
 ]
 
 [build-system]

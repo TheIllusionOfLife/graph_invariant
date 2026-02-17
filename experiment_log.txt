@@ -1,0 +1,8 @@
+============================================================
+ Graph Invariant — Experiment Suite (full)
+ Started: Sun Feb 15 03:40:40 JST 2026
+ Branch:  feat/full-experiments-analysis-paper
+============================================================
+
+
+[sanitized] Detailed runtime transcript removed from version-controlled file.

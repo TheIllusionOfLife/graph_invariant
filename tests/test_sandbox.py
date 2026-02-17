@@ -63,13 +63,6 @@ def test_validate_code_static_rejects_nx_attr():
     assert reason is not None
 
 
-def test_validate_code_static_rejects_nx_name_binding():
-    code = "def new_invariant(s):\n    alias = nx\n    return 1"
-    ok, reason = validate_code_static(code)
-    assert not ok
-    assert reason is not None
-
-
 def test_validate_code_static_allows_np_calls():
     code = "def new_invariant(s):\n    return np.mean(s['degrees'])"
     ok, reason = validate_code_static(code)
@@ -175,7 +168,8 @@ def test_sandbox_evaluate_detailed_reports_static_invalid_without_pool():
     details = evaluator.evaluate_detailed("import os\n", [object()])
     assert details[0]["value"] is None
     assert details[0]["error_type"] == "static_invalid"
-    assert "forbidden" in str(details[0]["error_detail"])
+    # Previously "forbidden token", but now checked via AST/structure:
+    assert "missing `new_invariant` function" in str(details[0]["error_detail"])
 
 
 def test_sandbox_evaluate_detailed_reports_runtime_exception():

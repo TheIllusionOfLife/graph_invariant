@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "target_name": "average_shortest_path_length",
+  "stat_baselines": {
+    "linear_regression": {
+      "status": "ok",
+      "val_metrics": {
+        "spearman": 0.9748087357717388,
+        "pearson": 0.9737318999197221,
+        "rmse": 0.20738055798656266,
+        "mae": 0.14566272020962992,
+        "valid_count": 200
+      },
+      "test_metrics": {
+        "spearman": 0.9748533713342834,
+        "pearson": 0.9780057762888631,
+        "rmse": 0.1618837258621951,
+        "mae": 0.11978971277879974,
+        "valid_count": 200
+      }
+    },
+    "random_forest": {
+      "status": "skipped",
+      "reason": "scikit-learn not installed"
+    }
+  },
+  "pysr_baseline": {
+    "status": "skipped",
+    "reason": "pysr not installed"
+  }
+}

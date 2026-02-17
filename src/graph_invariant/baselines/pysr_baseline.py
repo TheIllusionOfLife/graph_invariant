@@ -115,14 +115,7 @@ def run_pysr_baseline(
             "val_metrics": _metrics_dict(y_val_np, val_pred),
             "test_metrics": _metrics_dict(y_test_np, test_pred),
         }
-    except (RuntimeError, ValueError, TypeError) as exc:
-        LOGGER.exception("pysr baseline execution failed")
-        return {
-            "status": "error",
-            "reason": f"pysr execution failed: {type(exc).__name__}",
-            "error_type": type(exc).__name__,
-        }
-    except (ArithmeticError, OverflowError) as exc:
+    except (RuntimeError, ValueError, TypeError, ArithmeticError, OverflowError) as exc:
         LOGGER.exception("pysr baseline execution failed")
         return {
             "status": "error",

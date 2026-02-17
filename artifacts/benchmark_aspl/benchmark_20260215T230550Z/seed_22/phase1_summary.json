@@ -1,0 +1,246 @@
+{
+  "schema_version": 3,
+  "experiment_id": "seed_22",
+  "fitness_mode": "correlation",
+  "model_name": "gpt-oss:20b",
+  "best_candidate_id": "g17_i3_p1_635457581",
+  "best_candidate_code_sha256": "6cc8f8da223b0f48b313eadc2f0a6c94454b90e5f4c38fea15fb225d0270c4b5",
+  "best_val_score": 0.5711878370419312,
+  "stop_reason": "max_generations_reached",
+  "success": false,
+  "config": {
+    "seed": 22,
+    "target_name": "average_shortest_path_length",
+    "num_train_graphs": 50,
+    "num_val_graphs": 200,
+    "num_test_graphs": 200,
+    "max_generations": 20,
+    "population_size": 5,
+    "migration_interval": 10,
+    "island_temperatures": [
+      0.3,
+      0.3,
+      0.8,
+      1.2
+    ],
+    "timeout_sec": 2.0,
+    "memory_mb": 256,
+    "sandbox_max_workers": null,
+    "alpha": 0.5,
+    "beta": 0.2,
+    "gamma": 0.3,
+    "train_score_threshold": 0.3,
+    "early_stop_patience": 10,
+    "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_22",
+    "model_name": "gpt-oss:20b",
+    "ollama_url": "http://localhost:11434/api/generate",
+    "allow_remote_ollama": false,
+    "checkpoint_keep_last": 3,
+    "experiment_id": "seed_22",
+    "enable_constrained_fallback": true,
+    "stagnation_trigger_generations": 5,
+    "constrained_recovery_generations": 3,
+    "allow_late_constrained_recovery": true,
+    "run_baselines": true,
+    "persist_candidate_code_in_summary": true,
+    "success_spearman_threshold": 0.85,
+    "pysr_niterations": 30,
+    "pysr_populations": 8,
+    "pysr_procs": 0,
+    "pysr_timeout_in_seconds": 60.0,
+    "benchmark_seeds": [
+      11,
+      22,
+      33,
+      44,
+      55
+    ],
+    "novelty_bootstrap_samples": 1000,
+    "novelty_threshold": 0.7,
+    "enforce_pysr_parity_for_success": true,
+    "pysr_parity_epsilon": 0.0,
+    "require_baselines_for_success": true,
+    "persist_prompt_and_response_logs": true,
+    "llm_timeout_sec": 600.0,
+    "enable_self_correction": true,
+    "self_correction_max_retries": 1,
+    "self_correction_feedback_window": 3,
+    "novelty_gate_threshold": 0.15,
+    "fitness_mode": "correlation",
+    "bound_tolerance": 1e-09,
+    "success_bound_score_threshold": 0.7,
+    "success_satisfaction_threshold": 0.95,
+    "enable_map_elites": false,
+    "map_elites_bins": 5
+  },
+  "final_generation": 20,
+  "island_candidate_counts": {
+    "0": 5,
+    "1": 5,
+    "2": 5,
+    "3": 5
+  },
+  "train_metrics": {
+    "spearman": 0.876110444177671,
+    "pearson": 0.9152255757074405,
+    "rmse": 2.585618932971376,
+    "mae": 1.5028798429448837,
+    "valid_count": 50,
+    "novelty_bonus": null
+  },
+  "val_metrics": {
+    "spearman": 0.933834845871147,
+    "pearson": 0.8754135056825203,
+    "rmse": 2.5943091281376445,
+    "mae": 1.6498210030209972,
+    "valid_count": 200,
+    "novelty_bonus": 0.18294472497584757
+  },
+  "test_metrics": {
+    "spearman": 0.9221341491540996,
+    "pearson": 0.8579391019499453,
+    "rmse": 2.38690667907008,
+    "mae": 1.4527738693658971,
+    "valid_count": 200,
+    "novelty_bonus": 0.20554071759575832
+  },
+  "sanity_metrics": {
+    "spearman": 0.5,
+    "pearson": 0.8112877836360263,
+    "rmse": 2.4124202562522643,
+    "mae": 1.7655939043642963,
+    "valid_count": 3,
+    "novelty_bonus": null
+  },
+  "novelty_ci": {
+    "validation": {
+      "max_ci_upper_abs_rho": 0.8626667783531878,
+      "novelty_passed": false,
+      "threshold": 0.7,
+      "per_invariant": {
+        "density": {
+          "point_abs_rho": 0.7847713722177507,
+          "ci_upper_abs_rho": 0.8292548828206313
+        },
+        "clustering_coefficient": {
+          "point_abs_rho": 0.019462099618284615,
+          "ci_upper_abs_rho": 0.1548708802095654
+        },
+        "degree_assortativity": {
+          "point_abs_rho": 0.04961524038100953,
+          "ci_upper_abs_rho": 0.1739820363628303
+        },
+        "transitivity": {
+          "point_abs_rho": 0.009260023195904956,
+          "ci_upper_abs_rho": 0.15217325356538527
+        },
+        "average_degree": {
+          "point_abs_rho": 0.6088480456406293,
+          "ci_upper_abs_rho": 0.694089238372585
+        },
+        "max_degree": {
+          "point_abs_rho": 0.5770276814555361,
+          "ci_upper_abs_rho": 0.6609789524074491
+        },
+        "spectral_radius": {
+          "point_abs_rho": 0.6332153303832597,
+          "ci_upper_abs_rho": 0.7143975777630384
+        },
+        "diameter": {
+          "point_abs_rho": 0.8170552750241524,
+          "ci_upper_abs_rho": 0.8626667783531878
+        },
+        "algebraic_connectivity": {
+          "point_abs_rho": 0.7978924473111829,
+          "ci_upper_abs_rho": 0.8456993624222358
+        }
+      }
+    },
+    "test": {
+      "max_ci_upper_abs_rho": 0.8410611703096323,
+      "novelty_passed": false,
+      "threshold": 0.7,
+      "per_invariant": {
+        "density": {
+          "point_abs_rho": 0.7944592824042417,
+          "ci_upper_abs_rho": 0.8410611703096323
+        },
+        "clustering_coefficient": {
+          "point_abs_rho": 0.09246897454294044,
+          "ci_upper_abs_rho": 0.20858831572421446
+        },
+        "degree_assortativity": {
+          "point_abs_rho": 0.0370614265356634,
+          "ci_upper_abs_rho": 0.1619436655760087
+        },
+        "transitivity": {
+          "point_abs_rho": 0.11597609619939146,
+          "ci_upper_abs_rho": 0.23809470770453828
+        },
+        "average_degree": {
+          "point_abs_rho": 0.6091614164952,
+          "ci_upper_abs_rho": 0.6899531081575339
+        },
+        "max_degree": {
+          "point_abs_rho": 0.53896125395587,
+          "ci_upper_abs_rho": 0.632442482216595
+        },
+        "spectral_radius": {
+          "point_abs_rho": 0.6465896647416185,
+          "ci_upper_abs_rho": 0.7259300622689184
+        },
+        "diameter": {
+          "point_abs_rho": 0.7570372897568242,
+          "ci_upper_abs_rho": 0.8055155995128623
+        },
+        "algebraic_connectivity": {
+          "point_abs_rho": 0.7820985524638117,
+          "ci_upper_abs_rho": 0.8351152057887337
+        }
+      }
+    }
+  },
+  "dataset_fingerprint": "731af5d4e436a9e6deff361187e67071eb151f53a87e82eccebe8728ca6e8932",
+  "self_correction_stats": {
+    "enabled": true,
+    "max_retries": 1,
+    "feedback_window": 3,
+    "attempted_repairs": 167,
+    "successful_repairs": 42,
+    "failed_repairs": 125,
+    "failure_categories": {
+      "no_valid_train_predictions": 163,
+      "below_novelty_threshold": 121,
+      "below_train_threshold": 22
+    }
+  },
+  "baseline_comparison": {
+    "candidate": {
+      "val_spearman": 0.933834845871147,
+      "test_spearman": 0.9221341491540996
+    },
+    "pysr": {
+      "status": "ok",
+      "val_spearman": 0.9779044476111904,
+      "test_spearman": 0.9849452429856101
+    }
+  },
+  "success_criteria": {
+    "success_spearman_threshold": 0.85,
+    "threshold_passed": true,
+    "require_baselines_for_success": true,
+    "baselines_available": true,
+    "baselines_healthy": true,
+    "stat_baseline_ok": true,
+    "pysr_ok": true,
+    "baselines_passed": true,
+    "enforce_pysr_parity_for_success": true,
+    "pysr_parity_epsilon": 0.0,
+    "pysr_status": "ok",
+    "candidate_val_spearman": 0.933834845871147,
+    "pysr_val_spearman": 0.9779044476111904,
+    "pysr_parity_passed": false,
+    "pysr_parity_reason": "ok"
+  },
+  "best_candidate_code": "def new_invariant(s):\n    \"\"\"\n    Estimate the average shortest‑path length from global graph statistics\n    only.  The expression combines size, degree distribution, assortativity,\n    clustering, density, triangle prevalence, and transitivity.\n\n    Parameters\n    ----------\n    s : dict\n        Dictionary containing the following keys:\n        - n, m\n        - density\n        - avg_degree\n        - max_degree, min_degree\n        - std_degree\n        - avg_clustering\n        - transitivity\n        - degree_assortativity\n        - num_triangles\n        - degrees (sorted list of degrees)\n\n    Returns\n    -------\n    float\n        Approximation of the average shortest‑path length.\n    \"\"\"\n    # Basic scalars\n    n        = float(s['n'])\n    avg_deg  = float(s['avg_degree'])\n    std_deg  = float(s['std_degree'])\n    max_deg  = float(s['max_degree'])\n    min_deg  = float(s['min_degree'])\n    clust    = float(s['avg_clustering'])\n    trans    = float(s['transitivity'])\n    assort   = float(s['degree_assortativity'])\n    density  = float(s['density'])\n    num_tri  = float(s['num_triangles'])\n    degrees  = s['degrees']\n\n    # Harmonic mean of positive degrees (avoid division by zero)\n    positive_degrees = [d for d in degrees if d > 0]\n    if positive_degrees:\n        hm_den = sum(1.0 / d for d in positive_degrees)\n        harmonic = float(len(positive_degrees)) / hm_den\n    else:\n        harmonic = 0.1  # fallback for empty or all-zero degree lists\n\n    # Triangle ratio (fraction of possible triangles that exist)\n    possible_tri = n * (n - 1.0) * (n - 2.0) / 6.0\n    if possible_tri <= 0:\n        possible_tri = 1.0\n    tri_ratio = num_tri / possible_tri\n\n    # Degree heterogeneity adjustment (larger std or spread shortens paths)\n    heter = 1.0 + std_deg + (max_deg - min_deg) / (max_deg if max_deg > 0 else 1.0)\n\n    # Baseline: larger n or smaller connectivity yields longer paths\n    inv = n / (harmonic + 1.0)\n\n    # Positive assortativity tends to stretch paths\n    inv *= (1.0 + abs(assort))\n\n    # Local clustering tends to create detours\n    inv *= (1.0 + clust)\n\n    # Heterogeneity (hubs) shortens paths\n    inv /= heter\n\n    # Density reduces expected distance (cap at 0.05)\n    density_factor = max(0.05, 1.0 - density)\n    inv *= density_factor\n\n    # Triangle abundance shortens paths\n    inv /= (1.0 + tri_ratio)\n\n    # Global transitivity further shortens paths\n    inv *= (1.0 + trans)\n\n    return inv"
+}

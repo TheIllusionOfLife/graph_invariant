@@ -55,6 +55,29 @@ FORBIDDEN_ATTR_BASES = {
     "nx",
     "G",
 }
+FORBIDDEN_ATTRS: set[str] = {
+    # Generator / Coroutine / Async Generator introspection
+    "gi_frame",
+    "gi_code",
+    "gi_yieldfrom",
+    "cr_frame",
+    "cr_code",
+    "cr_await",
+    "cr_origin",
+    "ag_frame",
+    "ag_code",
+    "ag_await",
+    # Traceback introspection
+    "tb_frame",
+    "tb_next",
+    # Frame introspection
+    "f_back",
+    "f_builtins",
+    "f_code",
+    "f_globals",
+    "f_locals",
+    "f_trace",
+}
 ALLOWED_AST_NODES: tuple[type[ast.AST], ...] = (
     ast.Module,
     ast.FunctionDef,
@@ -348,6 +371,8 @@ def _validate_ast(tree: ast.AST) -> tuple[bool, str | None]:
 
         if isinstance(node, ast.Attribute):
             if node.attr.startswith("__"):
+                return False, f"forbidden attribute detected: {node.attr}"
+            if node.attr in FORBIDDEN_ATTRS:
                 return False, f"forbidden attribute detected: {node.attr}"
 
         if isinstance(node, ast.Call):

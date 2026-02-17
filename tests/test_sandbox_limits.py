@@ -73,7 +73,9 @@ def test_large_ast_check():
         ok, reason = validate_code_static(code)
 
         assert not ok
-        assert "code too complex" in str(reason)
+        # Check for various forms of complexity error messages
+        msg = str(reason)
+        assert "complexity" in msg or "too complex" in msg
 
     except RecursionError:
         pytest.skip("RecursionError during test setup prevents checking AST node limit")

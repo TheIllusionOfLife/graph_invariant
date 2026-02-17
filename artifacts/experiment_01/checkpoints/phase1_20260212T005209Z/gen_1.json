@@ -1,0 +1,83 @@
+{
+  "experiment_id": "phase1_20260212T005209Z",
+  "generation": 1,
+  "rng_seed": 42,
+  "rng_state": {
+    "bit_generator": "PCG64",
+    "state": {
+      "state": 95376830783351682500486580248632280039,
+      "inc": 332724090758049132448979897138935081983
+    },
+    "has_uint32": 0,
+    "uinteger": 3324115917
+  },
+  "best_val_score": 0.4927292572154954,
+  "no_improve_count": 0,
+  "island_stagnation": {
+    "0": 0,
+    "1": 1,
+    "2": 1,
+    "3": 1
+  },
+  "island_prompt_mode": {
+    "0": "free",
+    "1": "free",
+    "2": "free",
+    "3": "free"
+  },
+  "island_constrained_generations": {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 0
+  },
+  "island_recent_failures": {
+    "0": [
+      "no_valid_train_predictions: static_invalid: disallowed syntax: While",
+      "no_valid_train_predictions: runtime_exception: AttributeError: 'Graph' object has no attribute 'average_path_length'",
+      "no_valid_train_predictions: static_invalid: disallowed syntax: Try"
+    ],
+    "1": [
+      "no_valid_train_predictions: static_invalid: code must define exactly one function named `new_invariant`",
+      "no_valid_train_predictions: static_invalid: disallowed syntax: For",
+      "no_valid_train_predictions: static_invalid: disallowed syntax: While"
+    ],
+    "2": [
+      "no_valid_train_predictions: static_invalid: disallowed syntax: For",
+      "no_valid_train_predictions: static_invalid: disallowed syntax: Try",
+      "no_valid_train_predictions: static_invalid: disallowed call base: nx"
+    ],
+    "3": [
+      "no_valid_train_predictions: static_invalid: code must define exactly one function named `new_invariant`",
+      "no_valid_train_predictions: static_invalid: forbidden token detected: import ",
+      "no_valid_train_predictions: static_invalid: disallowed syntax: For"
+    ]
+  },
+  "islands": {
+    "0": [
+      {
+        "id": "g0_i0_p1_89250953",
+        "code": "def new_invariant(G):\n    n = G.number_of_nodes()\n    m = G.number_of_edges()\n    avg_deg = (2*m / n) if n else 0\n    return 0 if n <= 1 else ((n-1)/avg_deg if avg_deg else n)",
+        "island_id": 0,
+        "generation": 0,
+        "train_score": 0.5828091236494598,
+        "val_score": 0.4927292572154954,
+        "simplicity_score": 0.14752972352800872,
+        "novelty_bonus": 0.0
+      },
+      {
+        "id": "g0_i0_p3_773956048",
+        "code": "def new_invariant(G):\n    return G.number_of_nodes() / (G.size() + 1)",
+        "island_id": 0,
+        "generation": 0,
+        "train_score": 0.6741103618473182,
+        "val_score": 0.48597393951219936,
+        "simplicity_score": 0.17498917455111493,
+        "novelty_bonus": 0.000627241796267608
+      }
+    ],
+    "1": [],
+    "2": [],
+    "3": []
+  }
+}

@@ -1,0 +1,594 @@
+{
+  "experiment_map_elites_aspl": {
+    "fitness_mode": "correlation",
+    "success": true,
+    "val_spearman": 0.9352973339063481,
+    "test_spearman": 0.9470658869468552,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "best_scores": [
+        0.4263269880397349,
+        0.512803385591398,
+        0.512803385591398,
+        0.512803385591398,
+        0.512803385591398,
+        0.512803385591398,
+        0.5305633173613996,
+        0.5305633173613996,
+        0.5305680462859561,
+        0.5365733928946387,
+        0.5375940988048828,
+        0.5404896615380035,
+        0.5426859771161455,
+        0.5426859771161455,
+        0.5426859771161455,
+        0.5426859771161455,
+        0.5426859771161455,
+        0.5427748816001274,
+        0.5427748816001274,
+        0.5434966253021819,
+        0.5434966253021819,
+        0.5434966253021819,
+        0.5434966253021819,
+        0.5437000762854024,
+        0.5503922782177872,
+        0.5503922782177872,
+        0.5524962124229404,
+        0.5524962124229404,
+        0.5524962124229404,
+        0.5524962124229404
+      ],
+      "map_elites_coverage": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9748087357717388,
+            "pearson": 0.973731899919723,
+            "rmse": 0.20738055798656055,
+            "mae": 0.14566272020962878,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.9748533713342834,
+            "pearson": 0.9780057762888632,
+            "rmse": 0.1618837258621943,
+            "mae": 0.11978971277879914,
+            "valid_count": 200
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9608163807157283,
+            "pearson": 0.939819583069644,
+            "rmse": 0.32762900138460443,
+            "mae": 0.15656383549785863,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.950807770194255,
+            "pearson": 0.965732939198243,
+            "rmse": 0.21285233753527977,
+            "mae": 0.13110013846822646,
+            "valid_count": 200
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9817130016804002,
+          "pearson": 0.9753191960256336,
+          "rmse": 0.19942768637763375,
+          "mae": 0.14429826528575793,
+          "valid_count": 200
+        },
+        "test_metrics": {
+          "spearman": 0.9747089832405184,
+          "pearson": 0.9767021284185873,
+          "rmse": 0.1651476362245912,
+          "mae": 0.1255223134091304,
+          "valid_count": 200
+        }
+      }
+    },
+    "ood": {
+      "large_random": {
+        "valid_count": 100,
+        "total_count": 100,
+        "spearman": 0.9567716771677167,
+        "pearson": 0.879449155270321,
+        "rmse": 173.63589734914635,
+        "mae": 106.44799901242519
+      },
+      "extreme_params": {
+        "valid_count": 50,
+        "total_count": 50,
+        "spearman": 0.9263385354141656,
+        "pearson": 0.7968516408355883,
+        "rmse": 69.66856844929649,
+        "mae": 47.472437810232734
+      },
+      "special_topology": {
+        "valid_count": 8,
+        "total_count": 8,
+        "spearman": 0.5000000000000001,
+        "pearson": 0.49594060917527083,
+        "rmse": 36.097999583169106,
+        "mae": 31.375335206678354
+      }
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 164,
+      "successful_repairs": 68,
+      "failed_repairs": 96,
+      "failure_categories": {
+        "no_valid_train_predictions": 105,
+        "below_train_threshold": 38,
+        "below_novelty_threshold": 145
+      }
+    }
+  },
+  "experiment_algebraic_connectivity": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.7644836120903022,
+    "test_spearman": 0.7779479486987176,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "best_scores": [
+        0.44695617759899353,
+        0.44695617759899353,
+        0.44695617759899353,
+        0.44695617759899353,
+        0.44695617759899353,
+        0.44892684446507,
+        0.44918434497242943,
+        0.44918434497242943,
+        0.44918434497242943,
+        0.44918434497242943,
+        0.4596877656980921,
+        0.4596877656980921,
+        0.480734916614692,
+        0.48306008691688906,
+        0.48306008691688906,
+        0.48306008691688906,
+        0.48627258553697306,
+        0.4880785020502356,
+        0.4880785020502356,
+        0.4939659075538685
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "algebraic_connectivity",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.8576914422860573,
+            "pearson": 0.8646270915121714,
+            "rmse": 1.1193757446577839,
+            "mae": 0.6842785259157925,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.8662866571664293,
+            "pearson": 0.879800847248962,
+            "rmse": 1.1809968929359471,
+            "mae": 0.684851325168426,
+            "valid_count": 200
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9296845907465556,
+            "pearson": 0.9203186033455948,
+            "rmse": 1.0140462928909235,
+            "mae": 0.4821210363040867,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.9299718480357093,
+            "pearson": 0.9211866551295733,
+            "rmse": 1.1436533715458286,
+            "mae": 0.5208860313613835,
+            "valid_count": 200
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9408895222380561,
+          "pearson": 0.8621011168329483,
+          "rmse": 1.548626345994599,
+          "mae": 0.6085926384978064,
+          "valid_count": 200
+        },
+        "test_metrics": {
+          "spearman": 0.9375039375984401,
+          "pearson": 0.36048853687062055,
+          "rmse": 59.243007025577086,
+          "mae": 4.694237448159129,
+          "valid_count": 200
+        }
+      }
+    },
+    "ood": {},
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 75,
+      "successful_repairs": 36,
+      "failed_repairs": 39,
+      "failure_categories": {
+        "no_valid_train_predictions": 48,
+        "below_train_threshold": 43,
+        "below_novelty_threshold": 55
+      }
+    }
+  },
+  "experiment_upper_bound_aspl": {
+    "fitness_mode": "upper_bound",
+    "success": false,
+    "val_spearman": 0.42267500325526164,
+    "test_spearman": 0.3590295067690049,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "best_scores": [
+        0.2278811060751314,
+        0.23707464638702513,
+        0.3216014153485507,
+        0.3216014153485507,
+        0.3216014153485507,
+        0.3216014153485507,
+        0.3216014153485507,
+        0.3216014153485507,
+        0.3216014153485507,
+        0.3216014153485507,
+        0.43305527559667845,
+        0.43305527559667845,
+        0.44621867634055423,
+        0.44687274997232196,
+        0.4477276757431705,
+        0.44897012276457193,
+        0.44897012276457193,
+        0.44897012276457193,
+        0.44901775921318077,
+        0.45331732044510276
+      ]
+    },
+    "baselines": {},
+    "ood": {
+      "large_random": {
+        "valid_count": 97,
+        "total_count": 100,
+        "bound_score": 0.447080008882827,
+        "satisfaction_rate": 0.7835051546391752,
+        "mean_gap": 0.7524942718799137
+      },
+      "extreme_params": {
+        "valid_count": 49,
+        "total_count": 50,
+        "bound_score": 0.30333512550582203,
+        "satisfaction_rate": 0.5918367346938775,
+        "mean_gap": 0.9510985867758271
+      },
+      "special_topology": {
+        "valid_count": 8,
+        "total_count": 8,
+        "bound_score": 0.39241179421007477,
+        "satisfaction_rate": 0.625,
+        "mean_gap": 0.5927146156708297
+      }
+    },
+    "bounds_metrics": {
+      "val": {
+        "bound_score": 0.5137132073914047,
+        "satisfaction_rate": 0.8704663212435233,
+        "mean_gap": 0.6944596882445031,
+        "violation_count": 25,
+        "valid_count": 193
+      },
+      "test": {
+        "bound_score": 0.4986280800131158,
+        "satisfaction_rate": 0.844559585492228,
+        "mean_gap": 0.6937665954753548,
+        "violation_count": 30,
+        "valid_count": 193
+      }
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 56,
+      "successful_repairs": 27,
+      "failed_repairs": 29,
+      "failure_categories": {
+        "below_train_threshold": 7,
+        "no_valid_train_predictions": 47,
+        "below_novelty_threshold": 36
+      }
+    }
+  },
+  "experiment_v2": {
+    "fitness_mode": null,
+    "success": true,
+    "val_spearman": 0.9370055265153013,
+    "test_spearman": 0.9214745368634217,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "best_scores": [
+        0.49652587484186966,
+        0.5491013268732999,
+        0.5491013268732999,
+        0.5491013268732999,
+        0.5491013268732999,
+        0.5491013268732999,
+        0.5491013268732999,
+        0.5491013268732999,
+        0.5491013268732999,
+        0.5491013268732999,
+        0.5491013268732999,
+        0.5491013268732999
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9748087357717388,
+            "pearson": 0.9737318999197221,
+            "rmse": 0.20738055798656266,
+            "mae": 0.14566272020962992,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.9748533713342834,
+            "pearson": 0.9780057762888631,
+            "rmse": 0.1618837258621951,
+            "mae": 0.11978971277879974,
+            "valid_count": 200
+          }
+        },
+        "random_forest": {
+          "status": "skipped",
+          "reason": "scikit-learn not installed"
+        }
+      },
+      "pysr_baseline": {
+        "status": "skipped",
+        "reason": "pysr not installed"
+      }
+    },
+    "ood": {
+      "large_random": {
+        "valid_count": 100,
+        "total_count": 100,
+        "spearman": 0.8855685568556856,
+        "pearson": 0.9398471778551751,
+        "rmse": 11.23339353380055,
+        "mae": 8.09315080678792
+      },
+      "extreme_params": {
+        "valid_count": 50,
+        "total_count": 50,
+        "spearman": 0.9805042016806722,
+        "pearson": 0.943581129908694,
+        "rmse": 5.743191655310097,
+        "mae": 4.188610654077859
+      },
+      "special_topology": {
+        "valid_count": 8,
+        "total_count": 8,
+        "spearman": 0.7857142857142858,
+        "pearson": 0.699439909752809,
+        "rmse": 3.764978941418917,
+        "mae": 2.9547182863357744
+      }
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 36,
+      "successful_repairs": 14,
+      "failed_repairs": 22,
+      "failure_categories": {
+        "no_valid_train_predictions": 40,
+        "below_novelty_threshold": 53,
+        "below_train_threshold": 24
+      }
+    }
+  },
+  "benchmark/benchmark_20260215T230550Z": {
+    "fitness_mode": null,
+    "success": null,
+    "val_spearman": null,
+    "test_spearman": null,
+    "convergence": {},
+    "baselines": {},
+    "ood": {},
+    "runs": [
+      {
+        "seed": 11,
+        "status": 0,
+        "success": false,
+        "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_11",
+        "val_spearman": 0.9218210455261382,
+        "test_spearman": 0.9390399759994,
+        "has_baselines": true
+      },
+      {
+        "seed": 22,
+        "status": 0,
+        "success": false,
+        "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_22",
+        "val_spearman": 0.933834845871147,
+        "test_spearman": 0.9221341491540996,
+        "has_baselines": true
+      },
+      {
+        "seed": 33,
+        "status": 0,
+        "success": false,
+        "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_33",
+        "val_spearman": 0.9284212105302634,
+        "test_spearman": 0.9153573839345984,
+        "has_baselines": true
+      },
+      {
+        "seed": 44,
+        "status": 0,
+        "success": false,
+        "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_44",
+        "val_spearman": 0.9090632265806646,
+        "test_spearman": 0.8731478286957175,
+        "has_baselines": true
+      },
+      {
+        "seed": 55,
+        "status": 0,
+        "success": true,
+        "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_55",
+        "val_spearman": 0.9395769894247358,
+        "test_spearman": 0.9533713342833573,
+        "has_baselines": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,236 @@
+{
+  "schema_version": 3,
+  "experiment_id": "phase1_20260212T064018Z",
+  "model_name": "gpt-oss:20b",
+  "best_candidate_id": "g2_i1_p2_970698024",
+  "best_candidate_code_sha256": "b62ff58d1c6cddb1b44e13ed6f62075b9620779ef157f5340f1204ea92d05cbb",
+  "best_val_score": 0.6666372840718657,
+  "stop_reason": "early_stop",
+  "success": true,
+  "config": {
+    "seed": 42,
+    "target_name": "average_shortest_path_length",
+    "num_train_graphs": 50,
+    "num_val_graphs": 200,
+    "num_test_graphs": 200,
+    "max_generations": 20,
+    "population_size": 5,
+    "migration_interval": 10,
+    "island_temperatures": [
+      0.3,
+      0.3,
+      0.8,
+      1.2
+    ],
+    "timeout_sec": 2.0,
+    "memory_mb": 256,
+    "sandbox_max_workers": null,
+    "alpha": 0.6,
+    "beta": 0.2,
+    "gamma": 0.2,
+    "train_score_threshold": 0.3,
+    "early_stop_patience": 10,
+    "artifacts_dir": "artifacts/experiment_05",
+    "model_name": "gpt-oss:20b",
+    "ollama_url": "http://localhost:11434/api/generate",
+    "allow_remote_ollama": false,
+    "checkpoint_keep_last": 3,
+    "experiment_id": null,
+    "enable_constrained_fallback": true,
+    "stagnation_trigger_generations": 5,
+    "constrained_recovery_generations": 3,
+    "allow_late_constrained_recovery": true,
+    "run_baselines": false,
+    "persist_candidate_code_in_summary": true,
+    "success_spearman_threshold": 0.85,
+    "pysr_niterations": 30,
+    "pysr_populations": 8,
+    "pysr_procs": 0,
+    "pysr_timeout_in_seconds": 60.0,
+    "benchmark_seeds": [
+      11,
+      22,
+      33,
+      44,
+      55
+    ],
+    "novelty_bootstrap_samples": 1000,
+    "novelty_threshold": 0.7,
+    "enforce_pysr_parity_for_success": false,
+    "pysr_parity_epsilon": 0.0,
+    "require_baselines_for_success": false,
+    "persist_prompt_and_response_logs": false,
+    "llm_timeout_sec": 600.0,
+    "enable_self_correction": true,
+    "self_correction_max_retries": 1,
+    "self_correction_feedback_window": 3
+  },
+  "final_generation": 13,
+  "island_candidate_counts": {
+    "0": 5,
+    "1": 5,
+    "2": 5,
+    "3": 5
+  },
+  "train_metrics": {
+    "spearman": 0.9999999999999999,
+    "pearson": 0.9999999999999998,
+    "rmse": 2.923542684706508,
+    "mae": 2.815493903986263,
+    "valid_count": 50,
+    "novelty_bonus": null
+  },
+  "val_metrics": {
+    "spearman": 1.0,
+    "pearson": 1.0,
+    "rmse": 2.8264627794805732,
+    "mae": 2.6893217397597824,
+    "valid_count": 200,
+    "novelty_bonus": 0.07980690010002534
+  },
+  "test_metrics": {
+    "spearman": 1.0,
+    "pearson": 1.0,
+    "rmse": 2.751394282553243,
+    "mae": 2.6431909544478804,
+    "valid_count": 200,
+    "novelty_bonus": 0.08328358208955222
+  },
+  "sanity_metrics": {
+    "spearman": 1.0,
+    "pearson": 0.9999999999999998,
+    "rmse": 2.5135542902215464,
+    "mae": 2.5116874181889663,
+    "valid_count": 3,
+    "novelty_bonus": null
+  },
+  "novelty_ci": {
+    "validation": {
+      "max_ci_upper_abs_rho": 0.9447853200582833,
+      "novelty_passed": false,
+      "threshold": 0.7,
+      "per_invariant": {
+        "density": {
+          "point_abs_rho": 0.7720388541831561,
+          "ci_upper_abs_rho": 0.8232618417367776
+        },
+        "clustering_coefficient": {
+          "point_abs_rho": 0.22225705721830374,
+          "ci_upper_abs_rho": 0.3439810737311427
+        },
+        "degree_assortativity": {
+          "point_abs_rho": 0.0206315235249109,
+          "ci_upper_abs_rho": 0.16629492435165863
+        },
+        "transitivity": {
+          "point_abs_rho": 0.26187839466625557,
+          "ci_upper_abs_rho": 0.3863271911299866
+        },
+        "average_degree": {
+          "point_abs_rho": 0.7432274950287772,
+          "ci_upper_abs_rho": 0.7924008523511378
+        },
+        "max_degree": {
+          "point_abs_rho": 0.594776256306084,
+          "ci_upper_abs_rho": 0.6738023086460049
+        },
+        "spectral_radius": {
+          "point_abs_rho": 0.7172807009978382,
+          "ci_upper_abs_rho": 0.7820272748276296
+        },
+        "diameter": {
+          "point_abs_rho": 0.9168691043741666,
+          "ci_upper_abs_rho": 0.9378239373704975
+        },
+        "algebraic_connectivity": {
+          "point_abs_rho": 0.9201930998999747,
+          "ci_upper_abs_rho": 0.9447853200582833
+        }
+      }
+    },
+    "test": {
+      "max_ci_upper_abs_rho": 0.9415814424661134,
+      "novelty_passed": false,
+      "threshold": 0.7,
+      "per_invariant": {
+        "density": {
+          "point_abs_rho": 0.698102523295527,
+          "ci_upper_abs_rho": 0.7571591504386342
+        },
+        "clustering_coefficient": {
+          "point_abs_rho": 0.0968137770624252,
+          "ci_upper_abs_rho": 0.22474633539956396
+        },
+        "degree_assortativity": {
+          "point_abs_rho": 0.10636315907897698,
+          "ci_upper_abs_rho": 0.22354343738329135
+        },
+        "transitivity": {
+          "point_abs_rho": 0.11147730352412535,
+          "ci_upper_abs_rho": 0.23680441620453335
+        },
+        "average_degree": {
+          "point_abs_rho": 0.6792528274482876,
+          "ci_upper_abs_rho": 0.7445775705723575
+        },
+        "max_degree": {
+          "point_abs_rho": 0.5180175751956381,
+          "ci_upper_abs_rho": 0.610122021339637
+        },
+        "spectral_radius": {
+          "point_abs_rho": 0.6049291232280809,
+          "ci_upper_abs_rho": 0.688698310031213
+        },
+        "diameter": {
+          "point_abs_rho": 0.9000388035316206,
+          "ci_upper_abs_rho": 0.9282512879021153
+        },
+        "algebraic_connectivity": {
+          "point_abs_rho": 0.9167164179104478,
+          "ci_upper_abs_rho": 0.9415814424661134
+        }
+      }
+    }
+  },
+  "baseline_comparison": {
+    "candidate": {
+      "val_spearman": 1.0,
+      "test_spearman": 1.0
+    },
+    "pysr": {
+      "status": "missing",
+      "val_spearman": null,
+      "test_spearman": null
+    }
+  },
+  "success_criteria": {
+    "success_spearman_threshold": 0.85,
+    "threshold_passed": true,
+    "require_baselines_for_success": false,
+    "baselines_available": false,
+    "baselines_healthy": false,
+    "stat_baseline_ok": false,
+    "pysr_ok": false,
+    "baselines_passed": true,
+    "enforce_pysr_parity_for_success": false,
+    "pysr_parity_epsilon": 0.0,
+    "pysr_status": "missing",
+    "candidate_val_spearman": 1.0,
+    "pysr_val_spearman": null,
+    "pysr_parity_passed": true,
+    "pysr_parity_reason": "disabled"
+  },
+  "dataset_fingerprint": "af08648a118017775c4ac728a8e467b5c9cf7e503c9a2ce19baa0b26358f420b",
+  "self_correction_stats": {
+    "enabled": true,
+    "max_retries": 1,
+    "feedback_window": 3,
+    "attempted_repairs": 14,
+    "successful_repairs": 6,
+    "failed_repairs": 8,
+    "failure_categories": {
+      "no_valid_train_predictions": 22
+    }
+  },
+  "best_candidate_code": "def new_invariant(G):\n    \"\"\"\n    Compute the average shortest path length of a graph G.\n\n    For directed graphs, the average is taken over all reachable directed pairs.\n    For undirected graphs, each unordered pair is counted once.\n    Unreachable pairs are ignored.\n\n    Parameters\n    ----------\n    G : networkx.Graph or networkx.DiGraph\n        The graph on which to compute the invariant.\n\n    Returns\n    -------\n    float or None\n        The average shortest path length, or None if no pairs are reachable.\n    \"\"\"\n    nodes = list(G.nodes)\n    n = len(nodes)\n    if n <= 1:\n        return 0.0\n\n    total_dist = 0\n    pair_count = 0\n\n    for source in nodes:\n        visited = {source}\n        queue = [(source, 0)]\n        while queue:\n            current, dist = queue.pop(0)\n            for neighbor in G.neighbors(current):\n                if neighbor not in visited:\n                    visited.add(neighbor)\n                    queue.append((neighbor, dist + 1))\n                    total_dist += dist + 1\n                    pair_count += 1\n\n    if pair_count == 0:\n        return None\n\n    if G.is_directed():\n        return total_dist / pair_count\n    else:\n        # Each unordered pair was counted twice in the BFS loops\n        return 2 * total_dist / pair_count"
+}

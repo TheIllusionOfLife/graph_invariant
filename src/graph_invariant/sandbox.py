@@ -527,8 +527,10 @@ class SandboxEvaluator:
         if self._pool is None:
             raise RuntimeError("sandbox pool is not initialized")
         tasks = [(code, features) for features in features_list]
-        # Keep chunksize small for fairness; tune upward if IPC becomes dominant.
-        return self._pool.starmap(_run_candidate, tasks, chunksize=1)
+        # Batch tasks to reduce IPC overhead (pickling, context switching).
+        # We target ~4 chunks per worker to balance load vs overhead.
+        chunksize = max(1, len(tasks) // (self._worker_count * 4))
+        return self._pool.starmap(_run_candidate, tasks, chunksize=chunksize)
 
     def _evaluate_once_detailed(
         self, code: str, features_list: list[dict[str, Any]]
@@ -536,7 +538,9 @@ class SandboxEvaluator:
         if self._pool is None:
             raise RuntimeError("sandbox pool is not initialized")
         tasks = [(code, features) for features in features_list]
-        return self._pool.starmap(_run_candidate_detailed, tasks, chunksize=1)
+        # Batch tasks to reduce IPC overhead.
+        chunksize = max(1, len(tasks) // (self._worker_count * 4))
+        return self._pool.starmap(_run_candidate_detailed, tasks, chunksize=chunksize)
 
     def evaluate(self, code: str, features_list: list[dict[str, Any]]) -> list[float | None]:
         ok, _ = validate_code_static(code)

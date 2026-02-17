@@ -976,7 +976,8 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
     print("📦 Generating datasets...")
     datasets = generate_phase1_datasets(cfg)
     print(
-        f"✅ Datasets generated (Train: {len(datasets.train)}, Val: {len(datasets.val)}, Test: {len(datasets.test)})"
+        f"✅ Datasets generated (Train: {len(datasets.train)}, "
+        f"Val: {len(datasets.val)}, Test: {len(datasets.test)})"
     )
     artifacts_dir = Path(cfg.artifacts_dir)
     log_path = artifacts_dir / "logs" / "events.jsonl"
@@ -1094,7 +1095,8 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
                 state.no_improve_count += 1
 
             print(
-                f"🧬 Gen {current_gen}/{cfg.max_generations} | 🏆 Best: {state.best_val_score:.4f} | ⏳ Stagnation: {state.no_improve_count}"
+                f"🧬 Gen {current_gen}/{cfg.max_generations} | "
+                f"🏆 Best: {state.best_val_score:.4f} | ⏳ Stagnation: {state.no_improve_count}"
             )
             state.generation += 1
             state.rng_state = rng.bit_generator.state

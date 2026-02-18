@@ -629,6 +629,18 @@ def test_record_recent_failure_deduplicates_and_keeps_recency():
     assert state.island_recent_failures[0] == ["b", "a", "c"]
 
 
+def test_topology_descriptor_handles_missing_feature_keys():
+    from graph_invariant.cli import _topology_descriptor
+
+    descriptor = _topology_descriptor(
+        y_pred_valid=[1.0, 2.0, 3.0],
+        features_val=[{"density": 0.2}, {"density": 0.3}, {"density": 0.4}],
+        valid_indices=(0, 1, 2),
+    )
+    assert 0.0 <= descriptor[0] <= 1.0
+    assert 0.0 <= descriptor[1] <= 1.0
+
+
 def test_run_phase1_success_threshold_is_configurable(monkeypatch, tmp_path):
     import networkx as nx
 

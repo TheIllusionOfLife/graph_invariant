@@ -294,9 +294,9 @@ def _topology_descriptor(
     features_val: list[dict[str, Any]],
     valid_indices: tuple[int, ...],
 ) -> tuple[float, float]:
-    density = [float(features_val[idx]["density"]) for idx in valid_indices]
-    clustering = [float(features_val[idx]["avg_clustering"]) for idx in valid_indices]
-    transitivity = [float(features_val[idx]["transitivity"]) for idx in valid_indices]
+    density = [float(features_val[idx].get("density", 0.0)) for idx in valid_indices]
+    clustering = [float(features_val[idx].get("avg_clustering", 0.0)) for idx in valid_indices]
+    transitivity = [float(features_val[idx].get("transitivity", 0.0)) for idx in valid_indices]
     axis_density = _corr_abs(y_pred_valid, density)
     axis_cluster = (
         _corr_abs(y_pred_valid, clustering) + _corr_abs(y_pred_valid, transitivity)

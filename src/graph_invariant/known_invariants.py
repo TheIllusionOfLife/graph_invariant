@@ -7,6 +7,14 @@ import scipy.sparse
 import scipy.sparse.csgraph
 import scipy.sparse.linalg
 
+_SPARSE_EIGEN_FALLBACK_EXCEPTIONS = (
+    scipy.sparse.linalg.ArpackNoConvergence,
+    scipy.sparse.linalg.ArpackError,
+    ValueError,
+    RuntimeError,
+    TypeError,
+)
+
 
 def _safe_float(value: float) -> float:
     if math.isnan(value) or math.isinf(value):
@@ -53,7 +61,7 @@ def _laplacian_extrema_sparse(graph: nx.Graph) -> tuple[float, float]:
         lambda2 = max(float(smallest_sorted[1]), 0.0)
         lambda_max = max(float(largest[0]), 0.0)
         return lambda2, lambda_max
-    except (scipy.sparse.linalg.ArpackNoConvergence, scipy.sparse.linalg.ArpackError, ValueError):
+    except _SPARSE_EIGEN_FALLBACK_EXCEPTIONS:
         eigs = _dense_laplacian_eigs(graph)
         return max(float(eigs[1]), 0.0), max(float(eigs[-1]), 0.0)
 
@@ -73,7 +81,7 @@ def _normalized_laplacian_lambda2_sparse(graph: nx.Graph) -> float:
         smallest = scipy.sparse.linalg.eigsh(lap, k=2, which="SM", return_eigenvectors=False)
         smallest_sorted = np.sort(smallest)
         return max(float(smallest_sorted[1]), 0.0)
-    except (scipy.sparse.linalg.ArpackNoConvergence, scipy.sparse.linalg.ArpackError, ValueError):
+    except _SPARSE_EIGEN_FALLBACK_EXCEPTIONS:
         eigs = _dense_normalized_laplacian_eigs(graph)
         return max(float(eigs[1]), 0.0)
 
@@ -104,7 +112,7 @@ def _laplacian_energy_ratio(graph: nx.Graph, k: int = 5) -> float:
         )
         top_sum = float(np.sum(np.maximum(largest, 0.0)))
         return max(0.0, min(1.0, top_sum / trace))
-    except (scipy.sparse.linalg.ArpackNoConvergence, scipy.sparse.linalg.ArpackError, ValueError):
+    except _SPARSE_EIGEN_FALLBACK_EXCEPTIONS:
         eigs = _dense_laplacian_eigs(graph)
         top_sum = float(np.sum(eigs[-k_eff:]))
         return max(0.0, min(1.0, top_sum / trace))

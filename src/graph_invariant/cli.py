@@ -124,6 +124,7 @@ def _candidate_prompt(
     island_id: int,
     target_name: str,
     fitness_mode: str = "correlation",
+    enable_spectral_feature_pack: bool = True,
     archive_exemplars: list[str] | None = None,
 ) -> str:
     """Build the LLM prompt for a candidate, applying the island's strategy."""
@@ -143,6 +144,7 @@ def _candidate_prompt(
         target_name=target_name,
         strategy=strategy,
         fitness_mode=fitness_mode,
+        include_spectral_feature_pack=enable_spectral_feature_pack,
     )
     if state.island_prompt_mode.get(island_id, "free") == "constrained":
         return prompt + _CONSTRAINED_SUFFIX
@@ -428,6 +430,7 @@ def _run_one_generation(
                 island_id,
                 cfg.target_name,
                 fitness_mode=cfg.fitness_mode,
+                enable_spectral_feature_pack=cfg.enable_spectral_feature_pack,
                 archive_exemplars=archive_exemplar_codes,
             )
             current_prompt = base_prompt

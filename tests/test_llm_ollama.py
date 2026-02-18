@@ -37,6 +37,18 @@ def test_build_prompt_lists_available_features():
         assert key in prompt
 
 
+def test_build_prompt_omits_spectral_features_when_disabled():
+    prompt = build_prompt(
+        "free",
+        [],
+        [],
+        "diameter",
+        include_spectral_feature_pack=False,
+    )
+    assert "laplacian_lambda2" not in prompt
+    assert "normalized_laplacian_lambda2" not in prompt
+
+
 def test_generate_candidate_code_parses_response(monkeypatch):
     class DummyResponse:
         def raise_for_status(self) -> None:

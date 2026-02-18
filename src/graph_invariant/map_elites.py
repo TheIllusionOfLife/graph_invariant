@@ -1,8 +1,10 @@
 """MAP-Elites diversity archive for quality-diversity search.
 
-Maintains a 2D behavioral grid indexed by (simplicity_score, novelty_bonus).
-Each cell keeps only the candidate with the highest raw fitness_signal.
-Runs alongside the existing island model to provide diverse prompt exemplars.
+Maintains a 2D behavioral grid where cells are selected by a descriptor.
+By default, descriptors come from `(simplicity_score, novelty_bonus)`, but
+`try_insert(..., descriptor=...)` can override this with an explicit tuple
+(used for alternate behavior spaces such as topology correlation axes).
+Each cell keeps only the candidate with the highest raw `fitness_signal`.
 """
 
 from __future__ import annotations

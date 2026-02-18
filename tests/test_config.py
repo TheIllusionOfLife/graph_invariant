@@ -33,7 +33,7 @@ def test_phase1_config_defaults_are_valid():
     assert cfg.enable_spectral_feature_pack is True
     assert cfg.ood_train_special_topology_ratio == 0.1
     assert cfg.ood_val_special_topology_ratio == 0.1
-    assert cfg.enable_dual_map_elites is True
+    assert cfg.enable_dual_map_elites is False
     assert cfg.map_elites_topology_bins == 5
 
 
@@ -192,8 +192,17 @@ def test_map_elites_bins_accepts_valid_value():
 def test_topology_ood_ratios_validate_range():
     with pytest.raises(ValueError, match="ood_train_special_topology_ratio"):
         Phase1Config(ood_train_special_topology_ratio=-0.1)
+    with pytest.raises(ValueError, match="ood_train_special_topology_ratio"):
+        Phase1Config(ood_train_special_topology_ratio=1.1)
+    with pytest.raises(ValueError, match="ood_val_special_topology_ratio"):
+        Phase1Config(ood_val_special_topology_ratio=-0.1)
     with pytest.raises(ValueError, match="ood_val_special_topology_ratio"):
         Phase1Config(ood_val_special_topology_ratio=1.1)
+
+
+def test_warns_when_dual_map_elites_enabled_without_map_elites():
+    with pytest.warns(UserWarning, match="enable_dual_map_elites"):
+        Phase1Config(enable_map_elites=False, enable_dual_map_elites=True)
 
 
 def test_map_elites_topology_bins_validates_minimum():

@@ -136,8 +136,8 @@ simplicity_score = w1 * (1 / (1 + log2(max(ast_node_count, 1)))) + w2 * (1 / (1 
   - `max_degree` — 最大次数
   - `spectral_radius` — 隣接行列の最大固有値（`max(eigenvalues(A))`）
   - `diameter` — グラフ直径（連結成分の最長最短距離）
-  - `algebraic_connectivity` — ラプラシアンの第2最小固有値（Fiedler値）
-  - `laplacian_lambda2` — ラプラシアン第2固有値
+  - `algebraic_connectivity` — 非正規化ラプラシアンの第2最小固有値（Fiedler値）
+  - `laplacian_lambda2` — 非正規化ラプラシアン第2固有値（`algebraic_connectivity` 互換キー）
   - `laplacian_lambda_max` — ラプラシアン最大固有値
   - `laplacian_spectral_gap` — `laplacian_lambda_max - laplacian_lambda2`
   - `normalized_laplacian_lambda2` — 正規化ラプラシアン第2固有値

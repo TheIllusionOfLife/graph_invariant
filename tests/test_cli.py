@@ -1467,6 +1467,7 @@ def test_run_phase1_with_map_elites_populates_archive(monkeypatch, tmp_path):
         num_test_graphs=2,
         run_baselines=False,
         enable_map_elites=True,
+        enable_dual_map_elites=True,
         map_elites_bins=3,
     )
     bundle = DatasetBundle(
@@ -1570,6 +1571,7 @@ def test_run_phase1_map_elites_checkpoint_roundtrip(monkeypatch, tmp_path):
         num_test_graphs=2,
         run_baselines=False,
         enable_map_elites=True,
+        enable_dual_map_elites=True,
         map_elites_bins=3,
     )
     bundle = DatasetBundle(

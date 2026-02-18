@@ -14,10 +14,14 @@ class IslandStrategy(StrEnum):
     NOVEL = "novel"
 
 
-_FEATURE_KEYS_DOC = (
+_BASE_FEATURE_KEYS_DOC = (
     "Available keys in s: n (node count), m (edge count), density, avg_degree, "
     "max_degree, min_degree, std_degree, avg_clustering, transitivity, "
-    "degree_assortativity, num_triangles, degrees (sorted degree list), "
+    "degree_assortativity, num_triangles, degrees (sorted degree list)"
+)
+
+_SPECTRAL_FEATURE_KEYS_DOC = (
+    ", "
     "laplacian_lambda2, laplacian_lambda_max, laplacian_spectral_gap, "
     "normalized_laplacian_lambda2, laplacian_energy_ratio."
 )
@@ -94,6 +98,7 @@ def build_prompt(
     target_name: str,
     strategy: IslandStrategy | None = None,
     fitness_mode: str = "correlation",
+    include_spectral_feature_pack: bool = True,
 ) -> str:
     """Build an LLM prompt for candidate formula generation.
 
@@ -134,6 +139,12 @@ def build_prompt(
     if is_bounds:
         bounds_block = _BOUNDS_INSTRUCTIONS.get(fitness_mode, "")
 
+    feature_keys_doc = _BASE_FEATURE_KEYS_DOC
+    if include_spectral_feature_pack:
+        feature_keys_doc = feature_keys_doc + _SPECTRAL_FEATURE_KEYS_DOC
+    else:
+        feature_keys_doc = feature_keys_doc + "."
+
     return (
         f"You are discovering graph invariant formulas for target `{target_name}`.\n"
         f"Island mode: {island_mode}\n"
@@ -143,7 +154,7 @@ def build_prompt(
         f"Recent failures:\n{fail_block}\n"
         "Return only python code defining `def new_invariant(s):` "
         "where s is a dict of pre-computed graph features.\n"
-        f"{_FEATURE_KEYS_DOC}\n"
+        f"{feature_keys_doc}\n"
         f"{_ANTI_PATTERNS}"
         f"{_FORMULA_EXAMPLES}"
         f"{bounds_block}"

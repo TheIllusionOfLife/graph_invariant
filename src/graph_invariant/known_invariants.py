@@ -136,7 +136,7 @@ def _spectral_radius_sparse(graph: nx.Graph) -> float:
     try:
         vals = scipy.sparse.linalg.eigsh(adj_sparse, k=1, which="LM", maxiter=500)
         return float(np.abs(vals[0][0]))
-    except (scipy.sparse.linalg.ArpackNoConvergence, scipy.sparse.linalg.ArpackError):
+    except _SPARSE_EIGEN_FALLBACK_EXCEPTIONS:
         adjacency = nx.to_numpy_array(graph, dtype=float)
         eigvals = np.linalg.eigvals(adjacency)
         return float(np.max(np.abs(eigvals))) if eigvals.size else 0.0
@@ -151,22 +151,17 @@ def _algebraic_connectivity_sparse(graph: nx.Graph) -> float:
     n = graph.number_of_nodes()
     if n < 2 or not nx.is_connected(graph):
         return 0.0
+    # Keep this aligned with the non-normalized Laplacian lambda2 key for
+    # consistent semantics across exported invariants.
+    if n >= 10:
+        lambda2, _ = _laplacian_extrema_sparse(graph)
+        return max(float(lambda2), 0.0)
     if n < 10:
         try:
             return float(nx.algebraic_connectivity(graph))
         except nx.NetworkXError:
             return 0.0
-    laplacian = nx.to_scipy_sparse_array(graph, dtype=float, format="csr")
-    laplacian = scipy.sparse.csgraph.laplacian(laplacian)
-    try:
-        vals = scipy.sparse.linalg.eigsh(laplacian, k=2, which="SM", maxiter=1000)
-        eigenvalues = sorted(vals[0])
-        return max(float(eigenvalues[1]), 0.0)
-    except (scipy.sparse.linalg.ArpackNoConvergence, scipy.sparse.linalg.ArpackError):
-        try:
-            return float(nx.algebraic_connectivity(graph))
-        except nx.NetworkXError:
-            return 0.0
+    return 0.0
 
 
 def _spectral_pack(graph: nx.Graph) -> dict[str, float]:

@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import networkx as nx
 import numpy as np
 
-from graph_invariant.baselines.features import FEATURE_ORDER, features_from_graphs
+from graph_invariant.baselines.features import FEATURE_ORDER, feature_order, features_from_graphs
 from graph_invariant.baselines.pysr_baseline import run_pysr_baseline
 from graph_invariant.baselines.stat_baselines import run_stat_baselines
 
@@ -159,6 +159,15 @@ def test_features_from_graphs_no_exclusion_returns_all():
     no_exclude = features_from_graphs(graphs, exclude_features=None)
     assert full.shape == no_exclude.shape
     np.testing.assert_allclose(full, no_exclude, atol=1e-12)
+
+
+def test_features_from_graphs_can_disable_spectral_pack():
+    graphs = [nx.path_graph(5), nx.cycle_graph(6)]
+    full = features_from_graphs(graphs, enable_spectral_feature_pack=True)
+    base_only = features_from_graphs(graphs, enable_spectral_feature_pack=False)
+    assert full.shape[1] == len(FEATURE_ORDER)
+    assert base_only.shape[1] == len(feature_order(enable_spectral_feature_pack=False))
+    assert full.shape[0] == base_only.shape[0]
 
 
 def test_run_stat_baselines_accepts_target_name():

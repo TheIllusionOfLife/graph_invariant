@@ -629,6 +629,18 @@ def test_record_recent_failure_deduplicates_and_keeps_recency():
     assert state.island_recent_failures[0] == ["b", "a", "c"]
 
 
+def test_topology_descriptor_handles_missing_feature_keys():
+    from graph_invariant.cli import _topology_descriptor
+
+    descriptor = _topology_descriptor(
+        y_pred_valid=[1.0, 2.0, 3.0],
+        features_val=[{"density": 0.2}, {"density": 0.3}, {"density": 0.4}],
+        valid_indices=(0, 1, 2),
+    )
+    assert 0.0 <= descriptor[0] <= 1.0
+    assert 0.0 <= descriptor[1] <= 1.0
+
+
 def test_run_phase1_success_threshold_is_configurable(monkeypatch, tmp_path):
     import networkx as nx
 
@@ -735,25 +747,27 @@ def test_random_forest_baseline_skips_when_inputs_contain_nan():
 
 
 def test_stat_baseline_feature_matrix_has_stable_empty_shape():
-    from graph_invariant.baselines.stat_baselines import _features_from_graphs
+    from graph_invariant.baselines.stat_baselines import _FEATURE_ORDER, _features_from_graphs
 
     x = _features_from_graphs([])
-    assert x.shape == (0, 9)
+    assert x.shape == (0, len(_FEATURE_ORDER))
 
 
 def test_linear_and_random_forest_skip_on_empty_training_data():
     import numpy as np
 
     from graph_invariant.baselines.stat_baselines import (
+        _FEATURE_ORDER,
         _run_linear_regression,
         _run_random_forest_optional,
     )
 
-    x_train = np.empty((0, 9), dtype=float)
+    width = len(_FEATURE_ORDER)
+    x_train = np.empty((0, width), dtype=float)
     y_train = np.empty((0,), dtype=float)
-    x_val = np.empty((0, 9), dtype=float)
+    x_val = np.empty((0, width), dtype=float)
     y_val = np.empty((0,), dtype=float)
-    x_test = np.empty((0, 9), dtype=float)
+    x_test = np.empty((0, width), dtype=float)
     y_test = np.empty((0,), dtype=float)
 
     lr = _run_linear_regression(x_train, y_train, x_val, y_val, x_test, y_test)
@@ -1453,6 +1467,7 @@ def test_run_phase1_with_map_elites_populates_archive(monkeypatch, tmp_path):
         num_test_graphs=2,
         run_baselines=False,
         enable_map_elites=True,
+        enable_dual_map_elites=True,
         map_elites_bins=3,
     )
     bundle = DatasetBundle(
@@ -1491,6 +1506,8 @@ def test_run_phase1_with_map_elites_populates_archive(monkeypatch, tmp_path):
     assert "map_elites_stats" in gen_summaries[0]["payload"]
     stats = gen_summaries[0]["payload"]["map_elites_stats"]
     assert stats["coverage"] > 0
+    assert "map_elites_stats_primary" in gen_summaries[0]["payload"]
+    assert "map_elites_stats_topology" in gen_summaries[0]["payload"]
 
 
 def test_run_phase1_without_map_elites_omits_archive(monkeypatch, tmp_path):
@@ -1554,6 +1571,7 @@ def test_run_phase1_map_elites_checkpoint_roundtrip(monkeypatch, tmp_path):
         num_test_graphs=2,
         run_baselines=False,
         enable_map_elites=True,
+        enable_dual_map_elites=True,
         map_elites_bins=3,
     )
     bundle = DatasetBundle(
@@ -1591,6 +1609,9 @@ def test_run_phase1_map_elites_checkpoint_roundtrip(monkeypatch, tmp_path):
     ckpt_data = json.loads(ckpt_path.read_text("utf-8"))
     assert "map_elites_archive" in ckpt_data
     assert ckpt_data["map_elites_archive"]["num_bins"] == 3
+    assert "map_elites_archives" in ckpt_data
+    assert ckpt_data["map_elites_archives"]["primary"]["num_bins"] == 3
+    assert ckpt_data["map_elites_archives"]["topology"]["num_bins"] == 5
 
 
 def test_candidate_prompt_includes_archive_exemplars():
@@ -1651,13 +1672,13 @@ def test_report_includes_map_elites_coverage(monkeypatch, tmp_path):
         json.dumps(
             {
                 "event_type": "generation_summary",
-                "payload": {"map_elites_stats": {"coverage": 3}},
+                "payload": {"map_elites_stats_primary": {"coverage": 3}},
             }
         ),
         json.dumps(
             {
                 "event_type": "generation_summary",
-                "payload": {"map_elites_stats": {"coverage": 7}},
+                "payload": {"map_elites_stats_primary": {"coverage": 7}},
             }
         ),
     ]

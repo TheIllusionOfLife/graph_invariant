@@ -16,8 +16,13 @@ _FEATURE_ORDER = FEATURE_ORDER
 def _features_from_graphs(
     graphs: list[nx.Graph],
     exclude_features: tuple[str, ...] | None = None,
+    enable_spectral_feature_pack: bool = True,
 ) -> np.ndarray:
-    return features_from_graphs(graphs, exclude_features=exclude_features)
+    return features_from_graphs(
+        graphs,
+        exclude_features=exclude_features,
+        enable_spectral_feature_pack=enable_spectral_feature_pack,
+    )
 
 
 def _metrics_dict(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float | int]:
@@ -97,11 +102,24 @@ def run_stat_baselines(
     y_val: list[float],
     y_test: list[float],
     target_name: str | None = None,
+    enable_spectral_feature_pack: bool = True,
 ) -> dict[str, object]:
     exclude = (target_name,) if target_name and target_name in _LEAKABLE_FEATURES else None
-    x_train = _features_from_graphs(train_graphs, exclude)
-    x_val = _features_from_graphs(val_graphs, exclude)
-    x_test = _features_from_graphs(test_graphs, exclude)
+    x_train = _features_from_graphs(
+        train_graphs,
+        exclude,
+        enable_spectral_feature_pack=enable_spectral_feature_pack,
+    )
+    x_val = _features_from_graphs(
+        val_graphs,
+        exclude,
+        enable_spectral_feature_pack=enable_spectral_feature_pack,
+    )
+    x_test = _features_from_graphs(
+        test_graphs,
+        exclude,
+        enable_spectral_feature_pack=enable_spectral_feature_pack,
+    )
     y_train_np = np.asarray(y_train, dtype=float)
     y_val_np = np.asarray(y_val, dtype=float)
     y_test_np = np.asarray(y_test, dtype=float)

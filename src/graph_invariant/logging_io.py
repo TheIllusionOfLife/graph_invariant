@@ -41,6 +41,8 @@ def save_checkpoint(state: CheckpointState, path: str | Path) -> None:
             for island, candidates in state.islands.items()
         },
     }
+    if state.map_elites_archives is not None:
+        payload["map_elites_archives"] = state.map_elites_archives
     if state.map_elites_archive is not None:
         payload["map_elites_archive"] = state.map_elites_archive
     target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -66,7 +68,11 @@ def load_checkpoint(path: str | Path) -> CheckpointState:
         for island, values in payload.get("island_recent_failures", {}).items()
         if isinstance(values, list)
     }
+    raw_archives = payload.get("map_elites_archives")
     raw_archive = payload.get("map_elites_archive")
+    map_elites_archives = raw_archives if isinstance(raw_archives, dict) else None
+    if map_elites_archives is None and isinstance(raw_archive, dict):
+        map_elites_archives = {"primary": raw_archive}
     return CheckpointState(
         experiment_id=str(payload.get("experiment_id", "phase1")),
         generation=int(payload["generation"]),
@@ -79,6 +85,7 @@ def load_checkpoint(path: str | Path) -> CheckpointState:
         island_prompt_mode=island_prompt_mode,
         island_constrained_generations=island_constrained_generations,
         island_recent_failures=island_recent_failures,
+        map_elites_archives=map_elites_archives,
         map_elites_archive=raw_archive if isinstance(raw_archive, dict) else None,
     )
 

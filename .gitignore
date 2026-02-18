@@ -23,9 +23,15 @@ build/
 dist/
 *.egg-info/
 
-# Experiment outputs (scratch/smoke runs only; main artifacts are tracked)
+# Experiment outputs (raw/heavy artifacts must not be committed; archive on Zenodo)
+artifacts/
 artifacts_smoke/
 outputs/
+zenodo_staging/
+*.tar
+*.tar.gz
+*.tgz
+*.zip
 
 # LaTeX build artifacts
 paper/*.aux

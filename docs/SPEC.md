@@ -127,7 +127,7 @@ simplicity_score = w1 * (1 / (1 + log2(max(ast_node_count, 1)))) + w2 * (1 / (1 
 ### 4.3 新規性
 
 - 発見された式と既存不変量との相関行列を算出
-- **参照不変量セット（9種）**:
+- **参照不変量セット（14種）**:
   - `density` — グラフ密度
   - `clustering_coefficient` — 平均クラスタ係数
   - `degree_assortativity` — 次数相関
@@ -136,7 +136,12 @@ simplicity_score = w1 * (1 / (1 + log2(max(ast_node_count, 1)))) + w2 * (1 / (1 
   - `max_degree` — 最大次数
   - `spectral_radius` — 隣接行列の最大固有値（`max(eigenvalues(A))`）
   - `diameter` — グラフ直径（連結成分の最長最短距離）
-  - `algebraic_connectivity` — ラプラシアンの第2最小固有値（Fiedler値）
+  - `algebraic_connectivity` — 非正規化ラプラシアンの第2最小固有値（Fiedler値）
+  - `laplacian_lambda2` — 非正規化ラプラシアン第2固有値（`algebraic_connectivity` 互換キー）
+  - `laplacian_lambda_max` — ラプラシアン最大固有値
+  - `laplacian_spectral_gap` — `laplacian_lambda_max - laplacian_lambda2`
+  - `normalized_laplacian_lambda2` — 正規化ラプラシアン第2固有値
+  - `laplacian_energy_ratio` — 上位固有値エネルギー比
 - 各既存指標との相関について、ブートストラップ法（1000回リサンプリング）で95%信頼区間を算出
 - 全既存指標との相関の95%信頼区間上限が $|\rho| < 0.7$ を満たす場合に「新規」と判定
 
@@ -240,6 +245,12 @@ multiprocessing.Pool(initializer=worker_init)  # ワーカーを事前起動
 
 - データセット生成時のマスターシードを記録
 - 各グラフの個別シードもログに含める
+
+### データ保管ポリシー（Zenodo）
+
+- 大容量の生実験データ（完全ログ・チェックポイント・シード別成果物）は Zenodo にアーカイブする。
+- Git リポジトリにはコード、設定、軽量サマリのみ保持する。
+- 論文で参照するデータセットは Zenodo DOI を明記し、`paper/references.bib` と整合させる。
 
 ### チェックポイント / レジューム
 

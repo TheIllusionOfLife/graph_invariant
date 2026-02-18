@@ -1,8 +1,10 @@
 """MAP-Elites diversity archive for quality-diversity search.
 
-Maintains a 2D behavioral grid indexed by (simplicity_score, novelty_bonus).
-Each cell keeps only the candidate with the highest raw fitness_signal.
-Runs alongside the existing island model to provide diverse prompt exemplars.
+Maintains a 2D behavioral grid where cells are selected by a descriptor.
+By default, descriptors come from `(simplicity_score, novelty_bonus)`, but
+`try_insert(..., descriptor=...)` can override this with an explicit tuple
+(used for alternate behavior spaces such as topology correlation axes).
+Each cell keeps only the candidate with the highest raw `fitness_signal`.
 """
 
 from __future__ import annotations
@@ -31,6 +33,7 @@ class MapElitesArchive:
     """2D behavioral grid mapping (simplicity, novelty) bins to elite candidates."""
 
     num_bins: int
+    archive_id: str = "primary"
     cells: dict[tuple[int, int], ArchiveCell] = field(default_factory=dict)
 
 
@@ -43,10 +46,16 @@ def _bin_index(value: float, num_bins: int) -> int:
     return min(idx, num_bins - 1)
 
 
-def try_insert(archive: MapElitesArchive, candidate: Candidate, fitness_signal: float) -> bool:
+def try_insert(
+    archive: MapElitesArchive,
+    candidate: Candidate,
+    fitness_signal: float,
+    descriptor: tuple[float, float] | None = None,
+) -> bool:
     """Insert candidate if cell is empty or fitness_signal beats the incumbent."""
-    row = _bin_index(candidate.simplicity_score, archive.num_bins)
-    col = _bin_index(candidate.novelty_bonus, archive.num_bins)
+    row_value, col_value = descriptor or (candidate.simplicity_score, candidate.novelty_bonus)
+    row = _bin_index(row_value, archive.num_bins)
+    col = _bin_index(col_value, archive.num_bins)
     key = (row, col)
     existing = archive.cells.get(key)
     if existing is not None and existing.fitness_signal >= fitness_signal:
@@ -81,6 +90,7 @@ def archive_stats(archive: MapElitesArchive) -> dict[str, int | float]:
     coverage = len(archive.cells)
     if coverage == 0:
         return {
+            "archive_id": archive.archive_id,
             "coverage": 0,
             "total_cells": total_cells,
             "best_fitness": 0.0,
@@ -88,6 +98,7 @@ def archive_stats(archive: MapElitesArchive) -> dict[str, int | float]:
         }
     fitnesses = [cell.fitness_signal for cell in archive.cells.values()]
     return {
+        "archive_id": archive.archive_id,
         "coverage": coverage,
         "total_cells": total_cells,
         "best_fitness": max(fitnesses),
@@ -104,7 +115,7 @@ def serialize_archive(archive: MapElitesArchive) -> dict[str, Any]:
             "candidate": asdict(cell.candidate),
             "fitness_signal": cell.fitness_signal,
         }
-    return {"num_bins": archive.num_bins, "cells": cells_data}
+    return {"num_bins": archive.num_bins, "archive_id": archive.archive_id, "cells": cells_data}
 
 
 def deserialize_archive(data: dict[str, Any]) -> MapElitesArchive:
@@ -115,6 +126,7 @@ def deserialize_archive(data: dict[str, Any]) -> MapElitesArchive:
     num_bins = int(data["num_bins"])
     if num_bins <= 0:
         raise ValueError(f"Cannot deserialize archive with num_bins={num_bins}; must be > 0")
+    archive_id = str(data.get("archive_id", "primary"))
     cells: dict[tuple[int, int], ArchiveCell] = {}
     for key, cell_data in data.get("cells", {}).items():
         try:
@@ -128,4 +140,4 @@ def deserialize_archive(data: dict[str, Any]) -> MapElitesArchive:
         except (ValueError, KeyError, TypeError):
             logger.warning("Skipping malformed archive cell: %s", key)
             continue
-    return MapElitesArchive(num_bins=num_bins, cells=cells)
+    return MapElitesArchive(num_bins=num_bins, archive_id=archive_id, cells=cells)

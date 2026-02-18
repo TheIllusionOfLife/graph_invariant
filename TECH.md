@@ -15,7 +15,7 @@
 
 - `networkx`: graph generation and graph statistics
 - `numpy`: vectorized numerical operations
-- `scipy`: statistical metrics (Spearman/Pearson)
+- `scipy`: statistical metrics (Spearman/Pearson) and Laplacian spectral feature extraction
 - `scipy.sparse` / `scipy.sparse.linalg`: sparse eigensolver for algebraic connectivity on large graphs
 - `sympy`: symbolic simplification for simplicity scoring
 - `requests`: HTTP integration with Ollama API
@@ -37,6 +37,11 @@
 - `run_all_experiments.sh`: sequential experiment runner with OOD validation and reporting
 - `configs/`: pre-built experiment configurations (quick and full profiles)
 
+## Data Archival
+
+- Zenodo is the canonical archive for heavy/raw experiment data.
+- Git stores lightweight reproducibility assets; raw bundles are referenced by DOI.
+
 ## CI
 
 - GitHub Actions workflows in `.github/workflows/`
@@ -50,6 +55,8 @@
 - Sandbox evaluator is best-effort and not a full security boundary.
 - Ollama endpoint must be localhost unless `allow_remote_ollama=true`.
 - Artifact outputs are expected to be generated locally and kept out of Git.
+- Published raw datasets should be deposited to Zenodo with DOI and checksum metadata.
+- MAP-Elites can run in dual-archive mode (`primary` + `topology`) and checkpoints must preserve both archives.
 
 ## Preferred Local Validation Command Set
 

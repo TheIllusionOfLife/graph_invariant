@@ -76,15 +76,28 @@ def run_pysr_baseline(
     procs: int = 0,
     timeout_in_seconds: float | None = 60.0,
     target_name: str | None = None,
+    enable_spectral_feature_pack: bool = True,
 ) -> dict[str, object]:
     pysr_module = _load_pysr_module()
     if pysr_module is None:
         return {"status": "skipped", "reason": "pysr not installed"}
 
     exclude = (target_name,) if target_name and target_name in _LEAKABLE_FEATURES else None
-    x_train = features_from_graphs(train_graphs, exclude_features=exclude)
-    x_val = features_from_graphs(val_graphs, exclude_features=exclude)
-    x_test = features_from_graphs(test_graphs, exclude_features=exclude)
+    x_train = features_from_graphs(
+        train_graphs,
+        exclude_features=exclude,
+        enable_spectral_feature_pack=enable_spectral_feature_pack,
+    )
+    x_val = features_from_graphs(
+        val_graphs,
+        exclude_features=exclude,
+        enable_spectral_feature_pack=enable_spectral_feature_pack,
+    )
+    x_test = features_from_graphs(
+        test_graphs,
+        exclude_features=exclude,
+        enable_spectral_feature_pack=enable_spectral_feature_pack,
+    )
     y_train_np = np.asarray(y_train, dtype=float)
     y_val_np = np.asarray(y_val, dtype=float)
     y_test_np = np.asarray(y_test, dtype=float)

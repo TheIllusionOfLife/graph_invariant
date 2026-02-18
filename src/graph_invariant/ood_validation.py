@@ -64,9 +64,13 @@ def _evaluate_ood_split(
     evaluator: Any,
     fitness_mode: str = "correlation",
     tolerance: float = 1e-9,
+    enable_spectral_feature_pack: bool = True,
 ) -> dict[str, float | int]:
     """Evaluate candidate code against a list of graphs."""
-    features = compute_feature_dicts(graphs)
+    features = compute_feature_dicts(
+        graphs,
+        include_spectral_feature_pack=enable_spectral_feature_pack,
+    )
     y_true = target_values(graphs, target_name)
     y_pred_raw = evaluator.evaluate(code, features)
     valid_pairs = [(yt, yp) for yt, yp in zip(y_true, y_pred_raw, strict=True) if yp is not None]
@@ -120,6 +124,7 @@ def run_ood_validation(
     fitness_mode = cfg.get("fitness_mode", "correlation")
     timeout_sec = cfg.get("timeout_sec", 2.0)
     memory_mb = cfg.get("memory_mb", 256)
+    enable_spectral_feature_pack = bool(cfg.get("enable_spectral_feature_pack", True))
 
     datasets = generate_ood_datasets(seed=seed, num_large=num_large, num_extreme=num_extreme)
 
@@ -132,6 +137,7 @@ def run_ood_validation(
                 target_name=target_name,
                 evaluator=evaluator,
                 fitness_mode=fitness_mode,
+                enable_spectral_feature_pack=enable_spectral_feature_pack,
             )
 
     out = Path(output_dir)

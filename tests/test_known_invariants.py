@@ -21,6 +21,11 @@ EXPECTED_KEYS = {
     "degree_assortativity",
     "num_triangles",
     "degrees",
+    "laplacian_lambda2",
+    "laplacian_lambda_max",
+    "laplacian_spectral_gap",
+    "normalized_laplacian_lambda2",
+    "laplacian_energy_ratio",
 }
 
 
@@ -81,6 +86,11 @@ EXPECTED_INVARIANT_KEYS = {
     "spectral_radius",
     "diameter",
     "algebraic_connectivity",
+    "laplacian_lambda2",
+    "laplacian_lambda_max",
+    "laplacian_spectral_gap",
+    "normalized_laplacian_lambda2",
+    "laplacian_energy_ratio",
 }
 
 
@@ -144,3 +154,40 @@ def test_compute_known_invariant_values_single_node():
     assert result["spectral_radius"][0] == 0.0
     assert result["algebraic_connectivity"][0] == 0.0
     assert result["diameter"][0] == 0.0
+
+
+def test_compute_known_invariant_values_spectral_pack_disabled():
+    result = compute_known_invariant_values(
+        [nx.path_graph(5)],
+        include_spectral_feature_pack=False,
+    )
+    assert "laplacian_lambda2" not in result
+    assert "laplacian_lambda_max" not in result
+    assert "laplacian_spectral_gap" not in result
+    assert "normalized_laplacian_lambda2" not in result
+    assert "laplacian_energy_ratio" not in result
+
+
+def test_sparse_laplacian_extrema_falls_back_on_runtime_error(monkeypatch):
+    from graph_invariant.known_invariants import _laplacian_extrema_sparse
+
+    graph = nx.path_graph(12)  # triggers sparse path
+    monkeypatch.setattr(
+        "graph_invariant.known_invariants.scipy.sparse.linalg.eigsh",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("solver failure")),
+    )
+    lambda2, lambda_max = _laplacian_extrema_sparse(graph)
+    assert lambda2 >= 0.0
+    assert lambda_max >= lambda2
+
+
+def test_sparse_normalized_laplacian_falls_back_on_runtime_error(monkeypatch):
+    from graph_invariant.known_invariants import _normalized_laplacian_lambda2_sparse
+
+    graph = nx.cycle_graph(12)  # triggers sparse path
+    monkeypatch.setattr(
+        "graph_invariant.known_invariants.scipy.sparse.linalg.eigsh",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("solver failure")),
+    )
+    lambda2 = _normalized_laplacian_lambda2_sparse(graph)
+    assert lambda2 >= 0.0

@@ -1,9 +1,12 @@
+import warnings
 from dataclasses import dataclass
 
 import networkx as nx
 import numpy as np
 
 from .config import Phase1Config
+
+_SPECIAL_TOPOLOGY_POOL_RECOMMENDED_MAX_RATIO = 0.2
 
 
 @dataclass(slots=True)
@@ -56,6 +59,28 @@ def _sample_graphs(rng: np.random.Generator, count: int) -> list[nx.Graph]:
     return out
 
 
+def _sample_special_topology_graphs(
+    rng: np.random.Generator,
+    pool: list[nx.Graph],
+    count: int,
+) -> list[nx.Graph]:
+    """Sample from a fixed special-topology pool (with replacement)."""
+    if count <= 0:
+        return []
+    duplication_factor = count / float(len(pool))
+    if duplication_factor > 1.0:
+        warnings.warn(
+            (
+                f"special-topology sampling requests {count} graphs from a pool of {len(pool)}; "
+                f"expected duplication factor is {duplication_factor:.2f}. "
+                "Consider using ood_*_special_topology_ratio <= 0.2 for diversity."
+            ),
+            stacklevel=2,
+        )
+    indices = rng.integers(0, len(pool), size=count)
+    return [pool[int(idx)].copy() for idx in indices]
+
+
 # ── OOD graph generation ──────────────────────────────────────────────
 
 
@@ -89,7 +114,12 @@ def generate_ood_extreme_params(rng: np.random.Generator, count: int) -> list[nx
 
 
 def generate_ood_special_topology() -> list[nx.Graph]:
-    """Deterministic structures for structural generalization."""
+    """Deterministic structures for structural generalization.
+
+    Returns a fixed pool of 8 connected, integer-labeled topology archetypes.
+    Phase1 train/val injection samples from this pool with replacement; in
+    practice, keep `ood_*_special_topology_ratio <= 0.2` to limit duplication.
+    """
     graphs: list[nx.Graph] = []
     graphs.append(nx.barbell_graph(20, 5))
     graphs.append(nx.grid_2d_graph(8, 8))
@@ -108,6 +138,47 @@ def generate_phase1_datasets(cfg: Phase1Config) -> DatasetBundle:
     train = _sample_graphs(rng, cfg.num_train_graphs)
     val = _sample_graphs(rng, cfg.num_val_graphs)
     test = _sample_graphs(rng, cfg.num_test_graphs)
+    special_pool = generate_ood_special_topology()
+
+    if cfg.ood_train_special_topology_ratio > _SPECIAL_TOPOLOGY_POOL_RECOMMENDED_MAX_RATIO:
+        warnings.warn(
+            (
+                "ood_train_special_topology_ratio exceeds recommended maximum 0.2; "
+                "expect higher duplicate special-topology samples."
+            ),
+            stacklevel=2,
+        )
+    if cfg.ood_val_special_topology_ratio > _SPECIAL_TOPOLOGY_POOL_RECOMMENDED_MAX_RATIO:
+        warnings.warn(
+            (
+                "ood_val_special_topology_ratio exceeds recommended maximum 0.2; "
+                "expect higher duplicate special-topology samples."
+            ),
+            stacklevel=2,
+        )
+
+    train_special_count = min(
+        cfg.num_train_graphs,
+        int(round(cfg.ood_train_special_topology_ratio * cfg.num_train_graphs)),
+    )
+    if train_special_count > 0:
+        train[:train_special_count] = _sample_special_topology_graphs(
+            rng=rng,
+            pool=special_pool,
+            count=train_special_count,
+        )
+
+    val_special_count = min(
+        cfg.num_val_graphs,
+        int(round(cfg.ood_val_special_topology_ratio * cfg.num_val_graphs)),
+    )
+    if val_special_count > 0:
+        val[:val_special_count] = _sample_special_topology_graphs(
+            rng=rng,
+            pool=special_pool,
+            count=val_special_count,
+        )
+
     sanity = [
         nx.karate_club_graph(),
         nx.les_miserables_graph(),

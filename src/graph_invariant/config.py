@@ -57,8 +57,13 @@ class Phase1Config:
     bound_tolerance: float = 1e-9
     success_bound_score_threshold: float = 0.7
     success_satisfaction_threshold: float = 0.95
+    enable_spectral_feature_pack: bool = True
+    ood_train_special_topology_ratio: float = 0.10
+    ood_val_special_topology_ratio: float = 0.10
     enable_map_elites: bool = False
+    enable_dual_map_elites: bool = False
     map_elites_bins: int = 5
+    map_elites_topology_bins: int = 5
 
     def __post_init__(self) -> None:
         self.island_temperatures = tuple(float(x) for x in self.island_temperatures)
@@ -118,8 +123,19 @@ class Phase1Config:
             raise ValueError("success_bound_score_threshold must be between 0.0 and 1.0")
         if not (0.0 <= self.success_satisfaction_threshold <= 1.0):
             raise ValueError("success_satisfaction_threshold must be between 0.0 and 1.0")
+        if not (0.0 <= self.ood_train_special_topology_ratio <= 1.0):
+            raise ValueError("ood_train_special_topology_ratio must be between 0.0 and 1.0")
+        if not (0.0 <= self.ood_val_special_topology_ratio <= 1.0):
+            raise ValueError("ood_val_special_topology_ratio must be between 0.0 and 1.0")
         if self.map_elites_bins < 2:
             raise ValueError("map_elites_bins must be >= 2")
+        if self.map_elites_topology_bins < 2:
+            raise ValueError("map_elites_topology_bins must be >= 2")
+        if self.enable_dual_map_elites and not self.enable_map_elites:
+            warnings.warn(
+                "enable_dual_map_elites=true has no effect when enable_map_elites=false",
+                stacklevel=2,
+            )
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> "Phase1Config":

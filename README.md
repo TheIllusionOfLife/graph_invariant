@@ -122,6 +122,11 @@ Pre-built configs are available under `configs/`.
 - `src/graph_invariant/baselines/features.py`: baseline feature extraction (excludes target to prevent leakage).
 - `configs/`: pre-built experiment configurations (quick and full profiles).
 
+Key runtime toggles now include:
+- `enable_spectral_feature_pack`: enable extended Laplacian-derived features/invariants.
+- `ood_train_special_topology_ratio` / `ood_val_special_topology_ratio`: inject deterministic topologies into train/val splits.
+- `enable_dual_map_elites`: maintain both primary and topology-behavior MAP-Elites archives.
+
 ## Artifacts
 
 Phase 1 run outputs:
@@ -139,6 +144,13 @@ Benchmark outputs:
 - `<artifacts_dir>/benchmark_<timestamp>/benchmark_report.md`
 - `<artifacts_dir>/benchmark_<timestamp>/seed_<N>/...`
 
+## Data Policy (Zenodo)
+
+- Heavy raw experimental data is archived on Zenodo, not committed to Git.
+- This repository stores code, configs, and lightweight summaries/figures.
+- Dataset DOI/record links should be documented and cited from the paper.
+- Policy details: `docs/DATA_POLICY.md`
+
 ## Documentation Map
 
 - `AGENTS.md`: contributor/agent workflow and repository etiquette.
@@ -146,6 +158,7 @@ Benchmark outputs:
 - `TECH.md`: technology choices and constraints.
 - `STRUCTURE.md`: repository layout and code organization.
 - `docs/SPEC.md`: implementation spec (authoritative details).
+- `docs/DATA_POLICY.md`: data archival and citation policy (Zenodo).
 - `docs/REVIEW.md`: resolved review findings.
 - `docs/Research_Plan_Graph_Invariant_Discovery.md`: original proposal (historical context).
 
@@ -157,6 +170,7 @@ This repository accompanies the paper:
 > Yuya Mukai. 2026.
 
 The paper source is in `paper/` (NeurIPS format). Analysis scripts are in `analysis/`.
+Raw experiment datasets referenced by the paper should be archived on Zenodo and cited by DOI.
 
 To compile the paper (requires [tectonic](https://tectonic-typesetting.github.io/)):
 

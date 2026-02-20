@@ -170,16 +170,16 @@ def main() -> None:
     if args.max_parallel < 1:
         raise ValueError("--max-parallel must be >= 1")
 
+    run_results: list[dict[str, Any]]
     if args.max_parallel == 1:
-        for config_path, seed, out_root in jobs:
-            run = _run_one(config_path=config_path, seed=seed, output_root=out_root)
-            runs.append(run)
-            grouped[run["experiment"]].append(run)
+        run_results = [_run_one_job(job) for job in jobs]
     else:
         with concurrent.futures.ProcessPoolExecutor(max_workers=args.max_parallel) as pool:
-            for run in pool.map(_run_one_job, jobs):
-                runs.append(run)
-                grouped[run["experiment"]].append(run)
+            run_results = list(pool.map(_run_one_job, jobs))
+
+    for run in run_results:
+        runs.append(run)
+        grouped[run["experiment"]].append(run)
 
     payload = {
         "schema_version": 1,

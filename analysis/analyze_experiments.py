@@ -500,6 +500,26 @@ def _fmt_tex_float(value: Any, digits: int = 3) -> str:
     return f"{numeric:.{digits}f}"
 
 
+def _escape_latex_text(value: Any) -> str:
+    """Escape LaTeX special characters in untrusted text."""
+    text = str(value)
+    replacements = [
+        ("\\", "\\textbackslash{}"),
+        ("&", "\\&"),
+        ("%", "\\%"),
+        ("$", "\\$"),
+        ("#", "\\#"),
+        ("_", "\\_"),
+        ("{", "\\{"),
+        ("}", "\\}"),
+        ("~", "\\textasciitilde{}"),
+        ("^", "\\textasciicircum{}"),
+    ]
+    for source, target in replacements:
+        text = text.replace(source, target)
+    return text
+
+
 def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Path) -> None:
     """Write generated appendix tables as LaTeX source."""
     seed_aggregates = appendix_payload.get("appendix_seed_aggregates", {})
@@ -531,7 +551,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
                 "    {group} & {seed_count} & {success_count}/{seed_count} & "
                 "{val_mean}$\\pm${val_std} & {test_mean}$\\pm${test_std} "
                 "& $\\pm${test_ci} \\\\".format(
-                    group=group.replace("_", "\\_").replace("/", "/\\allowbreak "),
+                    group=_escape_latex_text(group).replace("/", "/\\allowbreak "),
                     seed_count=seed_count,
                     success_count=success_count,
                     val_mean=_fmt_tex_float(val.get("mean"), 3),
@@ -567,7 +587,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
         for name, payload in sorted(bounds.items()):
             lines.append(
                 "    {name} & {vbs} & {vsr} & {tbs} & {tsr} \\\\".format(
-                    name=name.replace("_", "\\_"),
+                    name=_escape_latex_text(name),
                     vbs=_fmt_tex_float(payload.get("val_bound_score"), 3),
                     vsr=_fmt_tex_float(payload.get("val_satisfaction_rate"), 3),
                     tbs=_fmt_tex_float(payload.get("test_bound_score"), 3),
@@ -604,7 +624,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
             criteria = payload.get("criteria_success_runs", 0)
             lines.append(
                 "    {name} & {mean} & {std} & {completed}/{total} & {criteria} \\\\".format(
-                    name=name.replace("_", "\\_"),
+                    name=_escape_latex_text(name),
                     mean=_fmt_tex_float(duration.get("mean"), 2),
                     std=_fmt_tex_float(duration.get("std"), 2),
                     completed=completed,
@@ -976,12 +996,11 @@ def main() -> None:
     print(f"Report written to {report_path}")
 
     figure_data_path = output_dir / "figure_data.json"
-    write_figure_data_json(experiments, figure_data_path, matrix_summaries)
+    figure_data = write_figure_data_json(experiments, figure_data_path, matrix_summaries)
     print(f"Figure data written to {figure_data_path}")
 
     appendix_tex_path = Path(args.appendix_tex_output)
-    appendix_payload = build_appendix_payload(experiments, matrix_summaries)
-    write_appendix_tables_tex(appendix_payload, appendix_tex_path)
+    write_appendix_tables_tex(figure_data, appendix_tex_path)
     print(f"Appendix tables written to {appendix_tex_path}")
 
     table = build_comparison_table(experiments)

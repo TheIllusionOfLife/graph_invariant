@@ -452,7 +452,7 @@ def test_build_seed_aggregates(analyze_module):
 
 
 def test_discover_experiments_reads_neurips_matrix_seed_dirs(tmp_path, analyze_module):
-    seed_dir = tmp_path / "neurips_matrix" / "map_elites_aspl_full" / "seed_11"
+    seed_dir = tmp_path / "neurips_matrix_2026_final" / "map_elites_aspl_full" / "seed_11"
     seed_dir.mkdir(parents=True)
     (seed_dir / "phase1_summary.json").write_text(
         json.dumps(
@@ -469,7 +469,7 @@ def test_discover_experiments_reads_neurips_matrix_seed_dirs(tmp_path, analyze_m
     (seed_dir / "logs" / "events.jsonl").write_text("", encoding="utf-8")
 
     experiments = analyze_module.discover_experiments(tmp_path)
-    assert "neurips_matrix/map_elites_aspl_full/seed_11" in experiments
+    assert "neurips_matrix_2026_final/map_elites_aspl_full/seed_11" in experiments
 
 
 def test_write_figure_data_json_includes_aggregates(tmp_path, mock_phase1_summary, analyze_module):
@@ -488,3 +488,56 @@ def test_write_figure_data_json_includes_aggregates(tmp_path, mock_phase1_summar
     analyze_module.write_figure_data_json(experiments, output_path)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert "__aggregates__" in payload
+    assert "appendix_seed_aggregates" in payload
+    assert "appendix_small_data_tradeoff" in payload
+    assert "appendix_bounds_diagnostics" in payload
+    assert "appendix_runtime_summary" in payload
+
+
+def test_discover_matrix_summaries(tmp_path, analyze_module):
+    matrix_root = tmp_path / "neurips_matrix_2026_final"
+    matrix_root.mkdir()
+    matrix_payload = {
+        "runs": [{"experiment": "map_elites_aspl_full", "status": 0, "success": True}]
+    }
+    (matrix_root / "matrix_summary.json").write_text(
+        json.dumps(matrix_payload),
+        encoding="utf-8",
+    )
+    discovered = analyze_module.discover_matrix_summaries(tmp_path)
+    assert "neurips_matrix_2026_final" in discovered
+
+
+def test_write_appendix_tables_tex(tmp_path, analyze_module):
+    payload = {
+        "appendix_seed_aggregates": {
+            "neurips_matrix/map_elites_aspl_full": {
+                "seed_count": 2,
+                "success_count": 1,
+                "val_spearman": {"mean": 0.8, "std": 0.1, "ci95_half_width": 0.2},
+                "test_spearman": {"mean": 0.7, "std": 0.1, "ci95_half_width": 0.2},
+            }
+        },
+        "appendix_bounds_diagnostics": {
+            "experiment_upper_bound_aspl": {
+                "val_bound_score": 0.8,
+                "val_satisfaction_rate": 0.9,
+                "test_bound_score": 0.7,
+                "test_satisfaction_rate": 0.85,
+            }
+        },
+        "appendix_runtime_summary": {
+            "map_elites_aspl_full": {
+                "duration_sec": {"mean": 100.0, "std": 10.0},
+                "total_runs": 5,
+                "completed_runs": 5,
+                "criteria_success_runs": 2,
+            }
+        },
+    }
+    out = tmp_path / "appendix_tables.tex"
+    analyze_module.write_appendix_tables_tex(payload, out)
+    content = out.read_text(encoding="utf-8")
+    assert "tab:appendix_seed_aggregates" in content
+    assert "tab:appendix_bounds" in content
+    assert "tab:appendix_runtime" in content

@@ -11,6 +11,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
 import time
 from collections import defaultdict
@@ -38,16 +39,20 @@ def _load_json_or_default(path: Path) -> dict[str, Any]:
 
 
 def _summarize_runs(runs: list[dict[str, Any]]) -> dict[str, Any]:
-    successful = [run for run in runs if run.get("status") == 0]
-    val_scores = [run["val_spearman"] for run in successful if run.get("val_spearman") is not None]
+    completed = [run for run in runs if run.get("status") == 0]
+    criteria_success = [run for run in completed if bool(run.get("success", False))]
+    val_scores = [run["val_spearman"] for run in completed if run.get("val_spearman") is not None]
     test_scores = [
-        run["test_spearman"] for run in successful if run.get("test_spearman") is not None
+        run["test_spearman"] for run in completed if run.get("test_spearman") is not None
     ]
     durations = [run["duration_sec"] for run in runs if run.get("duration_sec") is not None]
     return {
         "total_runs": len(runs),
-        "successful_runs": len(successful),
-        "failed_runs": len(runs) - len(successful),
+        "completed_runs": len(completed),
+        "criteria_success_runs": len(criteria_success),
+        "failed_runs": len(runs) - len(completed),
+        # Backward-compat alias for existing readers that interpreted this as status==0.
+        "successful_runs": len(completed),
         "val_spearman": mean_std_ci95(val_scores),
         "test_spearman": mean_std_ci95(test_scores),
         "duration_sec": mean_std_ci95(durations),
@@ -131,7 +136,18 @@ def parse_args() -> argparse.Namespace:
         default="artifacts/neurips_matrix",
         help="Output root for matrix artifacts and summary",
     )
+    parser.add_argument(
+        "--max-parallel",
+        type=int,
+        default=1,
+        help="Maximum number of runs to execute in parallel",
+    )
     return parser.parse_args()
+
+
+def _run_one_job(job: tuple[Path, int, Path]) -> dict[str, Any]:
+    config_path, seed, output_root = job
+    return _run_one(config_path=config_path, seed=seed, output_root=output_root)
 
 
 def main() -> None:
@@ -144,13 +160,26 @@ def main() -> None:
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
     launched_at = datetime.now(UTC)
+    jobs: list[tuple[Path, int, Path]] = []
     for config_path in config_paths:
         if not config_path.exists():
             raise FileNotFoundError(f"Config not found: {config_path}")
         for seed in args.seeds:
-            run = _run_one(config_path=config_path, seed=seed, output_root=output_root)
-            runs.append(run)
-            grouped[run["experiment"]].append(run)
+            jobs.append((config_path, seed, output_root))
+
+    if args.max_parallel < 1:
+        raise ValueError("--max-parallel must be >= 1")
+
+    run_results: list[dict[str, Any]]
+    if args.max_parallel == 1:
+        run_results = [_run_one_job(job) for job in jobs]
+    else:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=args.max_parallel) as pool:
+            run_results = list(pool.map(_run_one_job, jobs))
+
+    for run in run_results:
+        runs.append(run)
+        grouped[run["experiment"]].append(run)
 
     payload = {
         "schema_version": 1,

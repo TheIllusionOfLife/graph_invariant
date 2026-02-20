@@ -122,4 +122,116 @@ def test_main_writes_matrix_summary(monkeypatch, tmp_path, matrix_module):
     payload = json.loads(summary_path.read_text(encoding="utf-8"))
     assert payload["total_runs"] == 2
     assert "cfg" in payload["experiments"]
-    assert payload["experiments"]["cfg"]["summary"]["successful_runs"] == 2
+    summary = payload["experiments"]["cfg"]["summary"]
+    assert summary["completed_runs"] == 2
+    assert summary["criteria_success_runs"] == 2
+    assert summary["successful_runs"] == 2
+
+
+def test_summarize_runs_distinguishes_completion_and_criteria_success(matrix_module):
+    runs = [
+        {
+            "status": 0,
+            "success": True,
+            "val_spearman": 0.8,
+            "test_spearman": 0.7,
+            "duration_sec": 10.0,
+        },
+        {
+            "status": 0,
+            "success": False,
+            "val_spearman": 0.4,
+            "test_spearman": 0.3,
+            "duration_sec": 9.0,
+        },
+        {
+            "status": 1,
+            "success": False,
+            "val_spearman": None,
+            "test_spearman": None,
+            "duration_sec": 8.0,
+        },
+    ]
+    summary = matrix_module._summarize_runs(runs)
+    assert summary["total_runs"] == 3
+    assert summary["completed_runs"] == 2
+    assert summary["criteria_success_runs"] == 1
+    assert summary["failed_runs"] == 1
+    assert summary["successful_runs"] == 2
+
+
+def test_main_supports_parallel_execution(monkeypatch, tmp_path, matrix_module):
+    config_path = tmp_path / "cfg.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "target_name": "average_shortest_path_length",
+                "num_train_graphs": 2,
+                "num_val_graphs": 2,
+                "num_test_graphs": 2,
+                "max_generations": 0,
+                "population_size": 1,
+                "artifacts_dir": "ignored",
+                "run_baselines": False,
+                "persist_prompt_and_response_logs": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def _fake_run_one_job(job):
+        _cfg_path, seed, output_root = job
+        run_root = output_root / "cfg" / f"seed_{seed}"
+        run_root.mkdir(parents=True, exist_ok=True)
+        return {
+            "experiment": "cfg",
+            "seed": seed,
+            "status": 0,
+            "success": seed % 2 == 0,
+            "fitness_mode": "correlation",
+            "artifacts_dir": str(run_root),
+            "start_time_utc": "2026-02-20T00:00:00+00:00",
+            "end_time_utc": "2026-02-20T00:00:01+00:00",
+            "duration_sec": 1.0,
+            "val_spearman": 0.5,
+            "test_spearman": 0.4,
+        }
+
+    class _FakePool:
+        def __init__(self, max_workers):
+            self.max_workers = max_workers
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def map(self, func, jobs):
+            return [func(job) for job in jobs]
+
+    monkeypatch.setattr(matrix_module, "_run_one_job", _fake_run_one_job)
+    monkeypatch.setattr(matrix_module.concurrent.futures, "ProcessPoolExecutor", _FakePool)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_neurips_matrix.py",
+            "--configs",
+            str(config_path),
+            "--seeds",
+            "1",
+            "2",
+            "3",
+            "--max-parallel",
+            "2",
+            "--output-root",
+            str(tmp_path / "matrix"),
+        ],
+    )
+
+    matrix_module.main()
+    payload = json.loads((tmp_path / "matrix" / "matrix_summary.json").read_text(encoding="utf-8"))
+    summary = payload["experiments"]["cfg"]["summary"]
+    assert summary["total_runs"] == 3
+    assert summary["completed_runs"] == 3
+    assert summary["criteria_success_runs"] == 1

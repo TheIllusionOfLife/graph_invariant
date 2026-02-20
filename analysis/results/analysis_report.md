@@ -14,7 +14,7 @@
 
 | Experiment Group | Seeds | Val mean±std | Val CI95 | Test mean±std | Test CI95 |
 | --- | --- | --- | --- | --- | --- |
-| benchmark/benchmark_20260215T230550Z | 5 | 0.9265 ± 0.0118 | ±0.0103 | 0.9206 ± 0.0304 | ±0.0266 |
+| benchmark/benchmark_20260215T230550Z | 5 | 0.9265 ± 0.0118 | ±0.0146 | 0.9206 ± 0.0304 | ±0.0377 |
 
 ## experiment_map_elites_aspl
 

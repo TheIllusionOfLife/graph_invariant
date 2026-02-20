@@ -111,6 +111,7 @@ uv run python scripts/run_neurips_matrix.py \
     configs/neurips_matrix/small_data_aspl_train20.json \
     configs/neurips_matrix/small_data_aspl_train35.json \
   --seeds 11 22 33 44 55 \
+  --max-parallel 3 \
   --output-root artifacts/neurips_matrix
 ```
 
@@ -195,7 +196,10 @@ cd paper && tectonic -r 2 main.tex
 To regenerate analysis and figures from experiment artifacts:
 
 ```bash
-uv run python analysis/analyze_experiments.py --artifacts-root artifacts/ --output analysis/results/
+uv run python analysis/analyze_experiments.py \
+  --artifacts-root artifacts/ \
+  --output analysis/results/ \
+  --appendix-tex-output paper/sections/appendix_tables_generated.tex
 uv run python analysis/generate_figures.py --data analysis/results/ --output paper/figures/
 ```
 

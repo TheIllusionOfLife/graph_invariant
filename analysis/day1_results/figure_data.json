@@ -1,0 +1,1314 @@
+{
+  "neurips_matrix/map_elites_aspl_medium/seed_11": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": -0.4622326933017597,
+    "test_spearman": -0.5647878450835634,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "best_scores": [
+        0.24549754596819318,
+        0.24549754596819318,
+        0.24549754596819318,
+        0.24549754596819318,
+        0.2976373907089643,
+        0.2976373907089643,
+        0.2976373907089643,
+        0.2976373907089643,
+        0.2976373907089643,
+        0.2976373907089643
+      ],
+      "map_elites_coverage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9734606426080823,
+            "pearson": 0.9684076259108484,
+            "rmse": 0.29320340652813476,
+            "mae": 0.15203313005920943,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9751179048922993,
+            "pearson": 0.9790581816721219,
+            "rmse": 0.1793831703075463,
+            "mae": 0.13171390333216604,
+            "valid_count": 220
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9763555947249759,
+            "pearson": 0.940888909719447,
+            "rmse": 0.4243144611696122,
+            "mae": 0.1790441308129341,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9792866623709732,
+            "pearson": 0.9603812118514352,
+            "rmse": 0.2549085801074889,
+            "mae": 0.13787158013953674,
+            "valid_count": 220
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9741317106811697,
+          "pearson": 0.9712502740705212,
+          "rmse": 0.2814772199132816,
+          "mae": 0.15471972531304726,
+          "valid_count": 220
+        },
+        "test_metrics": {
+          "spearman": 0.9709921896216138,
+          "pearson": 0.9765703583350659,
+          "rmse": 0.1891026376823082,
+          "mae": 0.14035821804066662,
+          "valid_count": 220
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "attempted": [
+        7,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "evaluated": [
+        1,
+        3,
+        3,
+        3,
+        4,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "rejected": [
+        6,
+        3,
+        3,
+        3,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.14285714285714285,
+        0.5,
+        0.5,
+        0.5,
+        0.6666666666666666,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 1,
+      "repair_successes": 0,
+      "repair_failures": 1,
+      "rejection_reasons": {
+        "below_train_threshold": 16,
+        "below_novelty_threshold": 1
+      },
+      "summary_attempted_repairs": 1,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 1,
+      "failure_categories": {
+        "below_train_threshold": 16,
+        "below_novelty_threshold": 1
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 1,
+      "successful_repairs": 0,
+      "failed_repairs": 1,
+      "failure_categories": {
+        "below_train_threshold": 16,
+        "below_novelty_threshold": 1
+      }
+    }
+  },
+  "neurips_matrix/map_elites_aspl_screen/seed_11": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": -0.3255154683175538,
+    "test_spearman": -0.42516317534255316,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "best_scores": [
+        0.22734710893488413,
+        0.22734710893488413,
+        0.22734710893488413,
+        0.22734710893488413,
+        0.22734710893488413
+      ],
+      "map_elites_coverage": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "baselines": {},
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "attempted": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "evaluated": [
+        1,
+        2,
+        2,
+        2,
+        2
+      ],
+      "rejected": [
+        3,
+        2,
+        2,
+        2,
+        2
+      ],
+      "acceptance_rate": [
+        0.25,
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 0,
+      "repair_successes": 0,
+      "repair_failures": 0,
+      "rejection_reasons": {
+        "below_train_threshold": 9,
+        "below_novelty_threshold": 2
+      },
+      "summary_attempted_repairs": 0,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 0,
+      "failure_categories": {
+        "below_train_threshold": 9,
+        "below_novelty_threshold": 2
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 0,
+      "feedback_window": 3,
+      "attempted_repairs": 0,
+      "successful_repairs": 0,
+      "failed_repairs": 0,
+      "failure_categories": {
+        "below_train_threshold": 9,
+        "below_novelty_threshold": 2
+      }
+    }
+  },
+  "neurips_matrix/map_elites_aspl_screen/seed_22": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.36185679445464747,
+    "test_spearman": 0.4686604115062688,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "best_scores": [
+        0.2824348149189538,
+        0.2824348149189538,
+        0.2824348149189538,
+        0.2824348149189538,
+        0.2824348149189538
+      ],
+      "map_elites_coverage": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "baselines": {},
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "attempted": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "evaluated": [
+        3,
+        4,
+        4,
+        4,
+        4
+      ],
+      "rejected": [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.75,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 0,
+      "repair_successes": 0,
+      "repair_failures": 0,
+      "rejection_reasons": {
+        "below_novelty_threshold": 1
+      },
+      "summary_attempted_repairs": 0,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 0,
+      "failure_categories": {
+        "below_novelty_threshold": 1
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 0,
+      "feedback_window": 3,
+      "attempted_repairs": 0,
+      "successful_repairs": 0,
+      "failed_repairs": 0,
+      "failure_categories": {
+        "below_novelty_threshold": 1
+      }
+    }
+  },
+  "neurips_matrix/map_elites_aspl_screen/seed_33": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.19171063666542462,
+    "test_spearman": 0.38240792435821463,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "best_scores": [
+        0.0,
+        0.30692298499069437,
+        0.30692298499069437,
+        0.30692298499069437,
+        0.30692298499069437,
+        0.30692298499069437
+      ],
+      "map_elites_coverage": [
+        0,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "baselines": {},
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "attempted": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "evaluated": [
+        0,
+        1,
+        2,
+        2,
+        2,
+        2
+      ],
+      "rejected": [
+        4,
+        3,
+        2,
+        2,
+        2,
+        2
+      ],
+      "acceptance_rate": [
+        0.0,
+        0.25,
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 0,
+      "repair_successes": 0,
+      "repair_failures": 0,
+      "rejection_reasons": {
+        "below_novelty_threshold": 5,
+        "below_train_threshold": 10
+      },
+      "summary_attempted_repairs": 0,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 0,
+      "failure_categories": {
+        "below_novelty_threshold": 5,
+        "below_train_threshold": 10
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 0,
+      "feedback_window": 3,
+      "attempted_repairs": 0,
+      "successful_repairs": 0,
+      "failed_repairs": 0,
+      "failure_categories": {
+        "below_novelty_threshold": 5,
+        "below_train_threshold": 10
+      }
+    }
+  },
+  "neurips_matrix/small_data_aspl_train20_screen/seed_11": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.05212285641456861,
+    "test_spearman": -0.09108627772994067,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "best_scores": [
+        0.0,
+        0.17279946092173637,
+        0.17279946092173637,
+        0.17279946092173637,
+        0.17279946092173637,
+        0.17279946092173637
+      ],
+      "map_elites_coverage": [
+        0,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "baselines": {},
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "attempted": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "evaluated": [
+        0,
+        3,
+        4,
+        4,
+        4,
+        4
+      ],
+      "rejected": [
+        4,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.0,
+        0.75,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 0,
+      "repair_successes": 0,
+      "repair_failures": 0,
+      "rejection_reasons": {
+        "below_novelty_threshold": 4,
+        "below_train_threshold": 1
+      },
+      "summary_attempted_repairs": 0,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 0,
+      "failure_categories": {
+        "below_novelty_threshold": 4,
+        "below_train_threshold": 1
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 0,
+      "feedback_window": 3,
+      "attempted_repairs": 0,
+      "successful_repairs": 0,
+      "failed_repairs": 0,
+      "failure_categories": {
+        "below_novelty_threshold": 4,
+        "below_train_threshold": 1
+      }
+    }
+  },
+  "neurips_matrix/small_data_aspl_train20_screen/seed_22": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": -0.3172997577155665,
+    "test_spearman": -0.3018201527983867,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "best_scores": [
+        0.22916175347496393,
+        0.22916175347496393,
+        0.22916175347496393,
+        0.22916175347496393,
+        0.22916175347496393
+      ],
+      "map_elites_coverage": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "baselines": {},
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "attempted": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "evaluated": [
+        1,
+        2,
+        2,
+        2,
+        2
+      ],
+      "rejected": [
+        3,
+        2,
+        2,
+        2,
+        2
+      ],
+      "acceptance_rate": [
+        0.25,
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 0,
+      "repair_successes": 0,
+      "repair_failures": 0,
+      "rejection_reasons": {
+        "below_train_threshold": 11
+      },
+      "summary_attempted_repairs": 0,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 0,
+      "failure_categories": {
+        "below_train_threshold": 11
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 0,
+      "feedback_window": 3,
+      "attempted_repairs": 0,
+      "successful_repairs": 0,
+      "failed_repairs": 0,
+      "failure_categories": {
+        "below_train_threshold": 11
+      }
+    }
+  },
+  "neurips_matrix/small_data_aspl_train20_screen/seed_33": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.22058866014417883,
+    "test_spearman": 0.2303722943197197,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "best_scores": [
+        0.23069356480837727,
+        0.23069356480837727,
+        0.23069356480837727,
+        0.23069356480837727,
+        0.23069356480837727
+      ],
+      "map_elites_coverage": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "baselines": {},
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "attempted": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "evaluated": [
+        3,
+        4,
+        4,
+        4,
+        4
+      ],
+      "rejected": [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.75,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 0,
+      "repair_successes": 0,
+      "repair_failures": 0,
+      "rejection_reasons": {
+        "below_novelty_threshold": 1
+      },
+      "summary_attempted_repairs": 0,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 0,
+      "failure_categories": {
+        "below_novelty_threshold": 1
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 0,
+      "feedback_window": 3,
+      "attempted_repairs": 0,
+      "successful_repairs": 0,
+      "failed_repairs": 0,
+      "failure_categories": {
+        "below_novelty_threshold": 1
+      }
+    }
+  },
+  "neurips_matrix/upper_bound_aspl_screen/seed_11": {
+    "fitness_mode": "upper_bound",
+    "success": false,
+    "val_spearman": 0.0690070918869613,
+    "test_spearman": 0.1828000700250282,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "best_scores": [
+        0.15855949770165903,
+        0.15855949770165903,
+        0.15855949770165903,
+        0.15855949770165903,
+        0.15855949770165903
+      ]
+    },
+    "baselines": {},
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "attempted": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "evaluated": [
+        2,
+        4,
+        4,
+        4,
+        4
+      ],
+      "rejected": [
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.5,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 0,
+      "repair_successes": 0,
+      "repair_failures": 0,
+      "rejection_reasons": {
+        "below_train_threshold": 1,
+        "below_novelty_threshold": 1
+      },
+      "summary_attempted_repairs": 0,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 0,
+      "failure_categories": {
+        "below_train_threshold": 1,
+        "below_novelty_threshold": 1
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": 0.019536516784199494,
+      "val_satisfaction_rate": 1.0,
+      "val_mean_gap": 50.18619716329207,
+      "test_bound_score": 0.01837111691375646,
+      "test_satisfaction_rate": 1.0,
+      "test_mean_gap": 53.43327178714925,
+      "candidate_mean_gap_min": 30.275319347600064,
+      "candidate_mean_gap_max": 50.18619716329207,
+      "candidate_satisfaction_min": 0.9125,
+      "candidate_satisfaction_max": 1.0
+    },
+    "bounds_metrics": {
+      "val": {
+        "bound_score": 0.019536516784199494,
+        "satisfaction_rate": 1.0,
+        "mean_gap": 50.18619716329207,
+        "violation_count": 0,
+        "valid_count": 160
+      },
+      "test": {
+        "bound_score": 0.01837111691375646,
+        "satisfaction_rate": 1.0,
+        "mean_gap": 53.43327178714925,
+        "violation_count": 0,
+        "valid_count": 160
+      }
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 0,
+      "feedback_window": 3,
+      "attempted_repairs": 0,
+      "successful_repairs": 0,
+      "failed_repairs": 0,
+      "failure_categories": {
+        "below_train_threshold": 1,
+        "below_novelty_threshold": 1
+      }
+    }
+  },
+  "neurips_matrix/upper_bound_aspl_screen/seed_22": {
+    "fitness_mode": "upper_bound",
+    "success": false,
+    "val_spearman": -0.25605212925324666,
+    "test_spearman": -0.3505882714936449,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "best_scores": [
+        0.0,
+        0.2633450261776914,
+        0.2633450261776914,
+        0.2633450261776914,
+        0.2633450261776914,
+        0.2633450261776914
+      ]
+    },
+    "baselines": {},
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "attempted": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "evaluated": [
+        0,
+        1,
+        3,
+        4,
+        4,
+        4
+      ],
+      "rejected": [
+        4,
+        3,
+        1,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.0,
+        0.25,
+        0.75,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 0,
+      "repair_successes": 0,
+      "repair_failures": 0,
+      "rejection_reasons": {
+        "below_train_threshold": 5,
+        "no_valid_train_predictions": 3
+      },
+      "summary_attempted_repairs": 0,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 0,
+      "failure_categories": {
+        "below_train_threshold": 5,
+        "no_valid_train_predictions": 3
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": 0.36498521906852566,
+      "val_satisfaction_rate": 0.8,
+      "val_mean_gap": 1.1918695832167403,
+      "test_bound_score": 0.3693804652824606,
+      "test_satisfaction_rate": 0.8125,
+      "test_mean_gap": 1.199629044753873,
+      "candidate_mean_gap_min": 1.1918695832167403,
+      "candidate_mean_gap_max": 29.1951071527241,
+      "candidate_satisfaction_min": 0.8,
+      "candidate_satisfaction_max": 1.0
+    },
+    "bounds_metrics": {
+      "val": {
+        "bound_score": 0.36498521906852566,
+        "satisfaction_rate": 0.8,
+        "mean_gap": 1.1918695832167403,
+        "violation_count": 32,
+        "valid_count": 160
+      },
+      "test": {
+        "bound_score": 0.3693804652824606,
+        "satisfaction_rate": 0.8125,
+        "mean_gap": 1.199629044753873,
+        "violation_count": 30,
+        "valid_count": 160
+      }
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 0,
+      "feedback_window": 3,
+      "attempted_repairs": 0,
+      "successful_repairs": 0,
+      "failed_repairs": 0,
+      "failure_categories": {
+        "below_train_threshold": 5,
+        "no_valid_train_predictions": 3
+      }
+    }
+  },
+  "neurips_matrix/upper_bound_aspl_screen/seed_33": {
+    "fitness_mode": "upper_bound",
+    "success": false,
+    "val_spearman": -0.02861914388706552,
+    "test_spearman": -0.032633622871231414,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "best_scores": [
+        0.0,
+        0.15526273522170442,
+        0.15526273522170442,
+        0.15526273522170442,
+        0.15526273522170442,
+        0.15555289784123608
+      ]
+    },
+    "baselines": {},
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "attempted": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "evaluated": [
+        0,
+        1,
+        2,
+        2,
+        2,
+        3
+      ],
+      "rejected": [
+        4,
+        3,
+        2,
+        2,
+        2,
+        1
+      ],
+      "acceptance_rate": [
+        0.0,
+        0.25,
+        0.5,
+        0.5,
+        0.5,
+        0.75
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 0,
+      "repair_successes": 0,
+      "repair_failures": 0,
+      "rejection_reasons": {
+        "below_train_threshold": 12,
+        "no_valid_train_predictions": 1,
+        "below_novelty_threshold": 1
+      },
+      "summary_attempted_repairs": 0,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 0,
+      "failure_categories": {
+        "below_train_threshold": 12,
+        "no_valid_train_predictions": 1,
+        "below_novelty_threshold": 1
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": 0.017552201153896427,
+      "val_satisfaction_rate": 1.0,
+      "val_mean_gap": 55.97291133072556,
+      "test_bound_score": 0.017036710497676397,
+      "test_satisfaction_rate": 1.0,
+      "test_mean_gap": 57.696777182214134,
+      "candidate_mean_gap_min": 55.97291133072556,
+      "candidate_mean_gap_max": 367.81597483511297,
+      "candidate_satisfaction_min": 1.0,
+      "candidate_satisfaction_max": 1.0
+    },
+    "bounds_metrics": {
+      "val": {
+        "bound_score": 0.017552201153896427,
+        "satisfaction_rate": 1.0,
+        "mean_gap": 55.97291133072556,
+        "violation_count": 0,
+        "valid_count": 160
+      },
+      "test": {
+        "bound_score": 0.017036710497676397,
+        "satisfaction_rate": 1.0,
+        "mean_gap": 57.696777182214134,
+        "violation_count": 0,
+        "valid_count": 160
+      }
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 0,
+      "feedback_window": 3,
+      "attempted_repairs": 0,
+      "successful_repairs": 0,
+      "failed_repairs": 0,
+      "failure_categories": {
+        "below_train_threshold": 12,
+        "no_valid_train_predictions": 1,
+        "below_novelty_threshold": 1
+      }
+    }
+  },
+  "__aggregates__": {
+    "neurips_matrix/map_elites_aspl_medium": {
+      "seed_count": 1,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 1,
+        "mean": -0.4622326933017597,
+        "std": 0.0,
+        "ci95_half_width": 0.0
+      },
+      "test_spearman": {
+        "n": 1,
+        "mean": -0.5647878450835634,
+        "std": 0.0,
+        "ci95_half_width": 0.0
+      },
+      "complexity_ast_nodes": {
+        "n": 1,
+        "mean": 22.0,
+        "std": 0.0,
+        "ci95_half_width": 0.0
+      },
+      "seed_keys": [
+        "neurips_matrix/map_elites_aspl_medium/seed_11"
+      ]
+    },
+    "neurips_matrix/map_elites_aspl_screen": {
+      "seed_count": 3,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.07601732093417277,
+        "std": 0.357992827282632,
+        "ci95_half_width": 0.4051070201911823
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": 0.14196838684064342,
+        "std": 0.49304008914394687,
+        "ci95_half_width": 0.5579273832495283
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 29.0,
+        "std": 3.0,
+        "ci95_half_width": 3.394819582835
+      },
+      "seed_keys": [
+        "neurips_matrix/map_elites_aspl_screen/seed_11",
+        "neurips_matrix/map_elites_aspl_screen/seed_22",
+        "neurips_matrix/map_elites_aspl_screen/seed_33"
+      ]
+    },
+    "neurips_matrix/small_data_aspl_train20_screen": {
+      "seed_count": 3,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": -0.014862747052273024,
+        "std": 0.275129589140786,
+        "ci95_half_width": 0.31133843901082936
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": -0.054178045402869225,
+        "std": 0.2680090733585739,
+        "ci95_half_width": 0.3032808168717162
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 28.0,
+        "std": 1.7320508075688772,
+        "ci95_half_width": 1.96
+      },
+      "seed_keys": [
+        "neurips_matrix/small_data_aspl_train20_screen/seed_11",
+        "neurips_matrix/small_data_aspl_train20_screen/seed_22",
+        "neurips_matrix/small_data_aspl_train20_screen/seed_33"
+      ]
+    },
+    "neurips_matrix/upper_bound_aspl_screen": {
+      "seed_count": 3,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": -0.07188806041778363,
+        "std": 0.16679335617876495,
+        "ci95_half_width": 0.1887444506141481
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": -0.06680727477994937,
+        "std": 0.2683312497280066,
+        "ci95_half_width": 0.30364539375440847
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 27.0,
+        "std": 4.58257569495584,
+        "ci95_half_width": 5.185672569686598
+      },
+      "seed_keys": [
+        "neurips_matrix/upper_bound_aspl_screen/seed_11",
+        "neurips_matrix/upper_bound_aspl_screen/seed_22",
+        "neurips_matrix/upper_bound_aspl_screen/seed_33"
+      ]
+    }
+  }
+}

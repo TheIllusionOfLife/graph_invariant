@@ -5,9 +5,9 @@ independent of vertex labeling---are fundamental objects in network science,
 combinatorics, and theoretical computer science. Classical invariants such as
 the chromatic number, diameter, and algebraic connectivity encode structural
 information used in fields ranging from chemistry (molecular descriptors) to
-social network analysis. However, the discovery of \emph{new} invariants that
-capture previously unrecognized structural relationships remains a largely
-manual, expert-driven process.
+social network analysis. However, discovering compact and interpretable
+\emph{compositions} of known invariants/features that capture structural
+relationships remains a largely manual, expert-driven process.
 
 Recent work has demonstrated that large language models (LLMs) can generate
 executable mathematical programs when guided by evolutionary search.
@@ -21,7 +21,8 @@ accuracy without leveraging the mathematical reasoning capabilities of LLMs.
 
 We present a system that combines LLM-driven code generation with island-model
 evolution~\citep{whitley1997island} and MAP-Elites quality-diversity
-search~\citep{mouret2015mapelites} to discover interpretable graph invariants.
+search~\citep{mouret2015mapelites} to discover interpretable formula
+compositions over graph invariants/features.
 Our approach occupies a unique position: unlike neural approaches that learn
 latent graph representations~\citep{kipf2017gcn, xu2019gin}, our system
 produces closed-form formulas that can be inspected, verified, and used in
@@ -31,7 +32,7 @@ effectively.
 
 \paragraph{Contributions.}
 \begin{itemize}[leftmargin=1.5em,itemsep=2pt]
-  \item An open-source framework for LLM-driven graph invariant discovery with
+  \item An open-source framework for LLM-driven graph feature-composition discovery with
     island-model evolution, MAP-Elites diversity archive, and an LLM-driven
     self-correction loop. The system supports correlation and bounds
     (upper/lower) fitness modes.
@@ -40,6 +41,7 @@ effectively.
     graph invariants (bootstrap confidence interval test).
   \item Systematic evaluation across four experiment configurations with
     out-of-distribution validation on large-scale and extreme-topology graphs,
-    demonstrating that LLM-discovered formulas are competitive with statistical
-    and symbolic regression baselines while remaining interpretable.
+    demonstrating that LLM-discovered formulas are interpretable and achieve
+    strong (though not best-in-class on ASPL) correlations against statistical
+    and symbolic regression baselines.
 \end{itemize}

@@ -1,7 +1,7 @@
 """Generate publication-quality figures from analysis results.
 
 Usage:
-    uv run python analysis/generate_figures.py \\
+    uv run python analysis/generate_figures.py \
         --data analysis/results/ --output paper/figures/
 
 Reads figure_data.json produced by analyze_experiments.py and generates
@@ -32,7 +32,7 @@ plt.rcParams.update(
         "savefig.bbox": "tight",
         "font.family": "serif",
         "font.serif": ["DejaVu Serif", "Times New Roman", "Computer Modern Roman"],
-        "text.usetex": False,  # Set True if LaTeX is available
+        "text.usetex": False,
     }
 )
 
@@ -56,13 +56,25 @@ def _annotate_bars(bars, ax) -> None:
             )
 
 
+def _experiment_items(data: dict):
+    """Iterate only true experiment entries (exclude metadata buckets)."""
+    for name, info in data.items():
+        if name.startswith("__"):
+            continue
+        if not isinstance(info, dict):
+            continue
+        yield name, info
+
+
 # ── Figure generators ────────────────────────────────────────────────
 
 
 def plot_convergence(data: dict, output_path: Path) -> None:
-    """Plot Spearman correlation by generation, faceted by experiment."""
+    """Plot score by generation, faceted by experiment."""
     experiments_with_convergence = {
-        name: info for name, info in data.items() if info.get("convergence", {}).get("generations")
+        name: info
+        for name, info in _experiment_items(data)
+        if info.get("convergence", {}).get("generations")
     }
 
     if not experiments_with_convergence:
@@ -83,12 +95,17 @@ def plot_convergence(data: dict, output_path: Path) -> None:
         ax.set_ylabel("Best Score")
         ax.set_title(name.replace("_", " ").title(), fontsize=10)
 
-        # Add MAP-Elites coverage on secondary axis if available
         coverage = conv.get("map_elites_coverage", [])
         if coverage and len(coverage) == len(gens):
             ax2 = ax.twinx()
             ax2.plot(
-                gens, coverage, "s--", markersize=2, linewidth=1, color="tab:orange", alpha=0.7
+                gens,
+                coverage,
+                "s--",
+                markersize=2,
+                linewidth=1,
+                color="tab:orange",
+                alpha=0.7,
             )
             ax2.set_ylabel("Archive Coverage", color="tab:orange", fontsize=8)
             ax2.tick_params(axis="y", labelcolor="tab:orange", labelsize=7)
@@ -101,13 +118,9 @@ def plot_convergence(data: dict, output_path: Path) -> None:
 
 
 def plot_map_elites_coverage(data: dict, output_path: Path) -> None:
-    """Plot MAP-Elites archive coverage heatmap.
-
-    If full archive data isn't available, creates a summary visualization
-    from convergence coverage data.
-    """
+    """Plot MAP-Elites archive coverage summary."""
     me_data = data.get("experiment_map_elites_aspl", {})
-    conv = me_data.get("convergence", {})
+    conv = me_data.get("convergence", {}) if isinstance(me_data, dict) else {}
     coverage = conv.get("map_elites_coverage", [])
 
     if not coverage:
@@ -129,13 +142,13 @@ def plot_map_elites_coverage(data: dict, output_path: Path) -> None:
 
 
 def plot_baseline_comparison(data: dict, output_path: Path) -> None:
-    """Grouped bar chart: LLM candidate vs baselines."""
+    """Grouped bar chart: LLM candidates vs baselines."""
     methods: list[str] = []
     val_scores: list[float] = []
     test_scores: list[float] = []
     baselines_collected = False
 
-    for name, info in data.items():
+    for name, info in _experiment_items(data):
         val_s = info.get("val_spearman")
         test_s = info.get("test_spearman")
         if val_s is None:
@@ -145,11 +158,10 @@ def plot_baseline_comparison(data: dict, output_path: Path) -> None:
         val_scores.append(val_s)
         test_scores.append(test_s if test_s is not None else 0.0)
 
-        # Add baselines from first experiment that has them (avoid duplication)
         if not baselines_collected:
             added_any_baseline = False
             baselines = info.get("baselines", {})
-            stat = baselines.get("stat_baselines", {})
+            stat = baselines.get("stat_baselines", {}) if isinstance(baselines, dict) else {}
             if isinstance(stat, dict):
                 for bl_name, bl_data in stat.items():
                     if not isinstance(bl_data, dict) or bl_data.get("status") != "ok":
@@ -165,7 +177,7 @@ def plot_baseline_comparison(data: dict, output_path: Path) -> None:
                         test_scores.append(bl_test_s if bl_test_s is not None else 0.0)
                         added_any_baseline = True
 
-            pysr = baselines.get("pysr_baseline", {})
+            pysr = baselines.get("pysr_baseline", {}) if isinstance(baselines, dict) else {}
             if isinstance(pysr, dict) and pysr.get("status") == "ok":
                 pysr_val = pysr.get("val_metrics", {})
                 pysr_test = pysr.get("test_metrics", {})
@@ -200,7 +212,6 @@ def plot_baseline_comparison(data: dict, output_path: Path) -> None:
     ax.legend()
     ax.set_ylim(0, 1.05)
 
-    # Add value labels
     _annotate_bars(bars1, ax)
     _annotate_bars(bars2, ax)
 
@@ -215,7 +226,7 @@ def plot_ood_generalization(data: dict, output_path: Path) -> None:
     categories = ["large_random", "extreme_params", "special_topology"]
     experiments_with_ood = {
         name: info
-        for name, info in data.items()
+        for name, info in _experiment_items(data)
         if any(info.get("ood", {}).get(c) for c in categories)
     }
 
@@ -231,7 +242,7 @@ def plot_ood_generalization(data: dict, output_path: Path) -> None:
         ood = info.get("ood", {})
         scores = []
         for cat in categories:
-            cat_data = ood.get(cat, {})
+            cat_data = ood.get(cat, {}) if isinstance(ood, dict) else {}
             s = cat_data.get("spearman") if isinstance(cat_data, dict) else None
             scores.append(s if s is not None else 0.0)
         offset = (idx - len(experiments_with_ood) / 2 + 0.5) * width
@@ -254,13 +265,14 @@ def plot_ood_generalization(data: dict, output_path: Path) -> None:
 
 def plot_benchmark_boxplot(data: dict, output_path: Path) -> None:
     """Box plot of Val/Test Spearman across benchmark seeds."""
-    benchmark_data = {name: info for name, info in data.items() if name.startswith("benchmark/")}
+    benchmark_data = {
+        name: info for name, info in _experiment_items(data) if name.startswith("benchmark/")
+    }
 
     if not benchmark_data:
-        # Try to extract from a single benchmark summary
-        for _name, info in data.items():
+        for _name, info in _experiment_items(data):
             summary = info.get("summary", info)
-            runs = summary.get("runs", [])
+            runs = summary.get("runs", []) if isinstance(summary, dict) else []
             if runs:
                 val_scores = [r["val_spearman"] for r in runs if r.get("val_spearman") is not None]
                 test_scores = [
@@ -288,30 +300,16 @@ def plot_benchmark_boxplot(data: dict, output_path: Path) -> None:
         print("  No benchmark data available, skipping benchmark_boxplot.pdf")
         return
 
-    # Collect scores from individual benchmark entries
     val_scores = []
     test_scores = []
     for info in benchmark_data.values():
-        # Check for runs array (from benchmark_summary.json)
         runs = info.get("runs", [])
         if runs:
-            for r in runs:
-                if r.get("val_spearman") is not None:
-                    val_scores.append(r["val_spearman"])
-                if r.get("test_spearman") is not None:
-                    test_scores.append(r["test_spearman"])
-        else:
-            summary = info.get("summary", {})
-            val_s = summary.get("val_spearman")
-            if val_s is None:
-                val_s = info.get("val_spearman")
-            test_s = summary.get("test_spearman")
-            if test_s is None:
-                test_s = info.get("test_spearman")
-            if val_s is not None:
-                val_scores.append(val_s)
-            if test_s is not None:
-                test_scores.append(test_s)
+            for run in runs:
+                if run.get("val_spearman") is not None:
+                    val_scores.append(run["val_spearman"])
+                if run.get("test_spearman") is not None:
+                    test_scores.append(run["test_spearman"])
 
     if not val_scores and not test_scores:
         print("  No benchmark scores available, skipping benchmark_boxplot.pdf")
@@ -329,6 +327,126 @@ def plot_benchmark_boxplot(data: dict, output_path: Path) -> None:
     ax.boxplot(plot_data, tick_labels=labels)
     ax.set_ylabel("Spearman Correlation")
     ax.set_title("Multi-Seed Benchmark Consistency")
+
+    fig.tight_layout()
+    fig.savefig(output_path)
+    plt.close(fig)
+    print(f"  Saved {output_path}")
+
+
+def plot_seed_ci_comparison(data: dict, output_path: Path) -> None:
+    """Plot seed-aggregated mean test Spearman with 95% CI."""
+    aggregates = data.get("__aggregates__", {})
+    if not isinstance(aggregates, dict) or not aggregates:
+        print("  No aggregate data available, skipping seed_ci_comparison.pdf")
+        return
+
+    labels = []
+    means = []
+    errors = []
+    for name, payload in sorted(aggregates.items()):
+        test = payload.get("test_spearman", {}) if isinstance(payload, dict) else {}
+        mean = test.get("mean") if isinstance(test, dict) else None
+        ci = test.get("ci95_half_width") if isinstance(test, dict) else None
+        if mean is None:
+            continue
+        labels.append(name.split("/")[-1])
+        means.append(mean)
+        errors.append(ci if ci is not None else 0.0)
+
+    if not labels:
+        print("  No aggregate test Spearman means available, skipping seed_ci_comparison.pdf")
+        return
+
+    x = np.arange(len(labels))
+    fig, ax = plt.subplots(figsize=(max(8, len(labels) * 1.2), 4))
+    ax.bar(x, means, yerr=errors, capsize=4, color="tab:blue", alpha=0.85)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=25, ha="right")
+    ax.set_ylabel("Test Spearman")
+    ax.set_title("Seed-Aggregated Test Spearman (95% CI)")
+    ax.set_ylim(0, 1.05)
+
+    fig.tight_layout()
+    fig.savefig(output_path)
+    plt.close(fig)
+    print(f"  Saved {output_path}")
+
+
+def plot_small_data_tradeoff(data: dict, output_path: Path) -> None:
+    """Plot small-data regimes (train20/train35) against full-data runs."""
+    aggregates = data.get("__aggregates__", {})
+    if not isinstance(aggregates, dict):
+        print("  No aggregate data available, skipping small_data_tradeoff.pdf")
+        return
+
+    selected = []
+    for name, payload in sorted(aggregates.items()):
+        label = name.split("/")[-1]
+        if "small_data" in label or "full" in label:
+            test = payload.get("test_spearman", {}) if isinstance(payload, dict) else {}
+            mean = test.get("mean") if isinstance(test, dict) else None
+            ci = test.get("ci95_half_width") if isinstance(test, dict) else None
+            if mean is not None:
+                selected.append((label, mean, ci if ci is not None else 0.0))
+
+    if not selected:
+        print("  No small-data aggregate runs available, skipping small_data_tradeoff.pdf")
+        return
+
+    labels = [x[0] for x in selected]
+    means = [x[1] for x in selected]
+    errors = [x[2] for x in selected]
+
+    x = np.arange(len(labels))
+    fig, ax = plt.subplots(figsize=(max(8, len(labels) * 1.2), 4))
+    ax.errorbar(x, means, yerr=errors, fmt="o", color="tab:green", capsize=4)
+    ax.plot(x, means, "-", color="tab:green", alpha=0.6)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=25, ha="right")
+    ax.set_ylabel("Test Spearman")
+    ax.set_title("Small-Data Regime Performance")
+    ax.set_ylim(0, 1.05)
+
+    fig.tight_layout()
+    fig.savefig(output_path)
+    plt.close(fig)
+    print(f"  Saved {output_path}")
+
+
+def plot_bounds_diagnostics(data: dict, output_path: Path) -> None:
+    """Plot val/test satisfaction rates for bounds-mode experiments."""
+    labels = []
+    val_rates = []
+    test_rates = []
+
+    for name, info in _experiment_items(data):
+        bounds = info.get("bounds_diagnostics", {})
+        if not isinstance(bounds, dict):
+            continue
+        val = bounds.get("val_satisfaction_rate")
+        test = bounds.get("test_satisfaction_rate")
+        if val is None and test is None:
+            continue
+        labels.append(name.split("/")[-1])
+        val_rates.append(val if val is not None else 0.0)
+        test_rates.append(test if test is not None else 0.0)
+
+    if not labels:
+        print("  No bounds diagnostics available, skipping bounds_diagnostics.pdf")
+        return
+
+    x = np.arange(len(labels))
+    width = 0.35
+    fig, ax = plt.subplots(figsize=(max(7, len(labels) * 1.2), 4))
+    ax.bar(x - width / 2, val_rates, width, label="Validation", color="tab:purple")
+    ax.bar(x + width / 2, test_rates, width, label="Test", color="tab:pink")
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=20, ha="right")
+    ax.set_ylabel("Satisfaction Rate")
+    ax.set_title("Bounds Satisfaction Rates")
+    ax.set_ylim(0, 1.05)
+    ax.legend()
 
     fig.tight_layout()
     fig.savefig(output_path)
@@ -376,6 +494,9 @@ def main() -> None:
     plot_baseline_comparison(data, output_dir / "baseline_comparison.pdf")
     plot_ood_generalization(data, output_dir / "ood_generalization.pdf")
     plot_benchmark_boxplot(data, output_dir / "benchmark_boxplot.pdf")
+    plot_seed_ci_comparison(data, output_dir / "seed_ci_comparison.pdf")
+    plot_small_data_tradeoff(data, output_dir / "small_data_tradeoff.pdf")
+    plot_bounds_diagnostics(data, output_dir / "bounds_diagnostics.pdf")
     print("\nDone!")
 
 

@@ -10,6 +10,12 @@
 | experiment_v2 | unknown | True | 0.9370 | 0.9215 | 12 |
 | benchmark/benchmark_20260215T230550Z | unknown | False | N/A | N/A | None |
 
+## Multi-Seed Aggregates
+
+| Experiment Group | Seeds | Val mean±std | Val CI95 | Test mean±std | Test CI95 |
+| --- | --- | --- | --- | --- | --- |
+| benchmark/benchmark_20260215T230550Z | 5 | 0.9265 ± 0.0118 | ±0.0103 | 0.9206 ± 0.0304 | ±0.0266 |
+
 ## experiment_map_elites_aspl
 
 - Fitness mode: correlation
@@ -18,8 +24,30 @@
 - Final generation: 30
 - Validation Spearman: 0.9353
 - Test Spearman: 0.9471
-- Convergence: 0.426 → 0.552
-- MAP-Elites coverage: 2 → 5 cells
+- Best formula AST nodes: 358
+
+### Bounds Diagnostics
+
+- test_bound_score: None
+- test_mean_gap: None
+- test_satisfaction_rate: None
+- val_bound_score: None
+- val_mean_gap: None
+- val_satisfaction_rate: None
+- Convergence: 0.426 -> 0.552
+- MAP-Elites coverage: 2 -> 5 cells
+
+### Acceptance Funnel
+
+- Final generation attempted: 30
+- Final generation accepted: 14
+- Final generation acceptance rate: 0.467
+
+### Repair Breakdown
+
+- Repair attempts: 164
+- Repair successes: 68
+- Repair failures: 96
 
 ### Baselines
 
@@ -88,11 +116,6 @@ def new_invariant(s):
     return estimate
 ```
 
-### Self-Correction
-
-- Attempted repairs: 164
-- Successful repairs: 68
-
 ## experiment_algebraic_connectivity
 
 - Fitness mode: correlation
@@ -101,7 +124,29 @@ def new_invariant(s):
 - Final generation: 20
 - Validation Spearman: 0.7645
 - Test Spearman: 0.7779
-- Convergence: 0.447 → 0.494
+- Best formula AST nodes: 278
+
+### Bounds Diagnostics
+
+- test_bound_score: None
+- test_mean_gap: None
+- test_satisfaction_rate: None
+- val_bound_score: None
+- val_mean_gap: None
+- val_satisfaction_rate: None
+- Convergence: 0.447 -> 0.494
+
+### Acceptance Funnel
+
+- Final generation attempted: 23
+- Final generation accepted: 19
+- Final generation acceptance rate: 0.826
+
+### Repair Breakdown
+
+- Repair attempts: 75
+- Repair successes: 36
+- Repair failures: 39
 
 ### Baselines
 
@@ -188,11 +233,6 @@ def new_invariant(s):
     return score
 ```
 
-### Self-Correction
-
-- Attempted repairs: 75
-- Successful repairs: 36
-
 ## experiment_upper_bound_aspl
 
 - Fitness mode: upper_bound
@@ -201,10 +241,33 @@ def new_invariant(s):
 - Final generation: 20
 - Validation Spearman: 0.4227
 - Test Spearman: 0.3590
-- Val bound score: 0.5137132073914047
-- Val satisfaction rate: 0.8704663212435233
-- Test bound score: 0.4986280800131158
-- Convergence: 0.228 → 0.453
+- Best formula AST nodes: 386
+
+### Bounds Diagnostics
+
+- candidate_mean_gap_max: 79.7868812761218
+- candidate_mean_gap_min: 0.13880288873952462
+- candidate_satisfaction_max: 1.0
+- candidate_satisfaction_min: 0.175
+- test_bound_score: 0.4986280800131158
+- test_mean_gap: 0.6937665954753548
+- test_satisfaction_rate: 0.844559585492228
+- val_bound_score: 0.5137132073914047
+- val_mean_gap: 0.6944596882445031
+- val_satisfaction_rate: 0.8704663212435233
+- Convergence: 0.228 -> 0.453
+
+### Acceptance Funnel
+
+- Final generation attempted: 21
+- Final generation accepted: 20
+- Final generation acceptance rate: 0.952
+
+### Repair Breakdown
+
+- Repair attempts: 56
+- Repair successes: 27
+- Repair failures: 29
 
 ### OOD Generalization
 
@@ -288,11 +351,6 @@ def new_invariant(s):
     return float(final)
 ```
 
-### Self-Correction
-
-- Attempted repairs: 56
-- Successful repairs: 27
-
 ## experiment_v2
 
 - Fitness mode: unknown
@@ -301,7 +359,29 @@ def new_invariant(s):
 - Final generation: 12
 - Validation Spearman: 0.9370
 - Test Spearman: 0.9215
-- Convergence: 0.497 → 0.549
+- Best formula AST nodes: 208
+
+### Bounds Diagnostics
+
+- test_bound_score: None
+- test_mean_gap: None
+- test_satisfaction_rate: None
+- val_bound_score: None
+- val_mean_gap: None
+- val_satisfaction_rate: None
+- Convergence: 0.497 -> 0.549
+
+### Acceptance Funnel
+
+- Final generation attempted: 21
+- Final generation accepted: 15
+- Final generation acceptance rate: 0.714
+
+### Repair Breakdown
+
+- Repair attempts: 36
+- Repair successes: 14
+- Repair failures: 22
 
 ### Baselines
 
@@ -352,11 +432,6 @@ def new_invariant(s):
 
     return base * clustering_adj * variance_adj * density_adj * assort_adj
 ```
-
-### Self-Correction
-
-- Attempted repairs: 36
-- Successful repairs: 14
 
 ## benchmark/benchmark_20260215T230550Z
 

@@ -1,7 +1,7 @@
 """Cross-experiment analysis for graph invariant discovery results.
 
 Usage:
-    uv run python analysis/analyze_experiments.py \\
+    uv run python analysis/analyze_experiments.py \
         --artifacts-root artifacts/ --output analysis/results/
 
 Reads phase1_summary.json, baselines_summary.json, ood_validation.json,
@@ -12,9 +12,14 @@ Produces a markdown report and JSON figure data for generate_figures.py.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
+import re
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
+
+from graph_invariant.stats_utils import mean_std_ci95, safe_float
 
 # ── Data loading ─────────────────────────────────────────────────────
 
@@ -67,17 +72,47 @@ def load_event_log(experiment_dir: Path) -> list[dict]:
     return events
 
 
+# ── Helpers ──────────────────────────────────────────────────────────
+
+
+def _get_spearman(metrics: dict | None) -> float | None:
+    """Safely extract spearman from a metrics dict."""
+    if not isinstance(metrics, dict):
+        return None
+    val = metrics.get("spearman")
+    if isinstance(val, (int, float)):
+        return float(val)
+    return None
+
+
+def _ast_node_count(code: str | None) -> int | None:
+    if not isinstance(code, str) or not code.strip():
+        return None
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return None
+    return sum(1 for _ in ast.walk(tree))
+
+
+def _group_seed_base(name: str) -> str | None:
+    """Return a shared base id for seeded runs.
+
+    Examples:
+    - neurips_matrix/map_elites_aspl_full/seed_11 -> neurips_matrix/map_elites_aspl_full
+    - benchmark/benchmark_... -> handled separately from benchmark runs payload.
+    """
+    parts = name.split("/")
+    if parts and re.fullmatch(r"seed_\d+", parts[-1]):
+        return "/".join(parts[:-1])
+    return None
+
+
 # ── Analysis functions ───────────────────────────────────────────────
 
 
 def extract_convergence_data(events: list[dict]) -> dict[str, list]:
-    """Extract generation-by-generation convergence data from event log.
-
-    Returns dict with keys:
-        - generations: list of generation numbers
-        - best_scores: list of best scores per generation
-        - map_elites_coverage: list of archive coverage counts (if present)
-    """
+    """Extract generation-by-generation convergence data from event log."""
     generations: list[int] = []
     best_scores: list[float] = []
     coverages: list[int] = []
@@ -147,25 +182,127 @@ def extract_convergence_data_from_log_file(events_path: Path) -> dict[str, list]
     return result
 
 
-def _get_spearman(metrics: dict | None) -> float | None:
-    """Safely extract spearman from a metrics dict."""
-    if not isinstance(metrics, dict):
-        return None
-    val = metrics.get("spearman")
-    if isinstance(val, (int, float)):
-        return float(val)
-    return None
+def extract_acceptance_funnel(events: list[dict]) -> dict[str, list[float] | list[int]]:
+    """Compute per-generation attempted/evaluated/rejected candidate counts."""
+    per_gen: dict[int, dict[str, int]] = defaultdict(
+        lambda: {"attempted": 0, "evaluated": 0, "rejected": 0}
+    )
+
+    for event in events:
+        event_type = event.get("event_type")
+        payload = event.get("payload", {})
+        if not isinstance(payload, dict):
+            continue
+        generation = payload.get("generation")
+        if not isinstance(generation, int):
+            continue
+        if event_type == "candidate_evaluated":
+            per_gen[generation]["evaluated"] += 1
+            per_gen[generation]["attempted"] += 1
+        elif event_type == "candidate_rejected":
+            per_gen[generation]["rejected"] += 1
+            per_gen[generation]["attempted"] += 1
+
+    generations = sorted(per_gen.keys())
+    attempted = [per_gen[g]["attempted"] for g in generations]
+    evaluated = [per_gen[g]["evaluated"] for g in generations]
+    rejected = [per_gen[g]["rejected"] for g in generations]
+    rates = [
+        (evaluated[idx] / attempted[idx]) if attempted[idx] > 0 else 0.0
+        for idx in range(len(generations))
+    ]
+
+    return {
+        "generations": generations,
+        "attempted": attempted,
+        "evaluated": evaluated,
+        "rejected": rejected,
+        "acceptance_rate": rates,
+    }
+
+
+def extract_repair_breakdown(events: list[dict], summary: dict[str, Any]) -> dict[str, Any]:
+    """Summarize repair outcomes and rejection reasons."""
+    result = {
+        "repair_attempts": 0,
+        "repair_successes": 0,
+        "repair_failures": 0,
+        "rejection_reasons": {},
+    }
+
+    for event in events:
+        event_type = event.get("event_type")
+        payload = event.get("payload", {})
+        if event_type == "candidate_repair_attempted":
+            result["repair_attempts"] += 1
+        elif event_type == "candidate_repair_result":
+            status = payload.get("status") if isinstance(payload, dict) else None
+            if status == "success":
+                result["repair_successes"] += 1
+            elif status == "failed":
+                result["repair_failures"] += 1
+        elif event_type == "candidate_rejected" and isinstance(payload, dict):
+            reason = payload.get("reason")
+            if isinstance(reason, str):
+                current = result["rejection_reasons"].get(reason, 0)
+                result["rejection_reasons"][reason] = int(current) + 1
+
+    summary_sc = summary.get("self_correction_stats", {})
+    if isinstance(summary_sc, dict):
+        result["summary_attempted_repairs"] = int(summary_sc.get("attempted_repairs", 0))
+        result["summary_successful_repairs"] = int(summary_sc.get("successful_repairs", 0))
+        result["summary_failed_repairs"] = int(summary_sc.get("failed_repairs", 0))
+        failure_categories = summary_sc.get("failure_categories", {})
+        if isinstance(failure_categories, dict):
+            result["failure_categories"] = failure_categories
+
+    return result
+
+
+def extract_bounds_diagnostics(events: list[dict], summary: dict[str, Any]) -> dict[str, Any]:
+    """Collect bounds-specific diagnostics from summary and logs."""
+    diagnostics: dict[str, Any] = {}
+
+    bounds_metrics = summary.get("bounds_metrics", {})
+    if isinstance(bounds_metrics, dict):
+        val = bounds_metrics.get("val", {})
+        test = bounds_metrics.get("test", {})
+        if isinstance(val, dict):
+            diagnostics["val_bound_score"] = safe_float(val.get("bound_score"))
+            diagnostics["val_satisfaction_rate"] = safe_float(val.get("satisfaction_rate"))
+            diagnostics["val_mean_gap"] = safe_float(val.get("mean_gap"))
+        if isinstance(test, dict):
+            diagnostics["test_bound_score"] = safe_float(test.get("bound_score"))
+            diagnostics["test_satisfaction_rate"] = safe_float(test.get("satisfaction_rate"))
+            diagnostics["test_mean_gap"] = safe_float(test.get("mean_gap"))
+
+    eval_gaps: list[float] = []
+    eval_satisfaction: list[float] = []
+    for event in events:
+        if event.get("event_type") != "candidate_evaluated":
+            continue
+        payload = event.get("payload", {})
+        if not isinstance(payload, dict):
+            continue
+        gap = safe_float(payload.get("mean_gap"))
+        sat = safe_float(payload.get("satisfaction_rate"))
+        if gap is not None:
+            eval_gaps.append(gap)
+        if sat is not None:
+            eval_satisfaction.append(sat)
+
+    if eval_gaps:
+        diagnostics["candidate_mean_gap_min"] = min(eval_gaps)
+        diagnostics["candidate_mean_gap_max"] = max(eval_gaps)
+    if eval_satisfaction:
+        diagnostics["candidate_satisfaction_min"] = min(eval_satisfaction)
+        diagnostics["candidate_satisfaction_max"] = max(eval_satisfaction)
+
+    return diagnostics
 
 
 def build_comparison_table(experiments: dict[str, dict]) -> list[dict[str, Any]]:
-    """Build a cross-experiment comparison table.
-
-    Args:
-        experiments: dict mapping experiment name to {summary, baselines, ood}.
-
-    Returns:
-        List of row dicts with standardized columns for comparison.
-    """
+    """Build a cross-experiment comparison table."""
     rows: list[dict[str, Any]] = []
     for name, data in experiments.items():
         summary = data.get("summary", {})
@@ -182,46 +319,37 @@ def build_comparison_table(experiments: dict[str, dict]) -> list[dict[str, Any]]
             "stop_reason": summary.get("stop_reason"),
         }
 
-        # Bounds metrics (for upper/lower bound experiments)
         bounds = summary.get("bounds_metrics", {})
         if isinstance(bounds, dict) and bounds:
             val_bounds = bounds.get("val", {})
             test_bounds = bounds.get("test", {})
-            row["val_bound_score"] = val_bounds.get("bound_score")
-            row["test_bound_score"] = test_bounds.get("bound_score")
-            row["val_satisfaction_rate"] = val_bounds.get("satisfaction_rate")
+            if isinstance(val_bounds, dict):
+                row["val_bound_score"] = safe_float(val_bounds.get("bound_score"))
+                row["val_satisfaction_rate"] = safe_float(val_bounds.get("satisfaction_rate"))
+            if isinstance(test_bounds, dict):
+                row["test_bound_score"] = safe_float(test_bounds.get("bound_score"))
 
-        # Baseline comparison
         bc = summary.get("baseline_comparison", {})
         if isinstance(bc, dict) and bc:
             pysr = bc.get("pysr", {})
             if isinstance(pysr, dict):
-                pysr_val = pysr.get("val_spearman")
-                row["pysr_val_spearman"] = (
-                    float(pysr_val) if isinstance(pysr_val, (int, float)) else None
-                )
-            else:
-                row["pysr_val_spearman"] = None
+                row["pysr_val_spearman"] = safe_float(pysr.get("val_spearman"))
 
-        # Statistical baselines
         stat = baselines.get("stat_baselines", {})
         if isinstance(stat, dict):
             for bl_name, bl_data in stat.items():
                 if isinstance(bl_data, dict):
                     row[f"bl_{bl_name}_val_spearman"] = _get_spearman(bl_data.get("val_metrics"))
 
-        # PySR baseline from baselines_summary
         pysr_bl = baselines.get("pysr_baseline", {})
         if isinstance(pysr_bl, dict) and pysr_bl.get("status") == "ok":
             row["bl_pysr_val_spearman"] = _get_spearman(pysr_bl.get("val_metrics"))
 
-        # OOD results
         for category in ("large_random", "extreme_params", "special_topology"):
             cat_data = ood.get(category, {})
             if isinstance(cat_data, dict):
                 row[f"ood_{category}_spearman"] = _get_spearman(cat_data)
 
-        # Self-correction stats
         sc = summary.get("self_correction_stats", {})
         if isinstance(sc, dict):
             row["self_correction_attempts"] = sc.get("attempted_repairs", 0)
@@ -232,20 +360,75 @@ def build_comparison_table(experiments: dict[str, dict]) -> list[dict[str, Any]]
     return rows
 
 
+def build_seed_aggregates(experiments: dict[str, dict]) -> dict[str, dict[str, Any]]:
+    """Aggregate seeded runs into mean/std/CI summaries."""
+    grouped: dict[str, list[tuple[str, dict[str, Any]]]] = defaultdict(list)
+
+    # Seeded phase1 directories discovered individually.
+    for name, data in experiments.items():
+        base = _group_seed_base(name)
+        if base is not None:
+            grouped[base].append((name, data))
+
+    # Benchmark summaries include a runs list in a single file.
+    for name, data in experiments.items():
+        if not name.startswith("benchmark/"):
+            continue
+        summary = data.get("summary", {})
+        runs = summary.get("runs", []) if isinstance(summary, dict) else []
+        if not isinstance(runs, list) or not runs:
+            continue
+        grouped[name] = []
+        for run in runs:
+            if not isinstance(run, dict):
+                continue
+            pseudo_summary = {
+                "val_metrics": {"spearman": run.get("val_spearman")},
+                "test_metrics": {"spearman": run.get("test_spearman")},
+                "success": bool(run.get("success", False)),
+            }
+            grouped[name].append((f"{name}/seed_{run.get('seed')}", {"summary": pseudo_summary}))
+
+    aggregates: dict[str, dict[str, Any]] = {}
+    for base, entries in grouped.items():
+        val_scores: list[float] = []
+        test_scores: list[float] = []
+        complexity: list[float] = []
+        successes = 0
+        for _, data in entries:
+            summary = data.get("summary", {})
+            val_s = _get_spearman(summary.get("val_metrics"))
+            test_s = _get_spearman(summary.get("test_metrics"))
+            if val_s is not None:
+                val_scores.append(val_s)
+            if test_s is not None:
+                test_scores.append(test_s)
+            code_nodes = _ast_node_count(summary.get("best_candidate_code"))
+            if code_nodes is not None:
+                complexity.append(float(code_nodes))
+            if bool(summary.get("success", False)):
+                successes += 1
+
+        aggregates[base] = {
+            "seed_count": len(entries),
+            "success_count": successes,
+            "success_rate": (successes / len(entries)) if entries else 0.0,
+            "val_spearman": mean_std_ci95(val_scores),
+            "test_spearman": mean_std_ci95(test_scores),
+            "complexity_ast_nodes": mean_std_ci95(complexity),
+            "seed_keys": [name for name, _ in entries],
+        }
+
+    return aggregates
+
+
 # ── Output functions ─────────────────────────────────────────────────
 
 
 def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> None:
-    """Write a markdown analysis report summarizing all experiments.
-
-    Args:
-        experiments: dict mapping experiment name to
-            {summary, baselines, ood, convergence}.
-        output_path: Path to write the markdown report.
-    """
+    """Write a markdown analysis report summarizing all experiments."""
     lines: list[str] = ["# Cross-Experiment Analysis Report", ""]
 
-    # Summary table
     table_data = build_comparison_table(experiments)
     if table_data:
         lines.extend(["## Experiment Comparison", ""])
@@ -268,7 +451,45 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
             lines.append("| " + " | ".join(cells) + " |")
         lines.append("")
 
-    # Per-experiment details
+    aggregates = build_seed_aggregates(experiments)
+    if aggregates:
+        lines.extend(["## Multi-Seed Aggregates", ""])
+        lines.append(
+            "| Experiment Group | Seeds | Val mean±std | Val CI95 | Test mean±std | Test CI95 |"
+        )
+        lines.append("| --- | --- | --- | --- | --- | --- |")
+        for group, payload in sorted(aggregates.items()):
+            val = payload["val_spearman"]
+            test = payload["test_spearman"]
+            val_mean_std = (
+                f"{val['mean']:.4f} ± {val['std']:.4f}" if val.get("mean") is not None else "N/A"
+            )
+            val_ci = (
+                f"±{val['ci95_half_width']:.4f}"
+                if val.get("ci95_half_width") is not None
+                else "N/A"
+            )
+            test_mean_std = (
+                f"{test['mean']:.4f} ± {test['std']:.4f}" if test.get("mean") is not None else "N/A"
+            )
+            test_ci = (
+                f"±{test['ci95_half_width']:.4f}"
+                if test.get("ci95_half_width") is not None
+                else "N/A"
+            )
+            lines.append(
+                "| {group} | {seed_count} | {val_mean_std} | {val_ci} | "
+                "{test_mean_std} | {test_ci} |".format(
+                    group=group,
+                    seed_count=payload["seed_count"],
+                    val_mean_std=val_mean_std,
+                    val_ci=val_ci,
+                    test_mean_std=test_mean_std,
+                    test_ci=test_ci,
+                )
+            )
+        lines.append("")
+
     for name, data in experiments.items():
         summary = data.get("summary", {})
         convergence = data.get("convergence", {})
@@ -276,14 +497,11 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
         ood = data.get("ood", {})
 
         lines.extend([f"## {name}", ""])
-
-        # Basic info
         lines.append(f"- Fitness mode: {summary.get('fitness_mode', 'unknown')}")
         lines.append(f"- Success: {summary.get('success', False)}")
         lines.append(f"- Stop reason: {summary.get('stop_reason', 'N/A')}")
         lines.append(f"- Final generation: {summary.get('final_generation', 'N/A')}")
 
-        # Metrics
         val_s = _get_spearman(summary.get("val_metrics"))
         test_s = _get_spearman(summary.get("test_metrics"))
         if val_s is not None:
@@ -291,27 +509,41 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
         if test_s is not None:
             lines.append(f"- Test Spearman: {test_s:.4f}")
 
-        # Bounds metrics
-        bounds = summary.get("bounds_metrics", {})
-        if isinstance(bounds, dict) and bounds:
-            val_b = bounds.get("val", {})
-            test_b = bounds.get("test", {})
-            if val_b:
-                lines.append(f"- Val bound score: {val_b.get('bound_score', 'N/A')}")
-                lines.append(f"- Val satisfaction rate: {val_b.get('satisfaction_rate', 'N/A')}")
-            if test_b:
-                lines.append(f"- Test bound score: {test_b.get('bound_score', 'N/A')}")
+        code_nodes = _ast_node_count(summary.get("best_candidate_code"))
+        if code_nodes is not None:
+            lines.append(f"- Best formula AST nodes: {code_nodes}")
 
-        # Convergence
+        bounds = data.get("bounds_diagnostics", {})
+        if bounds:
+            lines.extend(["", "### Bounds Diagnostics", ""])
+            for key in sorted(bounds.keys()):
+                lines.append(f"- {key}: {bounds[key]}")
+
         if convergence:
             scores = convergence.get("best_scores", [])
             if scores:
-                lines.append(f"- Convergence: {scores[0]:.3f} → {scores[-1]:.3f}")
+                lines.append(f"- Convergence: {scores[0]:.3f} -> {scores[-1]:.3f}")
             coverage = convergence.get("map_elites_coverage", [])
             if coverage:
-                lines.append(f"- MAP-Elites coverage: {coverage[0]} → {coverage[-1]} cells")
+                lines.append(f"- MAP-Elites coverage: {coverage[0]} -> {coverage[-1]} cells")
 
-        # Baselines
+        funnel = data.get("acceptance_funnel", {})
+        if funnel and funnel.get("generations"):
+            final_idx = len(funnel["generations"]) - 1
+            lines.extend(["", "### Acceptance Funnel", ""])
+            lines.append(f"- Final generation attempted: {funnel['attempted'][final_idx]}")
+            lines.append(f"- Final generation accepted: {funnel['evaluated'][final_idx]}")
+            lines.append(
+                f"- Final generation acceptance rate: {funnel['acceptance_rate'][final_idx]:.3f}"
+            )
+
+        repair = data.get("repair_breakdown", {})
+        if repair:
+            lines.extend(["", "### Repair Breakdown", ""])
+            lines.append(f"- Repair attempts: {repair.get('repair_attempts', 0)}")
+            lines.append(f"- Repair successes: {repair.get('repair_successes', 0)}")
+            lines.append(f"- Repair failures: {repair.get('repair_failures', 0)}")
+
         stat = baselines.get("stat_baselines", {})
         if isinstance(stat, dict) and stat:
             lines.extend(["", "### Baselines", ""])
@@ -331,7 +563,6 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
             test_str = f"{pysr_test:.4f}" if pysr_test is not None else "N/A"
             lines.append(f"- PySR: val={val_str}, test={test_str}")
 
-        # OOD
         if ood:
             lines.extend(["", "### OOD Generalization", ""])
             for category, cat_data in ood.items():
@@ -342,17 +573,9 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
                     total = cat_data.get("total_count", "?")
                     lines.append(f"- {category}: spearman={ood_str} ({valid}/{total} valid)")
 
-        # Best candidate code
         code = summary.get("best_candidate_code")
         if code:
             lines.extend(["", "### Best Candidate Code", "", "```python", code, "```"])
-
-        # Self-correction stats
-        sc = summary.get("self_correction_stats", {})
-        if isinstance(sc, dict) and sc.get("enabled"):
-            lines.extend(["", "### Self-Correction", ""])
-            lines.append(f"- Attempted repairs: {sc.get('attempted_repairs', 0)}")
-            lines.append(f"- Successful repairs: {sc.get('successful_repairs', 0)}")
 
         lines.append("")
 
@@ -361,13 +584,7 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
 
 
 def write_figure_data_json(experiments: dict[str, dict], output_path: Path) -> None:
-    """Write JSON data for figure generation scripts.
-
-    Args:
-        experiments: dict mapping experiment name to
-            {summary, baselines, ood, convergence}.
-        output_path: Path to write the JSON file.
-    """
+    """Write JSON data for figure generation scripts."""
     figure_data: dict[str, Any] = {}
     for name, data in experiments.items():
         summary = data.get("summary", {})
@@ -379,24 +596,26 @@ def write_figure_data_json(experiments: dict[str, dict], output_path: Path) -> N
             "convergence": data.get("convergence", {}),
             "baselines": data.get("baselines", {}),
             "ood": data.get("ood", {}),
+            "acceptance_funnel": data.get("acceptance_funnel", {}),
+            "repair_breakdown": data.get("repair_breakdown", {}),
+            "bounds_diagnostics": data.get("bounds_diagnostics", {}),
         }
 
-        # Include bounds metrics if present
         bounds = summary.get("bounds_metrics")
         if bounds:
             entry["bounds_metrics"] = bounds
 
-        # Include self-correction stats
         sc = summary.get("self_correction_stats")
         if sc:
             entry["self_correction_stats"] = sc
 
-        # Include benchmark runs for boxplot
         runs = summary.get("runs")
         if runs:
             entry["runs"] = runs
 
         figure_data[name] = entry
+
+    figure_data["__aggregates__"] = build_seed_aggregates(experiments)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(figure_data, indent=2) + "\n", encoding="utf-8")
@@ -413,11 +632,33 @@ EXPERIMENT_DIRS = [
 ]
 
 
-def discover_experiments(artifacts_root: Path) -> dict[str, dict]:
-    """Discover and load all experiment data from the artifacts root.
+def _load_experiment_entry(exp_dir: Path, name: str) -> tuple[str, dict] | None:
+    summary = load_experiment_summary(exp_dir)
+    if not summary:
+        return None
+    baselines = load_baselines_summary(exp_dir)
+    ood = load_ood_results(exp_dir)
+    events = load_event_log(exp_dir)
+    convergence = extract_convergence_data(events)
+    acceptance_funnel = extract_acceptance_funnel(events)
+    repair_breakdown = extract_repair_breakdown(events, summary)
+    bounds_diagnostics = extract_bounds_diagnostics(events, summary)
+    return (
+        name,
+        {
+            "summary": summary,
+            "baselines": baselines,
+            "ood": ood,
+            "convergence": convergence,
+            "acceptance_funnel": acceptance_funnel,
+            "repair_breakdown": repair_breakdown,
+            "bounds_diagnostics": bounds_diagnostics,
+        },
+    )
 
-    Returns dict mapping experiment name to {summary, baselines, ood, convergence}.
-    """
+
+def discover_experiments(artifacts_root: Path) -> dict[str, dict]:
+    """Discover and load all experiment data from the artifacts root."""
     experiments: dict[str, dict] = {}
     root = Path(artifacts_root)
 
@@ -425,23 +666,11 @@ def discover_experiments(artifacts_root: Path) -> dict[str, dict]:
         exp_dir = root / exp_name
         if not exp_dir.exists():
             continue
-        summary = load_experiment_summary(exp_dir)
-        if not summary:
-            continue
+        loaded = _load_experiment_entry(exp_dir, exp_name)
+        if loaded is not None:
+            key, value = loaded
+            experiments[key] = value
 
-        baselines = load_baselines_summary(exp_dir)
-        ood = load_ood_results(exp_dir)
-        events_path = exp_dir / "logs" / "events.jsonl"
-        convergence = extract_convergence_data_from_log_file(events_path)
-
-        experiments[exp_name] = {
-            "summary": summary,
-            "baselines": baselines,
-            "ood": ood,
-            "convergence": convergence,
-        }
-
-    # Discover benchmark results
     for bench_dir in sorted(root.glob("benchmark_aspl/benchmark_*")):
         if not bench_dir.is_dir():
             continue
@@ -453,7 +682,22 @@ def discover_experiments(artifacts_root: Path) -> dict[str, dict]:
                 "baselines": {},
                 "ood": {},
                 "convergence": {},
+                "acceptance_funnel": {},
+                "repair_breakdown": {},
+                "bounds_diagnostics": {},
             }
+
+    # Seeded matrix artifacts: artifacts_root/neurips_matrix/<exp>/seed_<seed>/
+    matrix_root = root / "neurips_matrix"
+    if matrix_root.exists():
+        for seed_dir in sorted(matrix_root.glob("*/seed_*")):
+            if not seed_dir.is_dir():
+                continue
+            rel_name = str(seed_dir.relative_to(root))
+            loaded = _load_experiment_entry(seed_dir, rel_name)
+            if loaded is not None:
+                key, value = loaded
+                experiments[key] = value
 
     return experiments
 
@@ -489,17 +733,14 @@ def main() -> None:
         print("No experiments found. Nothing to analyze.")
         return
 
-    # Write report
     report_path = output_dir / "analysis_report.md"
     write_analysis_report(experiments, report_path)
     print(f"Report written to {report_path}")
 
-    # Write figure data
     figure_data_path = output_dir / "figure_data.json"
     write_figure_data_json(experiments, figure_data_path)
     print(f"Figure data written to {figure_data_path}")
 
-    # Print summary table
     table = build_comparison_table(experiments)
     print(f"\n{'Experiment':<35} {'Mode':<15} {'Success':<8} {'Val ρ':<10} {'Test ρ':<10}")
     print("-" * 78)

@@ -96,3 +96,33 @@ def test_plot_benchmark_boxplot_uses_runs_data(figures_module, tmp_path):
     out = tmp_path / "benchmark_boxplot.pdf"
     figures_module.plot_benchmark_boxplot(data, out)
     assert out.exists()
+
+
+def test_plot_seed_ci_comparison_uses_aggregates(figures_module, tmp_path):
+    data = {
+        "__aggregates__": {
+            "neurips_matrix/map_elites_aspl_full": {
+                "test_spearman": {"mean": 0.8, "ci95_half_width": 0.05}
+            },
+            "neurips_matrix/small_data_aspl_train20": {
+                "test_spearman": {"mean": 0.7, "ci95_half_width": 0.08}
+            },
+        }
+    }
+    out = tmp_path / "seed_ci_comparison.pdf"
+    figures_module.plot_seed_ci_comparison(data, out)
+    assert out.exists()
+
+
+def test_plot_bounds_diagnostics(figures_module, tmp_path):
+    data = {
+        "experiment_upper_bound_aspl": {
+            "bounds_diagnostics": {
+                "val_satisfaction_rate": 0.9,
+                "test_satisfaction_rate": 0.8,
+            }
+        }
+    }
+    out = tmp_path / "bounds_diagnostics.pdf"
+    figures_module.plot_bounds_diagnostics(data, out)
+    assert out.exists()

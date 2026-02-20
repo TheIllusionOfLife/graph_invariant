@@ -100,6 +100,20 @@ PROFILE=full bash run_all_experiments.sh
 
 Pre-built configs are available under `configs/`.
 
+Run the NeurIPS multi-seed evidence matrix:
+
+```bash
+uv run python scripts/run_neurips_matrix.py \
+  --configs \
+    configs/neurips_matrix/map_elites_aspl_full.json \
+    configs/neurips_matrix/algebraic_connectivity_full.json \
+    configs/neurips_matrix/upper_bound_aspl_full.json \
+    configs/neurips_matrix/small_data_aspl_train20.json \
+    configs/neurips_matrix/small_data_aspl_train35.json \
+  --seeds 11 22 33 44 55 \
+  --output-root artifacts/neurips_matrix
+```
+
 ## CLI Commands
 
 - `uv run python -m graph_invariant.cli phase1 --config <config.json> [--resume <checkpoint.json>]`

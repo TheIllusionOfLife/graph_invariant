@@ -8,8 +8,8 @@ correlation ($\rho = 0.947$), meeting the success threshold of $\rho \geq 0.85$.
 The algebraic connectivity experiment reaches $\rho = 0.778$, indicating that
 this target is harder for the LLM to approximate from pre-computed features.
 The upper-bound experiment achieves an 87\% satisfaction rate with a bound
-score of 0.514, demonstrating that the system can discover non-trivial
-mathematical inequalities.
+score of 0.514, demonstrating that the system can find non-trivial empirical
+inequalities on the evaluated graph distributions.
 
 \begin{table}[t]
   \centering
@@ -149,8 +149,8 @@ mathematical interpretation. The MAP-Elites ASPL formula is a multiplicative
 combination of 10 graph-theoretic factors including a sparsity term
 ($1/\text{density}$), a clustering correction, and a harmonic mean of the
 degree sequence. The upper-bound formula combines the path-graph bound
-$(n+1)/3$ with Moore-bound arguments, producing a provably valid inequality
-for most graph families.
+$(n+1)/3$ with Moore-bound-inspired terms and should be interpreted as an
+empirically high-coverage bound in our testbed (not a universal proof).
 
 \begin{table}[t]
   \centering
@@ -180,3 +180,33 @@ violations. Self-correction preserves the mathematical structure of the
 original formula while fixing implementation issues, effectively acting as a
 constrained search operator that retains mathematical intuition from failed
 candidates.
+
+\subsection{Day-1 Staged Pilot (Fast Profile)}
+
+To evaluate a one-day iteration protocol, we ran a staged pilot with reduced
+budgets (short generations/populations) and a faster local model profile, then
+aggregated results over available seeds. Table~\ref{tab:day1_pilot} summarizes
+the screening-stage outcomes from
+\texttt{analysis/day1\_results/figure\_data.json}.
+
+\begin{table}[t]
+  \centering
+  \caption{Day-1 staged pilot aggregates (fast profile). Values are mean $\pm$ std
+    Spearman $\rho$ across available seeds.}
+  \label{tab:day1_pilot}
+  \begin{tabular}{lccc}
+    \toprule
+    Regime & Seeds & Val $\rho$ & Test $\rho$ \\
+    \midrule
+    MAP-Elites ASPL (screen) & 3 & $0.076 \pm 0.358$ & $0.142 \pm 0.493$ \\
+    Small-data ASPL train=20 (screen) & 3 & $-0.015 \pm 0.275$ & $-0.054 \pm 0.268$ \\
+    Upper-bound ASPL (screen) & 3 & $-0.072 \pm 0.167$ & $-0.067 \pm 0.268$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The pilot demonstrates that rapid screening is operationally feasible, but
+performance is unstable under aggressive fast-profile settings. In particular,
+the variance is large and mean performance does not meet our target thresholds.
+This supports using fast-profile runs for pruning only, followed by
+higher-budget confirmatory runs before locking paper claims.

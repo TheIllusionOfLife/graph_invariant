@@ -410,3 +410,81 @@ def test_discover_experiments_reads_benchmark_and_streams_convergence(tmp_path, 
     assert "experiment_map_elites_aspl" in experiments
     assert experiments["experiment_map_elites_aspl"]["convergence"]["best_scores"] == [0.1]
     assert "benchmark/benchmark_20260101T000000Z" in experiments
+
+
+def test_extract_acceptance_funnel(analyze_module):
+    events = [
+        {"event_type": "candidate_rejected", "payload": {"generation": 0, "reason": "x"}},
+        {"event_type": "candidate_evaluated", "payload": {"generation": 0}},
+        {"event_type": "candidate_evaluated", "payload": {"generation": 1}},
+    ]
+    funnel = analyze_module.extract_acceptance_funnel(events)
+    assert funnel["generations"] == [0, 1]
+    assert funnel["attempted"] == [2, 1]
+    assert funnel["evaluated"] == [1, 1]
+    assert funnel["rejected"] == [1, 0]
+
+
+def test_build_seed_aggregates(analyze_module):
+    experiments = {
+        "neurips_matrix/map_elites_aspl_full/seed_11": {
+            "summary": {
+                "success": True,
+                "val_metrics": {"spearman": 0.9},
+                "test_metrics": {"spearman": 0.8},
+                "best_candidate_code": "def f(s):\n    return 1",
+            }
+        },
+        "neurips_matrix/map_elites_aspl_full/seed_22": {
+            "summary": {
+                "success": False,
+                "val_metrics": {"spearman": 0.7},
+                "test_metrics": {"spearman": 0.6},
+                "best_candidate_code": "def f(s):\n    return 2",
+            }
+        },
+    }
+    aggregates = analyze_module.build_seed_aggregates(experiments)
+    key = "neurips_matrix/map_elites_aspl_full"
+    assert key in aggregates
+    assert aggregates[key]["seed_count"] == 2
+    assert aggregates[key]["val_spearman"]["mean"] == pytest.approx(0.8)
+
+
+def test_discover_experiments_reads_neurips_matrix_seed_dirs(tmp_path, analyze_module):
+    seed_dir = tmp_path / "neurips_matrix" / "map_elites_aspl_full" / "seed_11"
+    seed_dir.mkdir(parents=True)
+    (seed_dir / "phase1_summary.json").write_text(
+        json.dumps(
+            {
+                "fitness_mode": "correlation",
+                "success": True,
+                "val_metrics": {"spearman": 0.5},
+                "test_metrics": {"spearman": 0.4},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (seed_dir / "logs").mkdir()
+    (seed_dir / "logs" / "events.jsonl").write_text("", encoding="utf-8")
+
+    experiments = analyze_module.discover_experiments(tmp_path)
+    assert "neurips_matrix/map_elites_aspl_full/seed_11" in experiments
+
+
+def test_write_figure_data_json_includes_aggregates(tmp_path, mock_phase1_summary, analyze_module):
+    experiments = {
+        "neurips_matrix/map_elites_aspl_full/seed_11": {
+            "summary": mock_phase1_summary,
+            "baselines": {},
+            "ood": {},
+            "convergence": {},
+            "acceptance_funnel": {},
+            "repair_breakdown": {},
+            "bounds_diagnostics": {},
+        },
+    }
+    output_path = tmp_path / "figure_data.json"
+    analyze_module.write_figure_data_json(experiments, output_path)
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    assert "__aggregates__" in payload

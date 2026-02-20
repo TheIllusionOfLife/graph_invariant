@@ -1,6 +1,6 @@
 \section{Method}
 
-Our system discovers graph invariants through an evolutionary loop that
+Our system discovers interpretable compositions of graph invariants/features through an evolutionary loop that
 combines LLM code generation, sandboxed evaluation, composite scoring, and
 quality-diversity archiving. Figure~\ref{fig:architecture} provides an overview.
 
@@ -155,4 +155,5 @@ objective rewards formulas $f$ such that $f(G) \geq y(G)$ (upper bound) or
 $f(G) \leq y(G)$ (lower bound) for all graphs $G$, with tighter bounds scoring
 higher. The bound score combines a satisfaction rate (fraction of graphs where
 the bound holds) with a tightness penalty (average gap). This mode enables
-discovery of mathematical inequalities relating graph properties.
+empirical search for candidate mathematical inequalities relating graph
+properties; universal validity requires additional proof.

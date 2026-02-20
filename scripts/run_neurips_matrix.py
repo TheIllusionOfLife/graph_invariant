@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import time
 from collections import defaultdict
 from datetime import UTC, datetime
@@ -22,6 +21,7 @@ from typing import Any
 from graph_invariant.cli import run_phase1
 from graph_invariant.config import Phase1Config
 from graph_invariant.logging_io import write_json
+from graph_invariant.stats_utils import mean_std_ci95, safe_float
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -37,25 +37,6 @@ def _load_json_or_default(path: Path) -> dict[str, Any]:
         return {}
 
 
-def _safe_float(value: Any) -> float | None:
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return float(value)
-    return None
-
-
-def _mean_std_ci95(values: list[float]) -> dict[str, float | int | None]:
-    if not values:
-        return {"n": 0, "mean": None, "std": None, "ci95_half_width": None}
-    n = len(values)
-    mean = sum(values) / n
-    if n == 1:
-        return {"n": 1, "mean": mean, "std": 0.0, "ci95_half_width": 0.0}
-    variance = sum((v - mean) ** 2 for v in values) / (n - 1)
-    std = math.sqrt(variance)
-    ci95_half_width = 1.96 * (std / math.sqrt(n))
-    return {"n": n, "mean": mean, "std": std, "ci95_half_width": ci95_half_width}
-
-
 def _summarize_runs(runs: list[dict[str, Any]]) -> dict[str, Any]:
     successful = [run for run in runs if run.get("status") == 0]
     val_scores = [run["val_spearman"] for run in successful if run.get("val_spearman") is not None]
@@ -67,9 +48,9 @@ def _summarize_runs(runs: list[dict[str, Any]]) -> dict[str, Any]:
         "total_runs": len(runs),
         "successful_runs": len(successful),
         "failed_runs": len(runs) - len(successful),
-        "val_spearman": _mean_std_ci95(val_scores),
-        "test_spearman": _mean_std_ci95(test_scores),
-        "duration_sec": _mean_std_ci95(durations),
+        "val_spearman": mean_std_ci95(val_scores),
+        "test_spearman": mean_std_ci95(test_scores),
+        "duration_sec": mean_std_ci95(durations),
     }
 
 
@@ -111,8 +92,8 @@ def _run_one(config_path: Path, seed: int, output_root: Path) -> dict[str, Any]:
         "start_time_utc": started.isoformat(),
         "end_time_utc": ended.isoformat(),
         "duration_sec": round(duration_sec, 3),
-        "val_spearman": _safe_float(val_metrics.get("spearman")),
-        "test_spearman": _safe_float(test_metrics.get("spearman")),
+        "val_spearman": safe_float(val_metrics.get("spearman")),
+        "test_spearman": safe_float(test_metrics.get("spearman")),
     }
 
     bounds_metrics = summary.get("bounds_metrics", {}) if isinstance(summary, dict) else {}
@@ -120,11 +101,11 @@ def _run_one(config_path: Path, seed: int, output_root: Path) -> dict[str, Any]:
         val_bounds = bounds_metrics.get("val", {})
         test_bounds = bounds_metrics.get("test", {})
         if isinstance(val_bounds, dict):
-            result["val_bound_score"] = _safe_float(val_bounds.get("bound_score"))
-            result["val_satisfaction_rate"] = _safe_float(val_bounds.get("satisfaction_rate"))
+            result["val_bound_score"] = safe_float(val_bounds.get("bound_score"))
+            result["val_satisfaction_rate"] = safe_float(val_bounds.get("satisfaction_rate"))
         if isinstance(test_bounds, dict):
-            result["test_bound_score"] = _safe_float(test_bounds.get("bound_score"))
-            result["test_satisfaction_rate"] = _safe_float(test_bounds.get("satisfaction_rate"))
+            result["test_bound_score"] = safe_float(test_bounds.get("bound_score"))
+            result["test_satisfaction_rate"] = safe_float(test_bounds.get("satisfaction_rate"))
 
     return result
 

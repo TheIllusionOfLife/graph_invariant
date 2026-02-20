@@ -14,11 +14,12 @@ from __future__ import annotations
 import argparse
 import ast
 import json
-import math
 import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
+
+from graph_invariant.stats_utils import mean_std_ci95, safe_float
 
 # ── Data loading ─────────────────────────────────────────────────────
 
@@ -84,12 +85,6 @@ def _get_spearman(metrics: dict | None) -> float | None:
     return None
 
 
-def _safe_float(value: Any) -> float | None:
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return float(value)
-    return None
-
-
 def _ast_node_count(code: str | None) -> int | None:
     if not isinstance(code, str) or not code.strip():
         return None
@@ -98,19 +93,6 @@ def _ast_node_count(code: str | None) -> int | None:
     except SyntaxError:
         return None
     return sum(1 for _ in ast.walk(tree))
-
-
-def _mean_std_ci95(values: list[float]) -> dict[str, float | int | None]:
-    if not values:
-        return {"n": 0, "mean": None, "std": None, "ci95_half_width": None}
-    n = len(values)
-    mean = sum(values) / n
-    if n == 1:
-        return {"n": 1, "mean": mean, "std": 0.0, "ci95_half_width": 0.0}
-    variance = sum((v - mean) ** 2 for v in values) / (n - 1)
-    std = math.sqrt(variance)
-    ci95_half_width = 1.96 * std / math.sqrt(n)
-    return {"n": n, "mean": mean, "std": std, "ci95_half_width": ci95_half_width}
 
 
 def _group_seed_base(name: str) -> str | None:
@@ -286,13 +268,13 @@ def extract_bounds_diagnostics(events: list[dict], summary: dict[str, Any]) -> d
         val = bounds_metrics.get("val", {})
         test = bounds_metrics.get("test", {})
         if isinstance(val, dict):
-            diagnostics["val_bound_score"] = _safe_float(val.get("bound_score"))
-            diagnostics["val_satisfaction_rate"] = _safe_float(val.get("satisfaction_rate"))
-            diagnostics["val_mean_gap"] = _safe_float(val.get("mean_gap"))
+            diagnostics["val_bound_score"] = safe_float(val.get("bound_score"))
+            diagnostics["val_satisfaction_rate"] = safe_float(val.get("satisfaction_rate"))
+            diagnostics["val_mean_gap"] = safe_float(val.get("mean_gap"))
         if isinstance(test, dict):
-            diagnostics["test_bound_score"] = _safe_float(test.get("bound_score"))
-            diagnostics["test_satisfaction_rate"] = _safe_float(test.get("satisfaction_rate"))
-            diagnostics["test_mean_gap"] = _safe_float(test.get("mean_gap"))
+            diagnostics["test_bound_score"] = safe_float(test.get("bound_score"))
+            diagnostics["test_satisfaction_rate"] = safe_float(test.get("satisfaction_rate"))
+            diagnostics["test_mean_gap"] = safe_float(test.get("mean_gap"))
 
     eval_gaps: list[float] = []
     eval_satisfaction: list[float] = []
@@ -302,8 +284,8 @@ def extract_bounds_diagnostics(events: list[dict], summary: dict[str, Any]) -> d
         payload = event.get("payload", {})
         if not isinstance(payload, dict):
             continue
-        gap = _safe_float(payload.get("mean_gap"))
-        sat = _safe_float(payload.get("satisfaction_rate"))
+        gap = safe_float(payload.get("mean_gap"))
+        sat = safe_float(payload.get("satisfaction_rate"))
         if gap is not None:
             eval_gaps.append(gap)
         if sat is not None:
@@ -342,16 +324,16 @@ def build_comparison_table(experiments: dict[str, dict]) -> list[dict[str, Any]]
             val_bounds = bounds.get("val", {})
             test_bounds = bounds.get("test", {})
             if isinstance(val_bounds, dict):
-                row["val_bound_score"] = _safe_float(val_bounds.get("bound_score"))
-                row["val_satisfaction_rate"] = _safe_float(val_bounds.get("satisfaction_rate"))
+                row["val_bound_score"] = safe_float(val_bounds.get("bound_score"))
+                row["val_satisfaction_rate"] = safe_float(val_bounds.get("satisfaction_rate"))
             if isinstance(test_bounds, dict):
-                row["test_bound_score"] = _safe_float(test_bounds.get("bound_score"))
+                row["test_bound_score"] = safe_float(test_bounds.get("bound_score"))
 
         bc = summary.get("baseline_comparison", {})
         if isinstance(bc, dict) and bc:
             pysr = bc.get("pysr", {})
             if isinstance(pysr, dict):
-                row["pysr_val_spearman"] = _safe_float(pysr.get("val_spearman"))
+                row["pysr_val_spearman"] = safe_float(pysr.get("val_spearman"))
 
         stat = baselines.get("stat_baselines", {})
         if isinstance(stat, dict):
@@ -431,9 +413,9 @@ def build_seed_aggregates(experiments: dict[str, dict]) -> dict[str, dict[str, A
             "seed_count": len(entries),
             "success_count": successes,
             "success_rate": (successes / len(entries)) if entries else 0.0,
-            "val_spearman": _mean_std_ci95(val_scores),
-            "test_spearman": _mean_std_ci95(test_scores),
-            "complexity_ast_nodes": _mean_std_ci95(complexity),
+            "val_spearman": mean_std_ci95(val_scores),
+            "test_spearman": mean_std_ci95(test_scores),
+            "complexity_ast_nodes": mean_std_ci95(complexity),
             "seed_keys": [name for name, _ in entries],
         }
 

@@ -73,3 +73,6 @@ cd paper && tectonic -r 2 main.tex
   - `docs/zenodo_neurips_day1_sha256s_2026-02-22.txt`
 - Raw artifact source included in the bundle:
   - `artifacts/neurips_matrix_day1_2026-02-21/`
+- Published Zenodo record:
+  - DOI: `10.5281/zenodo.18727765`
+  - URL: `https://zenodo.org/record/18727765`

@@ -18,6 +18,12 @@ day-scale NeurIPS matrix rerun used by the paper refresh in PR #38.
 - Archive SHA256:
   - `2c85883beb111233f5e8b4801eb6cd3b4e4b441aa50634437ab5f203faf939a9`
 
+## Published Zenodo Record
+
+- Record ID: `18727765`
+- DOI: `10.5281/zenodo.18727765`
+- Record URL: `https://zenodo.org/record/18727765`
+
 ## Verification Files Committed in Git
 
 - Archive checksum file:
@@ -37,10 +43,7 @@ Use the following when publishing the Zenodo record:
 - Description: include run command from
   `docs/final_neurips_rerun_manifest_2026-02-20.md`
 
-## Post-Upload Sync (Required)
+## Post-Upload Sync Status
 
-After Zenodo DOI is assigned:
-
-1. Replace placeholders in `paper/references.bib` dataset entry.
-2. Add DOI/URL to `docs/final_neurips_rerun_manifest_2026-02-20.md`.
-3. Ensure README and paper data-availability wording matches the DOI exactly.
+- `paper/references.bib` dataset entry updated with DOI/URL/version/year.
+- `docs/final_neurips_rerun_manifest_2026-02-20.md` updated with DOI/URL.

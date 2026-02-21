@@ -167,6 +167,7 @@ Benchmark outputs:
 - Dataset DOI/record links and checksum manifests must be documented and cited from the paper.
 - Policy details: `docs/DATA_POLICY.md`
 - Current release handoff example: `docs/zenodo_release_neurips_day1_2026-02-22.md`
+- Current published dataset DOI: `10.5281/zenodo.18727765` (`https://zenodo.org/record/18727765`)
 
 ## Documentation Map
 

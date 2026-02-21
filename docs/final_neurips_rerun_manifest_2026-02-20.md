@@ -1,40 +1,46 @@
 # Final NeurIPS Rerun Manifest (2026-02-20)
 
 This manifest records the exact commands and artifact paths used for the final
-analysis/paper refresh pass on branch `feat/final-neurips-rerun-rebuttal-pack`.
+analysis/paper refresh pass on branch `chore/final-matrix-results-refresh`.
+The filename date (`2026-02-20`) is retained for continuity with the original
+roadmap checkpoint; the recorded rerun artifacts are from `2026-02-21` and the
+run completed on `2026-02-22`.
 
 ## Branch and base
 
-- Base merge commit on `main`: `ab9bcce06765554af84fa65cc3f646850248e069`
-- Working branch: `feat/final-neurips-rerun-rebuttal-pack`
+- Base commit on `main`: `6debfe3fe69f236bb714b490c1cb2f67b690493a`
+- Working branch: `chore/final-matrix-results-refresh`
 
-## Validation commands
+## Matrix rerun (day-scale matrix)
 
-```bash
-uv run --group dev ruff check .
-uv run --group dev ruff format --check .
-uv run --group dev pytest -q
-```
-
-## Matrix rerun command (attempted)
+Command:
 
 ```bash
 uv run python scripts/run_neurips_matrix.py \
   --configs \
-    configs/neurips_matrix/map_elites_aspl_full.json \
-    configs/neurips_matrix/algebraic_connectivity_full.json \
-    configs/neurips_matrix/upper_bound_aspl_full.json \
-    configs/neurips_matrix/small_data_aspl_train20.json \
-    configs/neurips_matrix/small_data_aspl_train35.json \
-    configs/neurips_matrix/benchmark_aspl_full.json \
-  --seeds 11 22 33 44 55 \
-  --max-parallel 3 \
-  --output-root artifacts/neurips_matrix_2026-02-20_final
+    configs/neurips_day1/map_elites_aspl_medium.json \
+    configs/neurips_day1/algebraic_connectivity_medium.json \
+    configs/neurips_day1/upper_bound_aspl_medium.json \
+    configs/neurips_day1/small_data_aspl_train20_medium.json \
+    configs/neurips_day1/small_data_aspl_train35_medium.json \
+    configs/neurips_day1/benchmark_aspl_medium.json \
+  --seeds 11 22 33 \
+  --max-parallel 2 \
+  --output-root artifacts/neurips_matrix_day1_2026-02-21
 ```
 
-Status: launched and partially executed, but not fully completed in this pass
-because full-profile runs with long LLM timeouts exceeded practical in-session
-runtime.
+Completion timestamp: 2026-02-22 07:47:07 JST
+
+Matrix summary path:
+
+- `artifacts/neurips_matrix_day1_2026-02-21/matrix_summary.json`
+
+Run completion status:
+
+- Completed runs: 17/18
+- Incomplete run: `algebraic_connectivity_medium/seed_11` (pathological runtime hang; recorded as failed status in matrix summary)
+- Day1 profile rationale: larger validation/test sets and `migration_interval == max_generations`
+  were used intentionally for stable evaluation under a one-day compute budget.
 
 ## Analysis and figure refresh commands
 
@@ -55,10 +61,23 @@ uv run python analysis/generate_figures.py \
 cd paper && tectonic -r 2 main.tex
 ```
 
-## Output files updated
+## Output files refreshed
 
-- `analysis/results/analysis_report.md`
-- `analysis/results/figure_data.json`
-- `paper/figures/*.pdf` (refreshed where data available)
-- `paper/sections/appendix_tables_generated.tex`
+- `analysis/results/*`
+- `paper/figures/*`
 - `paper/main.pdf`
+- `docs/final_neurips_rerun_manifest_2026-02-20.md`
+
+## Zenodo archival handoff (prepared)
+
+- Local archive bundle (ignored by Git, upload this file to Zenodo):
+  - `zenodo_staging/neurips_day1_2026-02-22/neurips_matrix_day1_2026-02-21_artifacts.tar.gz`
+- Archive SHA256 (tracked):
+  - `docs/zenodo_neurips_day1_archive_sha256_2026-02-22.txt`
+- Per-file SHA256 manifest for raw artifacts (tracked):
+  - `docs/zenodo_neurips_day1_sha256s_2026-02-22.txt`
+- Raw artifact source included in the bundle:
+  - `artifacts/neurips_matrix_day1_2026-02-21/`
+- Published Zenodo record:
+  - DOI: `10.5281/zenodo.18727765`
+  - URL: `https://zenodo.org/record/18727765`

@@ -4,15 +4,23 @@
 \begin{table}[h]
   \centering
   \small
-  \caption{Seed-aggregated performance for NeurIPS matrix runs.}
+  \caption{Seed-aggregated performance for NeurIPS matrix runs. \textsuperscript{\dag}Groups marked with \textsuperscript{\dag} have incomplete seeds.}
   \label{tab:appendix_seed_aggregates}
   \begin{tabular}{p{4.6cm}ccccc}
     \toprule
     Group & Seeds & Success & Val mean$\pm$std & Test mean$\pm$std & Test CI95 \\
     \midrule
     benchmark/\allowbreak benchmark\_20260215T230550Z & 5 & 1/5 & 0.927$\pm$0.012 & 0.921$\pm$0.030 & $\pm$0.038 \\
+    neurips\_matrix\_day1\_2026-02-21/\allowbreak algebraic\_connectivity\_medium\textsuperscript{\dag} & 2 & 0/2 & 0.899$\pm$0.000 & 0.892$\pm$0.019 & $\pm$0.108 \\
+    neurips\_matrix\_day1\_2026-02-21/\allowbreak benchmark\_aspl\_medium & 3 & 0/3 & 0.065$\pm$0.489 & -0.011$\pm$0.510 & $\pm$0.989 \\
+    neurips\_matrix\_day1\_2026-02-21/\allowbreak map\_elites\_aspl\_medium & 3 & 0/3 & 0.106$\pm$0.420 & 0.031$\pm$0.438 & $\pm$0.969 \\
+    neurips\_matrix\_day1\_2026-02-21/\allowbreak small\_data\_aspl\_train20\_medium & 3 & 0/3 & 0.144$\pm$0.144 & 0.263$\pm$0.264 & $\pm$0.656 \\
+    neurips\_matrix\_day1\_2026-02-21/\allowbreak small\_data\_aspl\_train35\_medium & 3 & 1/3 & 0.899$\pm$0.052 & 0.913$\pm$0.029 & $\pm$0.072 \\
+    neurips\_matrix\_day1\_2026-02-21/\allowbreak upper\_bound\_aspl\_medium & 3 & 0/3 & 0.382$\pm$0.060 & 0.403$\pm$0.045 & $\pm$0.111 \\
     \bottomrule
   \end{tabular}
+  \vspace{2pt}
+  \raggedright\footnotesize \textsuperscript{\dag}algebraic\_connectivity\_medium uses 2/3 completed seeds; missing seed\_11 (missing phase1\_summary.json (pathological runtime; marked failed)).
 \end{table}
 
 \subsection{Bounds diagnostics}
@@ -26,6 +34,9 @@
     Experiment & Val score & Val sat. & Test score & Test sat. \\
     \midrule
     experiment\_upper\_bound\_aspl & 0.514 & 0.870 & 0.499 & 0.845 \\
+    neurips\_matrix\_day1\_2026-02-21/upper\_bound\_aspl\_medium/seed\_11 & 0.302 & 0.559 & 0.398 & 0.695 \\
+    neurips\_matrix\_day1\_2026-02-21/upper\_bound\_aspl\_medium/seed\_22 & 0.281 & 0.809 & 0.292 & 0.805 \\
+    neurips\_matrix\_day1\_2026-02-21/upper\_bound\_aspl\_medium/seed\_33 & 0.351 & 0.918 & 0.349 & 0.918 \\
     \bottomrule
   \end{tabular}
 \end{table}

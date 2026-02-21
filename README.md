@@ -105,15 +105,23 @@ Run the NeurIPS multi-seed evidence matrix:
 ```bash
 uv run python scripts/run_neurips_matrix.py \
   --configs \
-    configs/neurips_matrix/map_elites_aspl_full.json \
-    configs/neurips_matrix/algebraic_connectivity_full.json \
-    configs/neurips_matrix/upper_bound_aspl_full.json \
-    configs/neurips_matrix/small_data_aspl_train20.json \
-    configs/neurips_matrix/small_data_aspl_train35.json \
-  --seeds 11 22 33 44 55 \
-  --max-parallel 3 \
-  --output-root artifacts/neurips_matrix
+    configs/neurips_day1/map_elites_aspl_medium.json \
+    configs/neurips_day1/algebraic_connectivity_medium.json \
+    configs/neurips_day1/upper_bound_aspl_medium.json \
+    configs/neurips_day1/small_data_aspl_train20_medium.json \
+    configs/neurips_day1/small_data_aspl_train35_medium.json \
+    configs/neurips_day1/benchmark_aspl_medium.json \
+  --seeds 11 22 33 \
+  --max-parallel 2 \
+  --output-root artifacts/neurips_matrix_day1_2026-02-21
 ```
+
+For this day-scale profile, evaluation-heavy splits and sparse migration are
+intentional to maximize stability of comparison metrics under a strict runtime
+budget.
+
+For a full-profile matrix (longer runtime, broader evidence), use the
+`configs/neurips_matrix/*_full.json` configs with 5 seeds and higher parallelism.
 
 ## CLI Commands
 
@@ -162,9 +170,12 @@ Benchmark outputs:
 ## Data Policy (Zenodo)
 
 - Heavy raw experimental data is archived on Zenodo, not committed to Git.
-- This repository stores code, configs, and lightweight summaries/figures.
-- Dataset DOI/record links should be documented and cited from the paper.
+- This repository stores code, configs, manuscript assets, and lightweight summaries/figures.
+- Split policy: GitHub for lightweight paper package, Zenodo for raw experimental evidence.
+- Dataset DOI/record links and checksum manifests must be documented and cited from the paper.
 - Policy details: `docs/DATA_POLICY.md`
+- Current release handoff example: `docs/zenodo_release_neurips_day1_2026-02-22.md`
+- Current published dataset DOI: `10.5281/zenodo.18727765` (`https://zenodo.org/record/18727765`)
 
 ## Documentation Map
 

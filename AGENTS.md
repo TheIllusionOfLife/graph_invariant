@@ -96,6 +96,27 @@ Repository-specific instructions for coding agents and contributors.
 - When a dataset is published, record DOI/URL and checksum metadata in docs for paper citation.
 - Changing scoring weights (`alpha`, `beta`, `gamma`) triggers normalization if they do not sum to 1.0.
 
+## Zenodo Workflow (Required for Paper Releases)
+
+Use this workflow every time a paper-facing experiment set is finalized:
+
+1. Prepare archive and checksums locally (do not commit raw artifacts):
+   - `tar -czf zenodo_staging/<release>/<bundle>.tar.gz artifacts/<run_root>`
+   - `shasum -a 256 zenodo_staging/<release>/<bundle>.tar.gz > docs/zenodo_<release>_archive_sha256.txt`
+   - `find artifacts/<run_root> -type f | sort | while read -r f; do shasum -a 256 "$f"; done > docs/zenodo_<release>_sha256s.txt`
+2. Publish to Zenodo using an interactive shell token context:
+   - Ensure `ZENODO_TOKEN` is loaded in interactive zsh (`zsh -ic 'echo ${ZENODO_TOKEN:+set}'`).
+   - Create deposition, upload archive, set metadata, publish.
+3. Sync DOI into repository immediately after publish:
+   - `paper/references.bib` dataset entry (`year`, `version`, `doi`, `url`)
+   - release note in `docs/zenodo_release_<release>.md`
+   - run manifest (for example `docs/final_neurips_rerun_manifest_*.md`)
+   - README/data policy references
+4. Rebuild paper after citation update:
+   - `cd paper && tectonic -r 2 main.tex`
+5. Verify no placeholders remain:
+   - `rg -n "DOI_TBD|URL_TBD|YEAR_TBD|VERSION_TBD" paper/references.bib docs README.md`
+
 ## Document Sync Policy
 
 - Keep cross-document consistency when changing behavior:

@@ -451,6 +451,24 @@ def test_build_seed_aggregates(analyze_module):
     assert aggregates[key]["val_spearman"]["mean"] == pytest.approx(0.8)
 
 
+def test_build_seed_aggregates_marks_ci_clamp(analyze_module):
+    experiments = {
+        "neurips_matrix/example/seed_11": {
+            "summary": {"val_metrics": {"spearman": 1.0}, "test_metrics": {"spearman": 1.0}}
+        },
+        "neurips_matrix/example/seed_22": {
+            "summary": {"val_metrics": {"spearman": 1.0}, "test_metrics": {"spearman": 0.0}}
+        },
+        "neurips_matrix/example/seed_33": {
+            "summary": {"val_metrics": {"spearman": 1.0}, "test_metrics": {"spearman": -1.0}}
+        },
+    }
+    aggregates = analyze_module.build_seed_aggregates(experiments)
+    payload = aggregates["neurips_matrix/example"]
+    assert payload["val_ci95_clamped_to_bounds"] is False
+    assert payload["test_ci95_clamped_to_bounds"] is True
+
+
 def test_discover_experiments_reads_neurips_matrix_seed_dirs(tmp_path, analyze_module):
     seed_dir = tmp_path / "neurips_matrix_2026_final" / "map_elites_aspl_full" / "seed_11"
     seed_dir.mkdir(parents=True)
@@ -492,6 +510,55 @@ def test_write_figure_data_json_includes_aggregates(tmp_path, mock_phase1_summar
     assert "appendix_small_data_tradeoff" in payload
     assert "appendix_bounds_diagnostics" in payload
     assert "appendix_runtime_summary" in payload
+
+
+def test_build_appendix_payload_uses_matrix_scoped_runtime_keys(analyze_module):
+    experiments = {
+        "neurips_matrix_a/map_elites/seed_11": {
+            "summary": {"val_metrics": {"spearman": 0.4}, "test_metrics": {"spearman": 0.4}}
+        },
+        "neurips_matrix_b/map_elites/seed_11": {
+            "summary": {"val_metrics": {"spearman": 0.6}, "test_metrics": {"spearman": 0.6}}
+        },
+    }
+    matrix_summaries = {
+        "neurips_matrix_a": {
+            "runs": [{"experiment": "map_elites", "status": 0, "duration_sec": 10.0}]
+        },
+        "neurips_matrix_b": {
+            "runs": [{"experiment": "map_elites", "status": 0, "duration_sec": 20.0}]
+        },
+    }
+    payload = analyze_module.build_appendix_payload(experiments, matrix_summaries)
+    runtime = payload["appendix_runtime_summary"]
+    assert "neurips_matrix_a/map_elites" in runtime
+    assert "neurips_matrix_b/map_elites" in runtime
+    assert runtime["neurips_matrix_a/map_elites"]["duration_sec"]["mean"] == 10.0
+    assert runtime["neurips_matrix_b/map_elites"]["duration_sec"]["mean"] == 20.0
+
+
+def test_build_appendix_payload_handles_non_numeric_status_for_notes(analyze_module):
+    payload = analyze_module.build_appendix_payload(
+        experiments={},
+        matrix_summaries={
+            "neurips_matrix_x": {
+                "runs": [
+                    {
+                        "experiment": "algebraic",
+                        "status": "not_available",
+                        "seed": 11,
+                        "note": "missing summary",
+                    },
+                    {"experiment": "algebraic", "status": "0", "seed": 22},
+                ]
+            }
+        },
+    )
+    notes = payload["appendix_seed_notes"]
+    note_text = notes["neurips_matrix_x/algebraic"]
+    assert "2/2" not in note_text
+    assert "1/2 completed seeds" in note_text
+    assert "seed_11" in note_text
 
 
 def test_discover_matrix_summaries(tmp_path, analyze_module):
@@ -541,3 +608,41 @@ def test_write_appendix_tables_tex(tmp_path, analyze_module):
     assert "tab:appendix_seed_aggregates" in content
     assert "tab:appendix_bounds" in content
     assert "tab:appendix_runtime" in content
+
+
+def test_write_appendix_tables_tex_wraps_seed_notes_with_line_breaks(tmp_path, analyze_module):
+    payload = {
+        "appendix_seed_aggregates": {
+            "neurips_matrix/x": {
+                "seed_count": 1,
+                "success_count": 1,
+                "val_spearman": {"mean": 0.9, "std": 0.0, "ci95_half_width": 0.0},
+                "test_spearman": {"mean": 0.9, "std": 0.0, "ci95_half_width": 0.0},
+            }
+        },
+        "appendix_seed_notes": {
+            "neurips_matrix/x": "x note",
+            "neurips_matrix/y": "y note",
+        },
+        "appendix_bounds_diagnostics": {},
+        "appendix_runtime_summary": {},
+    }
+    out = tmp_path / "appendix_tables.tex"
+    analyze_module.write_appendix_tables_tex(payload, out)
+    content = out.read_text(encoding="utf-8")
+    assert "\\\\ " in content
+
+
+def test_normalize_candidate_code_for_report_handles_numpy_import_variants(analyze_module):
+    code_with_alias = "import numpy as np\n\ndef f(G, feats):\n    return np.sqrt(1.0)"
+    assert analyze_module._normalize_candidate_code_for_report(code_with_alias) == code_with_alias
+
+    code_with_from_import = "from numpy import sqrt\n\ndef f(G, feats):\n    return np.sqrt(1.0)"
+    assert (
+        analyze_module._normalize_candidate_code_for_report(code_with_from_import)
+        == code_with_from_import
+    )
+
+    missing_import = "def f(G, feats):\n    return np.sqrt(1.0)"
+    normalized = analyze_module._normalize_candidate_code_for_report(missing_import)
+    assert normalized.startswith("import numpy as np")

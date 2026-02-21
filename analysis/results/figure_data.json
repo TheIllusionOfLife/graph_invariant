@@ -1160,7 +1160,3547 @@
       }
     ]
   },
+  "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_22": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.8983945949296472,
+    "test_spearman": 0.8783430912359197,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "best_scores": [
+        0.5050431098818425,
+        0.5076565054003159,
+        0.5076565054003159,
+        0.5076565054003159,
+        0.5122468606660499,
+        0.5122468606660499,
+        0.5122468606660499,
+        0.5122468606660499,
+        0.5122468606660499,
+        0.5132702287100304,
+        0.5156108264193447,
+        0.5156200369986662
+      ],
+      "map_elites_coverage": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "algebraic_connectivity",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 1.0,
+            "pearson": 1.0,
+            "rmse": 9.372354352844528e-14,
+            "mae": 5.6434844171575225e-14,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 1.0,
+            "pearson": 0.9999999999999998,
+            "rmse": 7.984702629277189e-14,
+            "mae": 5.327240384933596e-14,
+            "valid_count": 220
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9994342476288699,
+            "pearson": 0.9934764633920949,
+            "rmse": 0.24161761880702692,
+            "mae": 0.07854847750129913,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9988076387754066,
+            "pearson": 0.9909705635338155,
+            "rmse": 0.2910779259576119,
+            "mae": 0.0914325182421367,
+            "valid_count": 220
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9999988730045136,
+          "pearson": 1.0,
+          "rmse": 4.054806428281227e-13,
+          "mae": 5.963844475083539e-14,
+          "valid_count": 220
+        },
+        "test_metrics": {
+          "spearman": 1.0,
+          "pearson": 1.0,
+          "rmse": 5.997232398512224e-14,
+          "mae": 2.4229734380492636e-14,
+          "valid_count": 220
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "attempted": [
+        17,
+        10,
+        10,
+        9,
+        10,
+        12,
+        11,
+        12,
+        10,
+        11,
+        12,
+        11
+      ],
+      "evaluated": [
+        4,
+        7,
+        8,
+        9,
+        9,
+        8,
+        8,
+        9,
+        9,
+        8,
+        7,
+        9
+      ],
+      "rejected": [
+        13,
+        3,
+        2,
+        0,
+        1,
+        4,
+        3,
+        3,
+        1,
+        3,
+        5,
+        2
+      ],
+      "acceptance_rate": [
+        0.23529411764705882,
+        0.7,
+        0.8,
+        1.0,
+        0.9,
+        0.6666666666666666,
+        0.7272727272727273,
+        0.75,
+        0.9,
+        0.7272727272727273,
+        0.5833333333333334,
+        0.8181818181818182
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 27,
+      "repair_successes": 16,
+      "repair_failures": 11,
+      "rejection_reasons": {
+        "no_valid_train_predictions": 13,
+        "below_novelty_threshold": 24,
+        "below_train_threshold": 3
+      },
+      "summary_attempted_repairs": 27,
+      "summary_successful_repairs": 16,
+      "summary_failed_repairs": 11,
+      "failure_categories": {
+        "no_valid_train_predictions": 13,
+        "below_novelty_threshold": 24,
+        "below_train_threshold": 3
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 27,
+      "successful_repairs": 16,
+      "failed_repairs": 11,
+      "failure_categories": {
+        "no_valid_train_predictions": 13,
+        "below_novelty_threshold": 24,
+        "below_train_threshold": 3
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_33": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.8990121884561851,
+    "test_spearman": 0.9056107470289582,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "best_scores": [
+        0.49928717403035744,
+        0.5141300578236744,
+        0.5164199157480379,
+        0.5183694994950612,
+        0.5183694994950612,
+        0.5183694994950612,
+        0.5188586021015058,
+        0.5188586021015058,
+        0.5188586021015058,
+        0.5193968884322945,
+        0.5193968884322945,
+        0.5193968884322945
+      ],
+      "map_elites_coverage": [
+        1,
+        1,
+        1,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "algebraic_connectivity",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9999898570406226,
+            "pearson": 1.0,
+            "rmse": 6.818191269270606e-14,
+            "mae": 2.2396967487696302e-14,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 1.0,
+            "pearson": 1.0,
+            "rmse": 3.238482339115352e-14,
+            "mae": 2.0018882385119952e-14,
+            "valid_count": 220
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.997632174483225,
+            "pearson": 0.9858056563938742,
+            "rmse": 0.5172631138444972,
+            "mae": 0.13335949170570618,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9991739123084812,
+            "pearson": 0.9931159780625162,
+            "rmse": 0.31887537052659193,
+            "mae": 0.10587060614957267,
+            "valid_count": 220
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9999954920180544,
+          "pearson": 0.9999999999999998,
+          "rmse": 5.324122218640726e-10,
+          "mae": 5.324122210417655e-10,
+          "valid_count": 220
+        },
+        "test_metrics": {
+          "spearman": 1.0,
+          "pearson": 1.0,
+          "rmse": 5.32415678920326e-10,
+          "mae": 5.324156779119723e-10,
+          "valid_count": 220
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "attempted": [
+        15,
+        12,
+        11,
+        9,
+        12,
+        10,
+        9,
+        9,
+        9,
+        11,
+        9,
+        14
+      ],
+      "evaluated": [
+        7,
+        7,
+        8,
+        9,
+        8,
+        8,
+        9,
+        9,
+        9,
+        9,
+        9,
+        6
+      ],
+      "rejected": [
+        8,
+        5,
+        3,
+        0,
+        4,
+        2,
+        0,
+        0,
+        0,
+        2,
+        0,
+        8
+      ],
+      "acceptance_rate": [
+        0.4666666666666667,
+        0.5833333333333334,
+        0.7272727272727273,
+        1.0,
+        0.6666666666666666,
+        0.8,
+        1.0,
+        1.0,
+        1.0,
+        0.8181818181818182,
+        1.0,
+        0.42857142857142855
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 22,
+      "repair_successes": 12,
+      "repair_failures": 10,
+      "rejection_reasons": {
+        "no_valid_train_predictions": 13,
+        "below_novelty_threshold": 19
+      },
+      "summary_attempted_repairs": 22,
+      "summary_successful_repairs": 12,
+      "summary_failed_repairs": 10,
+      "failure_categories": {
+        "no_valid_train_predictions": 13,
+        "below_novelty_threshold": 19
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 22,
+      "successful_repairs": 12,
+      "failed_repairs": 10,
+      "failure_categories": {
+        "no_valid_train_predictions": 13,
+        "below_novelty_threshold": 19
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_11": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": -0.4850317053364449,
+    "test_spearman": -0.5996690992890658,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "best_scores": [
+        0.3090882564664987,
+        0.3090882564664987,
+        0.3090882564664987,
+        0.3090882564664987,
+        0.3090882564664987,
+        0.3090882564664987,
+        0.3090882564664987,
+        0.3090882564664987
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9734609168796358,
+            "pearson": 0.9684157315081536,
+            "rmse": 0.2931821892072882,
+            "mae": 0.15200359359419188,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9751179048922993,
+            "pearson": 0.979058181672122,
+            "rmse": 0.1793831703075461,
+            "mae": 0.13171390333216587,
+            "valid_count": 220
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9763623567093253,
+            "pearson": 0.9406770995588183,
+            "rmse": 0.4242972679458849,
+            "mae": 0.17898030776637955,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9792866623709732,
+            "pearson": 0.9603812118514352,
+            "rmse": 0.2549085801074889,
+            "mae": 0.13787158013953674,
+            "valid_count": 220
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9748775518025606,
+          "pearson": 0.9711600606953844,
+          "rmse": 0.27875884824942604,
+          "mae": 0.13260647183031324,
+          "valid_count": 220
+        },
+        "test_metrics": {
+          "spearman": 0.9829206603406904,
+          "pearson": 0.9849678966287494,
+          "rmse": 0.15191531781674084,
+          "mae": 0.10101437959516801,
+          "valid_count": 220
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "attempted": [
+        8,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "evaluated": [
+        3,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "rejected": [
+        5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.375,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 2,
+      "repair_successes": 0,
+      "repair_failures": 2,
+      "rejection_reasons": {
+        "below_novelty_threshold": 3,
+        "below_train_threshold": 2
+      },
+      "summary_attempted_repairs": 2,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 2,
+      "failure_categories": {
+        "below_novelty_threshold": 3,
+        "below_train_threshold": 2
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 2,
+      "successful_repairs": 0,
+      "failed_repairs": 2,
+      "failure_categories": {
+        "below_novelty_threshold": 3,
+        "below_train_threshold": 2
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_22": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.4487209397937896,
+    "test_spearman": 0.2932652874230312,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "best_scores": [
+        0.331948128413356,
+        0.331948128413356,
+        0.331948128413356,
+        0.331948128413356,
+        0.331948128413356,
+        0.331948128413356,
+        0.331948128413356,
+        0.331948128413356
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9484057631282226,
+            "pearson": 0.9722211388193231,
+            "rmse": 0.22382468031131017,
+            "mae": 0.1401906009225575,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9517848791015593,
+            "pearson": 0.9753721493722729,
+            "rmse": 0.19104580798485526,
+            "mae": 0.14405453288241638,
+            "valid_count": 220
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9840676288975816,
+            "pearson": 0.9699182188963954,
+            "rmse": 0.23691175118724617,
+            "mae": 0.10849971396268063,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9791517104973995,
+            "pearson": 0.9790704710768028,
+            "rmse": 0.18111554618658063,
+            "mae": 0.1146682059709913,
+            "valid_count": 220
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9653994895830346,
+          "pearson": 0.9713333280834432,
+          "rmse": 0.22734023948744242,
+          "mae": 0.14508879371948918,
+          "valid_count": 220
+        },
+        "test_metrics": {
+          "spearman": 0.9597324512715326,
+          "pearson": 0.9741890712619231,
+          "rmse": 0.1914774254061999,
+          "mae": 0.1403847567486033,
+          "valid_count": 220
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "attempted": [
+        7,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "evaluated": [
+        4,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "rejected": [
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.5714285714285714,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 1,
+      "repair_successes": 0,
+      "repair_failures": 1,
+      "rejection_reasons": {
+        "below_novelty_threshold": 2,
+        "below_train_threshold": 1
+      },
+      "summary_attempted_repairs": 1,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2,
+        "below_train_threshold": 1
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 1,
+      "successful_repairs": 0,
+      "failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2,
+        "below_train_threshold": 1
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_33": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.23244130113381076,
+    "test_spearman": 0.27467471718737646,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "best_scores": [
+        0.23658786568469015,
+        0.23658786568469015,
+        0.23658786568469015,
+        0.23658786568469015,
+        0.23658786568469015,
+        0.23658786568469015,
+        0.23658786568469015,
+        0.23658786568469015
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9259688040916239,
+            "pearson": 0.9535713976194892,
+            "rmse": 0.366835348554194,
+            "mae": 0.22660362285980615,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9358491629241025,
+            "pearson": 0.9667725025253108,
+            "rmse": 0.24174634344917695,
+            "mae": 0.1692733242163488,
+            "valid_count": 220
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9789768840392692,
+            "pearson": 0.9799466495628223,
+            "rmse": 0.2125354246040219,
+            "mae": 0.12934203832619823,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9788012149011343,
+            "pearson": 0.9700694068348266,
+            "rmse": 0.19766324125272772,
+            "mae": 0.11972162390901638,
+            "valid_count": 220
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9446093777119772,
+          "pearson": 0.7858355541469941,
+          "rmse": 0.9951845310474766,
+          "mae": 0.29074068126040953,
+          "valid_count": 220
+        },
+        "test_metrics": {
+          "spearman": 0.9328986887407515,
+          "pearson": 0.911611394524584,
+          "rmse": 0.3435390171208173,
+          "mae": 0.22622312280169826,
+          "valid_count": 220
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "attempted": [
+        9,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "evaluated": [
+        3,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "rejected": [
+        6,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.3333333333333333,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 3,
+      "repair_successes": 1,
+      "repair_failures": 2,
+      "rejection_reasons": {
+        "below_novelty_threshold": 5,
+        "below_train_threshold": 1
+      },
+      "summary_attempted_repairs": 3,
+      "summary_successful_repairs": 1,
+      "summary_failed_repairs": 2,
+      "failure_categories": {
+        "below_novelty_threshold": 5,
+        "below_train_threshold": 1
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 3,
+      "successful_repairs": 1,
+      "failed_repairs": 2,
+      "failure_categories": {
+        "below_novelty_threshold": 5,
+        "below_train_threshold": 1
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_11": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": -0.3618683438146411,
+    "test_spearman": -0.47379303050166216,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "best_scores": [
+        0.24549754596819318,
+        0.24549754596819318,
+        0.24549754596819318,
+        0.24549754596819318,
+        0.24549754596819318,
+        0.24549754596819318,
+        0.24549754596819318,
+        0.24549754596819318
+      ],
+      "map_elites_coverage": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9734609168796358,
+            "pearson": 0.968415731508154,
+            "rmse": 0.29318218920728806,
+            "mae": 0.15200359359419183,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9751179048922993,
+            "pearson": 0.979058181672122,
+            "rmse": 0.17938317030754622,
+            "mae": 0.1317139033321659,
+            "valid_count": 220
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9763623567093253,
+            "pearson": 0.9406770995588183,
+            "rmse": 0.4242972679458849,
+            "mae": 0.17898030776637955,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9792866623709732,
+            "pearson": 0.9603812118514352,
+            "rmse": 0.2549085801074889,
+            "mae": 0.13787158013953674,
+            "valid_count": 220
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9600002704807075,
+          "pearson": 0.9709057043270115,
+          "rmse": 0.27913540556165495,
+          "mae": 0.14430578796594393,
+          "valid_count": 220
+        },
+        "test_metrics": {
+          "spearman": 0.9684964517884718,
+          "pearson": 0.9803131622663952,
+          "rmse": 0.17563930867676256,
+          "mae": 0.12823140175241804,
+          "valid_count": 220
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "attempted": [
+        7,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "evaluated": [
+        2,
+        5,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "rejected": [
+        5,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.2857142857142857,
+        0.8333333333333334,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 1,
+      "repair_successes": 0,
+      "repair_failures": 1,
+      "rejection_reasons": {
+        "below_novelty_threshold": 2,
+        "below_train_threshold": 4
+      },
+      "summary_attempted_repairs": 1,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2,
+        "below_train_threshold": 4
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 1,
+      "successful_repairs": 0,
+      "failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2,
+        "below_train_threshold": 4
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_22": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.4487209397937896,
+    "test_spearman": 0.2932652874230312,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "best_scores": [
+        0.331948128413356,
+        0.331948128413356,
+        0.331948128413356,
+        0.331948128413356,
+        0.331948128413356,
+        0.331948128413356,
+        0.331948128413356,
+        0.331948128413356
+      ],
+      "map_elites_coverage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9483899851602952,
+            "pearson": 0.972220896936087,
+            "rmse": 0.22382578562045474,
+            "mae": 0.1401923553936685,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9517848791015593,
+            "pearson": 0.9753714619099025,
+            "rmse": 0.19104863912768616,
+            "mae": 0.14405584909248897,
+            "valid_count": 220
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9840676288975816,
+            "pearson": 0.9699182188963954,
+            "rmse": 0.23691175118724617,
+            "mae": 0.10849971396268063,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9791517104973995,
+            "pearson": 0.9790704710768028,
+            "rmse": 0.18111554618658063,
+            "mae": 0.1146682059709913,
+            "valid_count": 220
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9205596391450713,
+          "pearson": 0.9625719983198119,
+          "rmse": 0.25940641062601444,
+          "mae": 0.1825777689821122,
+          "valid_count": 220
+        },
+        "test_metrics": {
+          "spearman": 0.9203811143139617,
+          "pearson": 0.9619225869753495,
+          "rmse": 0.23283037748254415,
+          "mae": 0.18034092662803403,
+          "valid_count": 220
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "attempted": [
+        7,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "evaluated": [
+        5,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "rejected": [
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.7142857142857143,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 1,
+      "repair_successes": 0,
+      "repair_failures": 1,
+      "rejection_reasons": {
+        "below_novelty_threshold": 2
+      },
+      "summary_attempted_repairs": 1,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 1,
+      "successful_repairs": 0,
+      "failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_33": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.23244130113381076,
+    "test_spearman": 0.27467471718737646,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "best_scores": [
+        0.23658786568469015,
+        0.23658786568469015,
+        0.23658786568469015,
+        0.23658786568469015,
+        0.23658786568469015,
+        0.23658786568469015,
+        0.23658786568469015,
+        0.23658786568469015
+      ],
+      "map_elites_coverage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9259690649825468,
+            "pearson": 0.9535713976194895,
+            "rmse": 0.36683534855419186,
+            "mae": 0.22660362285980595,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9358491629241025,
+            "pearson": 0.9667725025253107,
+            "rmse": 0.24174634344917637,
+            "mae": 0.1692733242163487,
+            "valid_count": 220
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9789768840392692,
+            "pearson": 0.9799466495628223,
+            "rmse": 0.2125354246040219,
+            "mae": 0.12934203832619823,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9788012149011343,
+            "pearson": 0.9700694068348266,
+            "rmse": 0.19766324125272772,
+            "mae": 0.11972162390901638,
+            "valid_count": 220
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9257271142296538,
+          "pearson": 0.9322398178417289,
+          "rmse": 0.44295185518945884,
+          "mae": 0.23794627772122756,
+          "valid_count": 220
+        },
+        "test_metrics": {
+          "spearman": 0.9271577737331163,
+          "pearson": 0.9493505086434963,
+          "rmse": 0.25569412184019163,
+          "mae": 0.1830161282238019,
+          "valid_count": 220
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "attempted": [
+        7,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "evaluated": [
+        5,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "rejected": [
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.7142857142857143,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 1,
+      "repair_successes": 0,
+      "repair_failures": 1,
+      "rejection_reasons": {
+        "below_novelty_threshold": 2
+      },
+      "summary_attempted_repairs": 1,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 1,
+      "successful_repairs": 0,
+      "failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_11": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": -0.011773348969136257,
+    "test_spearman": -0.024376441681671555,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "best_scores": [
+        0.12621184789372653,
+        0.12621184789372653,
+        0.12621184789372653,
+        0.12621184789372653,
+        0.12621184789372653,
+        0.12621184789372653,
+        0.12621184789372653,
+        0.12621184789372653
+      ],
+      "map_elites_coverage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9319375222833755,
+            "pearson": 0.9558439485818089,
+            "rmse": 0.35724140304227076,
+            "mae": 0.20676007886059167,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.9492132303307584,
+            "pearson": 0.976649959855787,
+            "rmse": 0.2541926234325522,
+            "mae": 0.19348348632692253,
+            "valid_count": 200
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9793619732581695,
+            "pearson": 0.9133431928789533,
+            "rmse": 0.5741194731672207,
+            "mae": 0.24879734822679045,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.9688655849642867,
+            "pearson": 0.9468161474114007,
+            "rmse": 0.32774923489170327,
+            "mae": 0.20613189663084325,
+            "valid_count": 200
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9630153261509998,
+          "pearson": 0.9710310539446548,
+          "rmse": 0.2902705033501729,
+          "mae": 0.16794236166977497,
+          "valid_count": 200
+        },
+        "test_metrics": {
+          "spearman": 0.9785434635865898,
+          "pearson": 0.9885283463532187,
+          "rmse": 0.18131657802505843,
+          "mae": 0.1292204429073457,
+          "valid_count": 200
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "attempted": [
+        7,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "evaluated": [
+        4,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "rejected": [
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.5714285714285714,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 1,
+      "repair_successes": 0,
+      "repair_failures": 1,
+      "rejection_reasons": {
+        "below_novelty_threshold": 2,
+        "below_train_threshold": 1
+      },
+      "summary_attempted_repairs": 1,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2,
+        "below_train_threshold": 1
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 1,
+      "successful_repairs": 0,
+      "failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2,
+        "below_train_threshold": 1
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_22": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.2724664246418369,
+    "test_spearman": 0.495079275743757,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "best_scores": [
+        0.2267558871341896,
+        0.2267558871341896,
+        0.2267558871341896,
+        0.2267558871341896,
+        0.2267558871341896,
+        0.2267558871341896,
+        0.2267558871341896,
+        0.2267558871341896
+      ],
+      "map_elites_coverage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.7555483386588523,
+            "pearson": 0.17563582647345644,
+            "rmse": 5.5758745435360755,
+            "mae": 1.2560433402122129,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.7448581507756283,
+            "pearson": 0.8645960762567076,
+            "rmse": 0.40671259532041826,
+            "mae": 0.30721287232064576,
+            "valid_count": 200
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9034401961497585,
+            "pearson": 0.9440744495273565,
+            "rmse": 0.4367344970073503,
+            "mae": 0.2815927235345764,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.8685092884232548,
+            "pearson": 0.9267524685502933,
+            "rmse": 0.29097888999565585,
+            "mae": 0.21411176115564537,
+            "valid_count": 200
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.8642653483665262,
+          "pearson": 0.9398336958634655,
+          "rmse": 0.44122346019290076,
+          "mae": 0.28809321368956986,
+          "valid_count": 200
+        },
+        "test_metrics": {
+          "spearman": 0.8566799882547622,
+          "pearson": 0.9261144374652934,
+          "rmse": 0.29933168362939694,
+          "mae": 0.22032399579959683,
+          "valid_count": 200
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "attempted": [
+        7,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "evaluated": [
+        5,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "rejected": [
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.7142857142857143,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 1,
+      "repair_successes": 0,
+      "repair_failures": 1,
+      "rejection_reasons": {
+        "below_novelty_threshold": 2
+      },
+      "summary_attempted_repairs": 1,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 1,
+      "successful_repairs": 0,
+      "failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_33": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.17254918229669883,
+    "test_spearman": 0.3178676718565843,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "best_scores": [
+        0.19799655662271484,
+        0.19799655662271484,
+        0.19799655662271484,
+        0.19799655662271484,
+        0.19799655662271484,
+        0.19799655662271484,
+        0.19799655662271484,
+        0.19799655662271484
+      ],
+      "map_elites_coverage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.8731458418477195,
+            "pearson": 0.14641016114625144,
+            "rmse": 5.551200929363329,
+            "mae": 1.02469522655649,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.8970434260856524,
+            "pearson": 0.9284982103393835,
+            "rmse": 0.3220735475427911,
+            "mae": 0.21698414166062718,
+            "valid_count": 200
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9095356100312313,
+            "pearson": 0.8988164205941056,
+            "rmse": 0.5382014460688089,
+            "mae": 0.2654748624425951,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.9258774941414789,
+            "pearson": 0.9246425618808615,
+            "rmse": 0.35187194156057605,
+            "mae": 0.22312366644071382,
+            "valid_count": 200
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9403724411597669,
+          "pearson": 0.688597308275643,
+          "rmse": 1.1707616098730773,
+          "mae": 0.45952044469490333,
+          "valid_count": 200
+        },
+        "test_metrics": {
+          "spearman": 0.9570644266106655,
+          "pearson": 0.8207383909806273,
+          "rmse": 1.0362377036204604,
+          "mae": 0.3416168376070556,
+          "valid_count": 200
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "attempted": [
+        7,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "evaluated": [
+        4,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "rejected": [
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "acceptance_rate": [
+        0.5714285714285714,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 1,
+      "repair_successes": 0,
+      "repair_failures": 1,
+      "rejection_reasons": {
+        "below_novelty_threshold": 2,
+        "below_train_threshold": 1
+      },
+      "summary_attempted_repairs": 1,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2,
+        "below_train_threshold": 1
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 1,
+      "successful_repairs": 0,
+      "failed_repairs": 1,
+      "failure_categories": {
+        "below_novelty_threshold": 2,
+        "below_train_threshold": 1
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_11": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.8528413344690954,
+    "test_spearman": 0.8840186004650117,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "best_scores": [
+        0.46347030030597763,
+        0.46347030030597763,
+        0.5059129116947596,
+        0.5059129116947596,
+        0.5180308307360805,
+        0.5325883596732223,
+        0.5325883596732223,
+        0.5325883596732223,
+        0.5349197169880215,
+        0.5480050495474684,
+        0.5480050495474684,
+        0.5502989600756124
+      ],
+      "map_elites_coverage": [
+        2,
+        3,
+        5,
+        5,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.8722145240279034,
+            "pearson": 0.909588805365795,
+            "rmse": 0.4962599104014348,
+            "mae": 0.31796758956937976,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.8569744243606092,
+            "pearson": 0.8963963993955931,
+            "rmse": 0.48633834747018184,
+            "mae": 0.31734046812564115,
+            "valid_count": 200
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9650256813354295,
+            "pearson": 0.9283826163976203,
+            "rmse": 0.5512457058781771,
+            "mae": 0.2379768384696438,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.9615120378009452,
+            "pearson": 0.9595513463458638,
+            "rmse": 0.3280170219033468,
+            "mae": 0.1914198407757647,
+            "valid_count": 200
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.949096938023983,
+          "pearson": 0.9660571404071456,
+          "rmse": 0.312615532875754,
+          "mae": 0.1852467034773202,
+          "valid_count": 200
+        },
+        "test_metrics": {
+          "spearman": 0.9575339383484589,
+          "pearson": 0.9795987762250074,
+          "rmse": 0.21476229990827295,
+          "mae": 0.1575118830778547,
+          "valid_count": 200
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "attempted": [
+        16,
+        13,
+        12,
+        12,
+        12,
+        11,
+        12,
+        10,
+        9,
+        12,
+        11,
+        11
+      ],
+      "evaluated": [
+        3,
+        3,
+        8,
+        8,
+        8,
+        9,
+        7,
+        9,
+        9,
+        9,
+        8,
+        7
+      ],
+      "rejected": [
+        13,
+        10,
+        4,
+        4,
+        4,
+        2,
+        5,
+        1,
+        0,
+        3,
+        3,
+        4
+      ],
+      "acceptance_rate": [
+        0.1875,
+        0.23076923076923078,
+        0.6666666666666666,
+        0.6666666666666666,
+        0.6666666666666666,
+        0.8181818181818182,
+        0.5833333333333334,
+        0.9,
+        1.0,
+        0.75,
+        0.7272727272727273,
+        0.6363636363636364
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 33,
+      "repair_successes": 18,
+      "repair_failures": 15,
+      "rejection_reasons": {
+        "no_valid_train_predictions": 21,
+        "below_novelty_threshold": 26,
+        "below_train_threshold": 6
+      },
+      "summary_attempted_repairs": 33,
+      "summary_successful_repairs": 18,
+      "summary_failed_repairs": 15,
+      "failure_categories": {
+        "no_valid_train_predictions": 21,
+        "below_novelty_threshold": 26,
+        "below_train_threshold": 6
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 33,
+      "successful_repairs": 18,
+      "failed_repairs": 15,
+      "failure_categories": {
+        "no_valid_train_predictions": 21,
+        "below_novelty_threshold": 26,
+        "below_train_threshold": 6
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_22": {
+    "fitness_mode": "correlation",
+    "success": true,
+    "val_spearman": 0.954850526493013,
+    "test_spearman": 0.9417951480519482,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "best_scores": [
+        0.5290809046182878,
+        0.5290809046182878,
+        0.5290809046182878,
+        0.5290809046182878,
+        0.5303208350940128,
+        0.5328657748147791,
+        0.5328657748147791,
+        0.5328657748147791,
+        0.542171964650437,
+        0.542171964650437,
+        0.5449983244091242,
+        0.5449983244091242
+      ],
+      "map_elites_coverage": [
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.8700587389109196,
+            "pearson": 0.46775849736114145,
+            "rmse": 2.2667181037155175,
+            "mae": 0.4776913848975933,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.8903798433885886,
+            "pearson": 0.9253877161731431,
+            "rmse": 0.3576888472236554,
+            "mae": 0.25938996414114485,
+            "valid_count": 200
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9548638143969567,
+            "pearson": 0.9524856015126253,
+            "rmse": 0.36740438530869296,
+            "mae": 0.23186833562542236,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.9226246616008532,
+            "pearson": 0.9313330856881874,
+            "rmse": 0.30556526123802064,
+            "mae": 0.20357773965403175,
+            "valid_count": 200
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9307746868990111,
+          "pearson": 0.9801629814213848,
+          "rmse": 0.2367773137025977,
+          "mae": 0.1808188698775185,
+          "valid_count": 200
+        },
+        "test_metrics": {
+          "spearman": 0.921009030362521,
+          "pearson": 0.950625742573028,
+          "rmse": 0.2452901322636768,
+          "mae": 0.18165845621609633,
+          "valid_count": 200
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "attempted": [
+        15,
+        14,
+        9,
+        10,
+        10,
+        11,
+        11,
+        13,
+        11,
+        10,
+        10,
+        11
+      ],
+      "evaluated": [
+        5,
+        6,
+        9,
+        8,
+        7,
+        7,
+        9,
+        8,
+        8,
+        8,
+        8,
+        9
+      ],
+      "rejected": [
+        10,
+        8,
+        0,
+        2,
+        3,
+        4,
+        2,
+        5,
+        3,
+        2,
+        2,
+        2
+      ],
+      "acceptance_rate": [
+        0.3333333333333333,
+        0.42857142857142855,
+        1.0,
+        0.8,
+        0.7,
+        0.6363636363636364,
+        0.8181818181818182,
+        0.6153846153846154,
+        0.7272727272727273,
+        0.8,
+        0.8,
+        0.8181818181818182
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 27,
+      "repair_successes": 12,
+      "repair_failures": 15,
+      "rejection_reasons": {
+        "no_valid_train_predictions": 20,
+        "below_novelty_threshold": 22,
+        "below_train_threshold": 1
+      },
+      "summary_attempted_repairs": 27,
+      "summary_successful_repairs": 12,
+      "summary_failed_repairs": 15,
+      "failure_categories": {
+        "no_valid_train_predictions": 20,
+        "below_novelty_threshold": 22,
+        "below_train_threshold": 1
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 27,
+      "successful_repairs": 12,
+      "failed_repairs": 15,
+      "failure_categories": {
+        "no_valid_train_predictions": 20,
+        "below_novelty_threshold": 22,
+        "below_train_threshold": 1
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_33": {
+    "fitness_mode": "correlation",
+    "success": false,
+    "val_spearman": 0.8895464132813412,
+    "test_spearman": 0.9142683567089178,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "best_scores": [
+        0.40409726233927806,
+        0.4543589664703746,
+        0.48475245206164047,
+        0.48475245206164047,
+        0.509694914862254,
+        0.509694914862254,
+        0.509694914862254,
+        0.509694914862254,
+        0.5112322831751186,
+        0.5112322831751186,
+        0.5112322831751186,
+        0.5112322831751186
+      ],
+      "map_elites_coverage": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.8670280308914251,
+            "pearson": 0.7251099021076437,
+            "rmse": 0.9361416779648766,
+            "mae": 0.3344616738845524,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.8968949223730595,
+            "pearson": 0.9590569318977035,
+            "rmse": 0.309385785122438,
+            "mae": 0.21919748974205625,
+            "valid_count": 200
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9132784356024282,
+            "pearson": 0.8702082330527294,
+            "rmse": 0.6018186038107236,
+            "mae": 0.24675428031697993,
+            "valid_count": 200
+          },
+          "test_metrics": {
+            "spearman": 0.9504897622440561,
+            "pearson": 0.921164467462931,
+            "rmse": 0.40596498660529123,
+            "mae": 0.22229901156424206,
+            "valid_count": 200
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.904770833770855,
+          "pearson": 0.9568729077307369,
+          "rmse": 0.3588598549082457,
+          "mae": 0.23897954932561433,
+          "valid_count": 200
+        },
+        "test_metrics": {
+          "spearman": 0.9419545488637217,
+          "pearson": 0.9740532254217883,
+          "rmse": 0.3197535912765973,
+          "mae": 0.20016212713948214,
+          "valid_count": 200
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "attempted": [
+        16,
+        13,
+        12,
+        10,
+        11,
+        10,
+        9,
+        11,
+        9,
+        12,
+        9,
+        13
+      ],
+      "evaluated": [
+        2,
+        8,
+        7,
+        9,
+        9,
+        8,
+        8,
+        9,
+        9,
+        8,
+        9,
+        8
+      ],
+      "rejected": [
+        14,
+        5,
+        5,
+        1,
+        2,
+        2,
+        1,
+        2,
+        0,
+        4,
+        0,
+        5
+      ],
+      "acceptance_rate": [
+        0.125,
+        0.6153846153846154,
+        0.5833333333333334,
+        0.9,
+        0.8181818181818182,
+        0.8,
+        0.8888888888888888,
+        0.8181818181818182,
+        1.0,
+        0.6666666666666666,
+        1.0,
+        0.6153846153846154
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 27,
+      "repair_successes": 14,
+      "repair_failures": 13,
+      "rejection_reasons": {
+        "no_valid_train_predictions": 17,
+        "below_novelty_threshold": 23,
+        "below_train_threshold": 1
+      },
+      "summary_attempted_repairs": 27,
+      "summary_successful_repairs": 14,
+      "summary_failed_repairs": 13,
+      "failure_categories": {
+        "no_valid_train_predictions": 17,
+        "below_novelty_threshold": 23,
+        "below_train_threshold": 1
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 27,
+      "successful_repairs": 14,
+      "failed_repairs": 13,
+      "failure_categories": {
+        "no_valid_train_predictions": 17,
+        "below_novelty_threshold": 23,
+        "below_train_threshold": 1
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_11": {
+    "fitness_mode": "upper_bound",
+    "success": false,
+    "val_spearman": 0.41357982605779603,
+    "test_spearman": 0.44326041013069556,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "best_scores": [
+        0.305060037327237,
+        0.305060037327237,
+        0.305060037327237,
+        0.305060037327237,
+        0.305060037327237,
+        0.305060037327237,
+        0.305060037327237,
+        0.305060037327237
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9425568657309759,
+            "pearson": 0.9739101104060772,
+            "rmse": 0.2856694841799635,
+            "mae": 0.18197895537379355,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9552968661909809,
+            "pearson": 0.9736627942404278,
+            "rmse": 0.20414454626155365,
+            "mae": 0.14688683232431035,
+            "valid_count": 220
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9769038307655897,
+            "pearson": 0.9842240095478023,
+            "rmse": 0.24882482395245167,
+            "mae": 0.14024366546460024,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.978512416253685,
+            "pearson": 0.9717353268967155,
+            "rmse": 0.20953660198907056,
+            "mae": 0.12320741639803139,
+            "valid_count": 220
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9624598073463578,
+          "pearson": 0.9670930353167411,
+          "rmse": 0.3172732229780116,
+          "mae": 0.18326798438835196,
+          "valid_count": 220
+        },
+        "test_metrics": {
+          "spearman": 0.9650021934224041,
+          "pearson": 0.9757780918132053,
+          "rmse": 0.19662076312298601,
+          "mae": 0.14055927334053303,
+          "valid_count": 220
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "attempted": [
+        15,
+        13,
+        15,
+        13,
+        14,
+        13,
+        12,
+        11
+      ],
+      "evaluated": [
+        5,
+        6,
+        2,
+        4,
+        7,
+        7,
+        8,
+        8
+      ],
+      "rejected": [
+        10,
+        7,
+        13,
+        9,
+        7,
+        6,
+        4,
+        3
+      ],
+      "acceptance_rate": [
+        0.3333333333333333,
+        0.46153846153846156,
+        0.13333333333333333,
+        0.3076923076923077,
+        0.5,
+        0.5384615384615384,
+        0.6666666666666666,
+        0.7272727272727273
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 34,
+      "repair_successes": 13,
+      "repair_failures": 21,
+      "rejection_reasons": {
+        "no_valid_train_predictions": 19,
+        "below_train_threshold": 6,
+        "below_novelty_threshold": 34
+      },
+      "summary_attempted_repairs": 34,
+      "summary_successful_repairs": 13,
+      "summary_failed_repairs": 21,
+      "failure_categories": {
+        "no_valid_train_predictions": 19,
+        "below_train_threshold": 6,
+        "below_novelty_threshold": 34
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": 0.30178089434123695,
+      "val_satisfaction_rate": 0.5590909090909091,
+      "val_mean_gap": 0.852638518788139,
+      "test_bound_score": 0.3975636538390242,
+      "test_satisfaction_rate": 0.6954545454545454,
+      "test_mean_gap": 0.7492910600327133,
+      "candidate_mean_gap_min": 0.25720763319282325,
+      "candidate_mean_gap_max": 58.21255615512499,
+      "candidate_satisfaction_min": 0.09545454545454546,
+      "candidate_satisfaction_max": 1.0
+    },
+    "bounds_metrics": {
+      "val": {
+        "bound_score": 0.30178089434123695,
+        "satisfaction_rate": 0.5590909090909091,
+        "mean_gap": 0.852638518788139,
+        "violation_count": 97,
+        "valid_count": 220
+      },
+      "test": {
+        "bound_score": 0.3975636538390242,
+        "satisfaction_rate": 0.6954545454545454,
+        "mean_gap": 0.7492910600327133,
+        "violation_count": 67,
+        "valid_count": 220
+      }
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 34,
+      "successful_repairs": 13,
+      "failed_repairs": 21,
+      "failure_categories": {
+        "no_valid_train_predictions": 19,
+        "below_train_threshold": 6,
+        "below_novelty_threshold": 34
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_22": {
+    "fitness_mode": "upper_bound",
+    "success": false,
+    "val_spearman": 0.3124754346611828,
+    "test_spearman": 0.4121649646029686,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "best_scores": [
+        0.2929985285812182,
+        0.30466860548307273,
+        0.30466860548307273,
+        0.3046967231975585,
+        0.3047157779101677,
+        0.30959027617484125,
+        0.30959027617484125,
+        0.30988877255808356,
+        0.30988877255808356,
+        0.30988877255808356,
+        0.3100911360753512,
+        0.3100911360753512
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9214497331285936,
+            "pearson": 0.9700367601195703,
+            "rmse": 0.2421266078313948,
+            "mae": 0.16931182687734495,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.924421428692178,
+            "pearson": 0.9684976271312971,
+            "rmse": 0.22246028734583376,
+            "mae": 0.17030127261620145,
+            "valid_count": 220
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9872286064789012,
+            "pearson": 0.9816684959685844,
+            "rmse": 0.18944542944734355,
+            "mae": 0.10172797681043662,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9819139764345243,
+            "pearson": 0.9793273341423003,
+            "rmse": 0.17948520926037906,
+            "mae": 0.11274583042115273,
+            "valid_count": 220
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9305439684272502,
+          "pearson": 0.9757006313040366,
+          "rmse": 0.22872821644070676,
+          "mae": 0.17363779700178644,
+          "valid_count": 220
+        },
+        "test_metrics": {
+          "spearman": 0.9243740948817499,
+          "pearson": 0.9644799694397657,
+          "rmse": 0.23050138619026062,
+          "mae": 0.18106268933405822,
+          "valid_count": 220
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "attempted": [
+        15,
+        11,
+        13,
+        10,
+        11,
+        12,
+        12,
+        9,
+        10,
+        10,
+        12,
+        10
+      ],
+      "evaluated": [
+        3,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        9,
+        8,
+        7,
+        7,
+        9
+      ],
+      "rejected": [
+        12,
+        3,
+        5,
+        2,
+        3,
+        4,
+        4,
+        0,
+        2,
+        3,
+        5,
+        1
+      ],
+      "acceptance_rate": [
+        0.2,
+        0.7272727272727273,
+        0.6153846153846154,
+        0.8,
+        0.7272727272727273,
+        0.6666666666666666,
+        0.6666666666666666,
+        1.0,
+        0.8,
+        0.7,
+        0.5833333333333334,
+        0.9
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 27,
+      "repair_successes": 15,
+      "repair_failures": 12,
+      "rejection_reasons": {
+        "below_train_threshold": 6,
+        "below_novelty_threshold": 22,
+        "no_valid_train_predictions": 16
+      },
+      "summary_attempted_repairs": 27,
+      "summary_successful_repairs": 15,
+      "summary_failed_repairs": 12,
+      "failure_categories": {
+        "below_train_threshold": 6,
+        "below_novelty_threshold": 22,
+        "no_valid_train_predictions": 16
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": 0.2811086480293277,
+      "val_satisfaction_rate": 0.8090909090909091,
+      "val_mean_gap": 1.8782142234432344,
+      "test_bound_score": 0.29222396915528276,
+      "test_satisfaction_rate": 0.8045454545454546,
+      "test_mean_gap": 1.7531809141841233,
+      "candidate_mean_gap_min": 1.6245265497824948,
+      "candidate_mean_gap_max": 132.85176222215102,
+      "candidate_satisfaction_min": 0.7545454545454545,
+      "candidate_satisfaction_max": 1.0
+    },
+    "bounds_metrics": {
+      "val": {
+        "bound_score": 0.2811086480293277,
+        "satisfaction_rate": 0.8090909090909091,
+        "mean_gap": 1.8782142234432344,
+        "violation_count": 42,
+        "valid_count": 220
+      },
+      "test": {
+        "bound_score": 0.29222396915528276,
+        "satisfaction_rate": 0.8045454545454546,
+        "mean_gap": 1.7531809141841233,
+        "violation_count": 43,
+        "valid_count": 220
+      }
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 27,
+      "successful_repairs": 15,
+      "failed_repairs": 12,
+      "failure_categories": {
+        "below_train_threshold": 6,
+        "below_novelty_threshold": 22,
+        "no_valid_train_predictions": 16
+      }
+    }
+  },
+  "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_33": {
+    "fitness_mode": "upper_bound",
+    "success": false,
+    "val_spearman": 0.41939469293418435,
+    "test_spearman": 0.3550551304058678,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "best_scores": [
+        0.38579794689425406,
+        0.38652307197746605,
+        0.38652307197746605,
+        0.38652307197746605,
+        0.38652307197746605,
+        0.38652307197746605,
+        0.38652307197746605,
+        0.38687183596627894,
+        0.38687183596627894,
+        0.38687183596627894,
+        0.38687183596627894,
+        0.38687183596627894
+      ]
+    },
+    "baselines": {
+      "schema_version": 1,
+      "target_name": "average_shortest_path_length",
+      "stat_baselines": {
+        "linear_regression": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.8784931658460301,
+            "pearson": 0.9617205696789265,
+            "rmse": 0.3583758102435781,
+            "mae": 0.24879665868828732,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9037252835802393,
+            "pearson": 0.9552931256287536,
+            "rmse": 0.2870935101981996,
+            "mae": 0.20122333714978716,
+            "valid_count": 220
+          }
+        },
+        "random_forest": {
+          "status": "ok",
+          "val_metrics": {
+            "spearman": 0.9788075350235239,
+            "pearson": 0.9853119640394796,
+            "rmse": 0.19970350936572825,
+            "mae": 0.11198017253522527,
+            "valid_count": 220
+          },
+          "test_metrics": {
+            "spearman": 0.9784811481830016,
+            "pearson": 0.9698414086393321,
+            "rmse": 0.19773065098386583,
+            "mae": 0.1156737388178262,
+            "valid_count": 220
+          }
+        }
+      },
+      "pysr_baseline": {
+        "status": "ok",
+        "model": "pysr",
+        "val_metrics": {
+          "spearman": 0.9009890055241679,
+          "pearson": 0.957517662969912,
+          "rmse": 0.38929183647348725,
+          "mae": 0.2517529964124053,
+          "valid_count": 220
+        },
+        "test_metrics": {
+          "spearman": 0.9580171641412576,
+          "pearson": 0.953930471447267,
+          "rmse": 0.3173757946199477,
+          "mae": 0.20249973077731703,
+          "valid_count": 220
+        }
+      }
+    },
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "attempted": [
+        16,
+        10,
+        10,
+        13,
+        12,
+        10,
+        10,
+        12,
+        11,
+        11,
+        11,
+        10
+      ],
+      "evaluated": [
+        6,
+        9,
+        9,
+        8,
+        8,
+        9,
+        8,
+        8,
+        8,
+        9,
+        6,
+        9
+      ],
+      "rejected": [
+        10,
+        1,
+        1,
+        5,
+        4,
+        1,
+        2,
+        4,
+        3,
+        2,
+        5,
+        1
+      ],
+      "acceptance_rate": [
+        0.375,
+        0.9,
+        0.9,
+        0.6153846153846154,
+        0.6666666666666666,
+        0.9,
+        0.8,
+        0.6666666666666666,
+        0.7272727272727273,
+        0.8181818181818182,
+        0.5454545454545454,
+        0.9
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 28,
+      "repair_successes": 18,
+      "repair_failures": 10,
+      "rejection_reasons": {
+        "no_valid_train_predictions": 13,
+        "below_novelty_threshold": 25,
+        "below_train_threshold": 1
+      },
+      "summary_attempted_repairs": 28,
+      "summary_successful_repairs": 18,
+      "summary_failed_repairs": 10,
+      "failure_categories": {
+        "no_valid_train_predictions": 13,
+        "below_novelty_threshold": 25,
+        "below_train_threshold": 1
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": 0.3506349358914007,
+      "val_satisfaction_rate": 0.9181818181818182,
+      "val_mean_gap": 1.6186261669778366,
+      "test_bound_score": 0.34946462317176896,
+      "test_satisfaction_rate": 0.9181818181818182,
+      "test_mean_gap": 1.6273956140347665,
+      "candidate_mean_gap_min": 0.7712167167368704,
+      "candidate_mean_gap_max": 86363636456.36285,
+      "candidate_satisfaction_min": 0.18181818181818182,
+      "candidate_satisfaction_max": 1.0
+    },
+    "bounds_metrics": {
+      "val": {
+        "bound_score": 0.3506349358914007,
+        "satisfaction_rate": 0.9181818181818182,
+        "mean_gap": 1.6186261669778366,
+        "violation_count": 18,
+        "valid_count": 220
+      },
+      "test": {
+        "bound_score": 0.34946462317176896,
+        "satisfaction_rate": 0.9181818181818182,
+        "mean_gap": 1.6273956140347665,
+        "violation_count": 18,
+        "valid_count": 220
+      }
+    },
+    "self_correction_stats": {
+      "enabled": true,
+      "max_retries": 1,
+      "feedback_window": 3,
+      "attempted_repairs": 28,
+      "successful_repairs": 18,
+      "failed_repairs": 10,
+      "failure_categories": {
+        "no_valid_train_predictions": 13,
+        "below_novelty_threshold": 25,
+        "below_train_threshold": 1
+      }
+    }
+  },
   "__aggregates__": {
+    "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium": {
+      "seed_count": 2,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 2,
+        "mean": 0.8987033916929161,
+        "std": 0.00043670457063186045,
+        "ci95_half_width": 0.003923571674095254
+      },
+      "test_spearman": {
+        "n": 2,
+        "mean": 0.8919769191324389,
+        "std": 0.01928114431831815,
+        "ci95_half_width": 0.1732314172531734
+      },
+      "complexity_ast_nodes": {
+        "n": 2,
+        "mean": 234.5,
+        "std": 67.17514421272202,
+        "ci95_half_width": 603.535
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_33"
+      ]
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium": {
+      "seed_count": 3,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.06537684519705181,
+        "std": 0.4887805232412717,
+        "ci95_half_width": 1.2142961293723797
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": -0.010576364892886029,
+        "std": 0.5102539462014946,
+        "ci95_half_width": 1.2676433744959408
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 29.666666666666668,
+        "std": 1.1547005383792515,
+        "ci95_half_width": 2.8686666666666665
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_11",
+        "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_33"
+      ]
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium": {
+      "seed_count": 3,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.10643129903765307,
+        "std": 0.4197292426629487,
+        "ci95_half_width": 1.0427493946980229
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": 0.03138232470291517,
+        "std": 0.4375934265445207,
+        "ci95_half_width": 1.0871300692755193
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 28.0,
+        "std": 1.7320508075688772,
+        "ci95_half_width": 4.303
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_11",
+        "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_33"
+      ]
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium": {
+      "seed_count": 3,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.14441408598979982,
+        "std": 0.1441934463099942,
+        "ci95_half_width": 0.3582252880576839
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": 0.2628568353062232,
+        "std": 0.2640609866961979,
+        "ci95_half_width": 0.6560167985768252
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 29.0,
+        "std": 0.0,
+        "ci95_half_width": 0.0
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_11",
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_33"
+      ]
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium": {
+      "seed_count": 3,
+      "success_count": 1,
+      "success_rate": 0.3333333333333333,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.8990794247478165,
+        "std": 0.05166843857770515,
+        "ci95_half_width": 0.12836187612298092
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": 0.9133607017419593,
+        "std": 0.02889896608739953,
+        "ci95_half_width": 0.07179480563195613
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 267.6666666666667,
+        "std": 80.33886564629434,
+        "ci95_half_width": 199.58891353841386
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_11",
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_33"
+      ]
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium": {
+      "seed_count": 3,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.38181665121772107,
+        "std": 0.06012159682138424,
+        "ci95_half_width": 0.14936238012875308
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": 0.4034935017131773,
+        "std": 0.04473744007339433,
+        "ci95_half_width": 0.11114293171689225
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 143.33333333333334,
+        "std": 68.25198409814423,
+        "ci95_half_width": 169.56101188887078
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_11",
+        "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_33"
+      ]
+    },
     "benchmark/benchmark_20260215T230550Z": {
       "seed_count": 5,
       "success_count": 1,
@@ -1193,6 +4733,173 @@
     }
   },
   "appendix_seed_aggregates": {
+    "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium": {
+      "seed_count": 2,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 2,
+        "mean": 0.8987033916929161,
+        "std": 0.00043670457063186045,
+        "ci95_half_width": 0.003923571674095254
+      },
+      "test_spearman": {
+        "n": 2,
+        "mean": 0.8919769191324389,
+        "std": 0.01928114431831815,
+        "ci95_half_width": 0.1732314172531734
+      },
+      "complexity_ast_nodes": {
+        "n": 2,
+        "mean": 234.5,
+        "std": 67.17514421272202,
+        "ci95_half_width": 603.535
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_33"
+      ]
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium": {
+      "seed_count": 3,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.06537684519705181,
+        "std": 0.4887805232412717,
+        "ci95_half_width": 1.2142961293723797
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": -0.010576364892886029,
+        "std": 0.5102539462014946,
+        "ci95_half_width": 1.2676433744959408
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 29.666666666666668,
+        "std": 1.1547005383792515,
+        "ci95_half_width": 2.8686666666666665
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_11",
+        "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_33"
+      ]
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium": {
+      "seed_count": 3,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.10643129903765307,
+        "std": 0.4197292426629487,
+        "ci95_half_width": 1.0427493946980229
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": 0.03138232470291517,
+        "std": 0.4375934265445207,
+        "ci95_half_width": 1.0871300692755193
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 28.0,
+        "std": 1.7320508075688772,
+        "ci95_half_width": 4.303
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_11",
+        "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_33"
+      ]
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium": {
+      "seed_count": 3,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.14441408598979982,
+        "std": 0.1441934463099942,
+        "ci95_half_width": 0.3582252880576839
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": 0.2628568353062232,
+        "std": 0.2640609866961979,
+        "ci95_half_width": 0.6560167985768252
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 29.0,
+        "std": 0.0,
+        "ci95_half_width": 0.0
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_11",
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_33"
+      ]
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium": {
+      "seed_count": 3,
+      "success_count": 1,
+      "success_rate": 0.3333333333333333,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.8990794247478165,
+        "std": 0.05166843857770515,
+        "ci95_half_width": 0.12836187612298092
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": 0.9133607017419593,
+        "std": 0.02889896608739953,
+        "ci95_half_width": 0.07179480563195613
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 267.6666666666667,
+        "std": 80.33886564629434,
+        "ci95_half_width": 199.58891353841386
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_11",
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_33"
+      ]
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium": {
+      "seed_count": 3,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.38181665121772107,
+        "std": 0.06012159682138424,
+        "ci95_half_width": 0.14936238012875308
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": 0.4034935017131773,
+        "std": 0.04473744007339433,
+        "ci95_half_width": 0.11114293171689225
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 143.33333333333334,
+        "std": 68.25198409814423,
+        "ci95_half_width": 169.56101188887078
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_11",
+        "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_33"
+      ]
+    },
     "benchmark/benchmark_20260215T230550Z": {
       "seed_count": 5,
       "success_count": 1,
@@ -1224,7 +4931,64 @@
       ]
     }
   },
-  "appendix_small_data_tradeoff": {},
+  "appendix_small_data_tradeoff": {
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium": {
+      "seed_count": 3,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.14441408598979982,
+        "std": 0.1441934463099942,
+        "ci95_half_width": 0.3582252880576839
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": 0.2628568353062232,
+        "std": 0.2640609866961979,
+        "ci95_half_width": 0.6560167985768252
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 29.0,
+        "std": 0.0,
+        "ci95_half_width": 0.0
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_11",
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_33"
+      ]
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium": {
+      "seed_count": 3,
+      "success_count": 1,
+      "success_rate": 0.3333333333333333,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.8990794247478165,
+        "std": 0.05166843857770515,
+        "ci95_half_width": 0.12836187612298092
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": 0.9133607017419593,
+        "std": 0.02889896608739953,
+        "ci95_half_width": 0.07179480563195613
+      },
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 267.6666666666667,
+        "std": 80.33886564629434,
+        "ci95_half_width": 199.58891353841386
+      },
+      "seed_keys": [
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_11",
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_22",
+        "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_33"
+      ]
+    }
+  },
   "appendix_bounds_diagnostics": {
     "experiment_upper_bound_aspl": {
       "val_bound_score": 0.5137132073914047,
@@ -1233,6 +4997,30 @@
       "test_bound_score": 0.4986280800131158,
       "test_satisfaction_rate": 0.844559585492228,
       "test_mean_gap": 0.6937665954753548
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_11": {
+      "val_bound_score": 0.30178089434123695,
+      "val_satisfaction_rate": 0.5590909090909091,
+      "val_mean_gap": 0.852638518788139,
+      "test_bound_score": 0.3975636538390242,
+      "test_satisfaction_rate": 0.6954545454545454,
+      "test_mean_gap": 0.7492910600327133
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_22": {
+      "val_bound_score": 0.2811086480293277,
+      "val_satisfaction_rate": 0.8090909090909091,
+      "val_mean_gap": 1.8782142234432344,
+      "test_bound_score": 0.29222396915528276,
+      "test_satisfaction_rate": 0.8045454545454546,
+      "test_mean_gap": 1.7531809141841233
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_33": {
+      "val_bound_score": 0.3506349358914007,
+      "val_satisfaction_rate": 0.9181818181818182,
+      "val_mean_gap": 1.6186261669778366,
+      "test_bound_score": 0.34946462317176896,
+      "test_satisfaction_rate": 0.9181818181818182,
+      "test_mean_gap": 1.6273956140347665
     }
   },
   "appendix_runtime_summary": {}

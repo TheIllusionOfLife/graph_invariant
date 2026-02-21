@@ -108,6 +108,30 @@ def _group_seed_base(name: str) -> str | None:
     return None
 
 
+def _clamp_ci95_to_metric_bounds(
+    stats: dict[str, Any], lower: float = -1.0, upper: float = 1.0
+) -> dict[str, Any]:
+    """Clamp CI95 half-width so implied interval stays within [lower, upper]."""
+    mean = safe_float(stats.get("mean"))
+    ci = safe_float(stats.get("ci95_half_width"))
+    if mean is None or ci is None:
+        return stats
+    max_half_width = max(0.0, min(upper - mean, mean - lower))
+    if ci > max_half_width:
+        clamped = dict(stats)
+        clamped["ci95_half_width"] = max_half_width
+        clamped["ci95_clamped_to_bounds"] = True
+        return clamped
+    return stats
+
+
+def _normalize_candidate_code_for_report(code: str) -> str:
+    """Ensure emitted candidate snippets are self-contained for readers."""
+    if "np." in code and "import numpy as np" not in code:
+        return f"import numpy as np\n\n{code}"
+    return code
+
+
 # ── Analysis functions ───────────────────────────────────────────────
 
 
@@ -409,12 +433,15 @@ def build_seed_aggregates(experiments: dict[str, dict]) -> dict[str, dict[str, A
             if bool(summary.get("success", False)):
                 successes += 1
 
+        val_stats = _clamp_ci95_to_metric_bounds(mean_std_ci95(val_scores))
+        test_stats = _clamp_ci95_to_metric_bounds(mean_std_ci95(test_scores))
+
         aggregates[base] = {
             "seed_count": len(entries),
             "success_count": successes,
             "success_rate": (successes / len(entries)) if entries else 0.0,
-            "val_spearman": mean_std_ci95(val_scores),
-            "test_spearman": mean_std_ci95(test_scores),
+            "val_spearman": val_stats,
+            "test_spearman": test_stats,
             "complexity_ast_nodes": mean_std_ci95(complexity),
             "seed_keys": [name for name, _ in entries],
         }
@@ -456,16 +483,19 @@ def build_appendix_payload(
     completion_by_experiment: dict[str, dict[str, int]] = defaultdict(
         lambda: {"total": 0, "completed": 0, "criteria_success": 0}
     )
-    for summary in matrix_summaries.values():
+    seed_notes: dict[str, str] = {}
+    for matrix_root, summary in matrix_summaries.items():
         runs = summary.get("runs", []) if isinstance(summary, dict) else []
         if not isinstance(runs, list):
             continue
+        grouped_runs: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for run in runs:
             if not isinstance(run, dict):
                 continue
             experiment = run.get("experiment")
             if not isinstance(experiment, str) or not experiment:
                 continue
+            grouped_runs[experiment].append(run)
             completion_by_experiment[experiment]["total"] += 1
             if int(run.get("status", 1)) == 0:
                 completion_by_experiment[experiment]["completed"] += 1
@@ -474,6 +504,31 @@ def build_appendix_payload(
             duration = safe_float(run.get("duration_sec"))
             if duration is not None:
                 runtime_by_experiment[experiment].append(duration)
+
+        for experiment, exp_runs in grouped_runs.items():
+            total = len(exp_runs)
+            completed = sum(1 for run in exp_runs if int(run.get("status", 1)) == 0)
+            if total == 0 or completed == total:
+                continue
+            missing = [run for run in exp_runs if int(run.get("status", 1)) != 0]
+            missing_seeds = ", ".join(
+                f"seed_{run.get('seed')}"
+                for run in missing
+                if isinstance(run.get("seed"), int | str)
+            )
+            reason = next(
+                (
+                    str(run.get("note"))
+                    for run in missing
+                    if isinstance(run.get("note"), str) and run.get("note")
+                ),
+                "incomplete run",
+            )
+            group = f"{matrix_root}/{experiment}"
+            seed_notes[group] = (
+                f"{experiment} uses {completed}/{total} completed seeds; "
+                f"missing {missing_seeds} ({reason})."
+            )
 
     runtime_summary: dict[str, dict[str, Any]] = {}
     for experiment, durations in sorted(runtime_by_experiment.items()):
@@ -487,6 +542,7 @@ def build_appendix_payload(
 
     return {
         "appendix_seed_aggregates": aggregates,
+        "appendix_seed_notes": seed_notes,
         "appendix_small_data_tradeoff": small_data_tradeoff,
         "appendix_bounds_diagnostics": bounds_diagnostics,
         "appendix_runtime_summary": runtime_summary,
@@ -523,8 +579,16 @@ def _escape_latex_text(value: Any) -> str:
 def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Path) -> None:
     """Write generated appendix tables as LaTeX source."""
     seed_aggregates = appendix_payload.get("appendix_seed_aggregates", {})
+    seed_notes = appendix_payload.get("appendix_seed_notes", {})
     bounds = appendix_payload.get("appendix_bounds_diagnostics", {})
     runtimes = appendix_payload.get("appendix_runtime_summary", {})
+
+    caption = "Seed-aggregated performance for NeurIPS matrix runs."
+    if isinstance(seed_notes, dict) and seed_notes:
+        caption += (
+            " \\textsuperscript{\\dag}Groups marked with \\textsuperscript{\\dag} "
+            "have incomplete seeds."
+        )
 
     lines: list[str] = [
         "% Auto-generated by analysis/analyze_experiments.py. Do not edit manually.",
@@ -533,7 +597,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
         "\\begin{table}[h]",
         "  \\centering",
         "  \\small",
-        "  \\caption{Seed-aggregated performance for NeurIPS matrix runs.}",
+        f"  \\caption{{{caption}}}",
         "  \\label{tab:appendix_seed_aggregates}",
         "  \\begin{tabular}{p{4.6cm}ccccc}",
         "    \\toprule",
@@ -551,7 +615,10 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
                 "    {group} & {seed_count} & {success_count}/{seed_count} & "
                 "{val_mean}$\\pm${val_std} & {test_mean}$\\pm${test_std} "
                 "& $\\pm${test_ci} \\\\".format(
-                    group=_escape_latex_text(group).replace("/", "/\\allowbreak "),
+                    group=(
+                        _escape_latex_text(group).replace("/", "/\\allowbreak ")
+                        + ("\\textsuperscript{\\dag}" if group in seed_notes else "")
+                    ),
                     seed_count=seed_count,
                     success_count=success_count,
                     val_mean=_fmt_tex_float(val.get("mean"), 3),
@@ -568,6 +635,18 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
         [
             "    \\bottomrule",
             "  \\end{tabular}",
+            *(
+                [
+                    "  \\vspace{2pt}",
+                    "  \\raggedright\\footnotesize "
+                    + "; ".join(
+                        "\\textsuperscript{\\dag}" + _escape_latex_text(note)
+                        for _, note in sorted(seed_notes.items())
+                    ),
+                ]
+                if isinstance(seed_notes, dict) and seed_notes
+                else []
+            ),
             "\\end{table}",
             "",
             "\\subsection{Bounds diagnostics}",
@@ -801,6 +880,7 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
 
         code = summary.get("best_candidate_code")
         if code:
+            code = _normalize_candidate_code_for_report(code)
             lines.extend(["", "### Best Candidate Code", "", "```python", code, "```"])
 
         lines.append("")

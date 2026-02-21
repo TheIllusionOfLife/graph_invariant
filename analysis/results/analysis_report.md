@@ -32,11 +32,11 @@
 | Experiment Group | Seeds | Val mean±std | Val CI95 | Test mean±std | Test CI95 |
 | --- | --- | --- | --- | --- | --- |
 | benchmark/benchmark_20260215T230550Z | 5 | 0.9265 ± 0.0118 | ±0.0146 | 0.9206 ± 0.0304 | ±0.0377 |
-| neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium | 2 | 0.8987 ± 0.0004 | ±0.0039 | 0.8920 ± 0.0193 | ±0.1732 |
-| neurips_matrix_day1_2026-02-21/benchmark_aspl_medium | 3 | 0.0654 ± 0.4888 | ±1.2143 | -0.0106 ± 0.5103 | ±1.2676 |
-| neurips_matrix_day1_2026-02-21/map_elites_aspl_medium | 3 | 0.1064 ± 0.4197 | ±1.0427 | 0.0314 ± 0.4376 | ±1.0871 |
+| neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium | 2 | 0.8987 ± 0.0004 | ±0.0039 | 0.8920 ± 0.0193 | ±0.1080 |
+| neurips_matrix_day1_2026-02-21/benchmark_aspl_medium | 3 | 0.0654 ± 0.4888 | ±0.9346 | -0.0106 ± 0.5103 | ±0.9894 |
+| neurips_matrix_day1_2026-02-21/map_elites_aspl_medium | 3 | 0.1064 ± 0.4197 | ±0.8936 | 0.0314 ± 0.4376 | ±0.9686 |
 | neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium | 3 | 0.1444 ± 0.1442 | ±0.3582 | 0.2629 ± 0.2641 | ±0.6560 |
-| neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium | 3 | 0.8991 ± 0.0517 | ±0.1284 | 0.9134 ± 0.0289 | ±0.0718 |
+| neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium | 3 | 0.8991 ± 0.0517 | ±0.1009 | 0.9134 ± 0.0289 | ±0.0718 |
 | neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium | 3 | 0.3818 ± 0.0601 | ±0.1494 | 0.4035 ± 0.0447 | ±0.1111 |
 
 ## experiment_map_elites_aspl
@@ -420,6 +420,8 @@ def new_invariant(s):
 ### Best Candidate Code
 
 ```python
+import numpy as np
+
 def new_invariant(s):
     """
     Estimate the average shortest path length from pre‑computed graph features.
@@ -733,6 +735,8 @@ def new_invariant(s):
 ### Best Candidate Code
 
 ```python
+import numpy as np
+
 def new_invariant(s):
   """
   A refined formula for average_shortest_path_length based on existing features.

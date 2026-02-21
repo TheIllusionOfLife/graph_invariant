@@ -105,15 +105,20 @@ Run the NeurIPS multi-seed evidence matrix:
 ```bash
 uv run python scripts/run_neurips_matrix.py \
   --configs \
-    configs/neurips_matrix/map_elites_aspl_full.json \
-    configs/neurips_matrix/algebraic_connectivity_full.json \
-    configs/neurips_matrix/upper_bound_aspl_full.json \
-    configs/neurips_matrix/small_data_aspl_train20.json \
-    configs/neurips_matrix/small_data_aspl_train35.json \
-  --seeds 11 22 33 44 55 \
-  --max-parallel 3 \
-  --output-root artifacts/neurips_matrix
+    configs/neurips_day1/map_elites_aspl_medium.json \
+    configs/neurips_day1/algebraic_connectivity_medium.json \
+    configs/neurips_day1/upper_bound_aspl_medium.json \
+    configs/neurips_day1/small_data_aspl_train20_medium.json \
+    configs/neurips_day1/small_data_aspl_train35_medium.json \
+    configs/neurips_day1/benchmark_aspl_medium.json \
+  --seeds 11 22 33 \
+  --max-parallel 2 \
+  --output-root artifacts/neurips_matrix_day1_2026-02-21
 ```
+
+For this day-scale profile, evaluation-heavy splits and sparse migration are
+intentional to maximize stability of comparison metrics under a strict runtime
+budget.
 
 ## CLI Commands
 

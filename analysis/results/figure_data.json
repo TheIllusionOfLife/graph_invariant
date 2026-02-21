@@ -4548,7 +4548,8 @@
         "n": 2,
         "mean": 0.8919769191324389,
         "std": 0.01928114431831815,
-        "ci95_half_width": 0.1732314172531734
+        "ci95_half_width": 0.10802308086756107,
+        "ci95_clamped_to_bounds": true
       },
       "complexity_ast_nodes": {
         "n": 2,
@@ -4569,13 +4570,15 @@
         "n": 3,
         "mean": 0.06537684519705181,
         "std": 0.4887805232412717,
-        "ci95_half_width": 1.2142961293723797
+        "ci95_half_width": 0.9346231548029482,
+        "ci95_clamped_to_bounds": true
       },
       "test_spearman": {
         "n": 3,
         "mean": -0.010576364892886029,
         "std": 0.5102539462014946,
-        "ci95_half_width": 1.2676433744959408
+        "ci95_half_width": 0.989423635107114,
+        "ci95_clamped_to_bounds": true
       },
       "complexity_ast_nodes": {
         "n": 3,
@@ -4597,13 +4600,15 @@
         "n": 3,
         "mean": 0.10643129903765307,
         "std": 0.4197292426629487,
-        "ci95_half_width": 1.0427493946980229
+        "ci95_half_width": 0.893568700962347,
+        "ci95_clamped_to_bounds": true
       },
       "test_spearman": {
         "n": 3,
         "mean": 0.03138232470291517,
         "std": 0.4375934265445207,
-        "ci95_half_width": 1.0871300692755193
+        "ci95_half_width": 0.9686176752970849,
+        "ci95_clamped_to_bounds": true
       },
       "complexity_ast_nodes": {
         "n": 3,
@@ -4653,7 +4658,8 @@
         "n": 3,
         "mean": 0.8990794247478165,
         "std": 0.05166843857770515,
-        "ci95_half_width": 0.12836187612298092
+        "ci95_half_width": 0.10092057525218345,
+        "ci95_clamped_to_bounds": true
       },
       "test_spearman": {
         "n": 3,
@@ -4747,7 +4753,8 @@
         "n": 2,
         "mean": 0.8919769191324389,
         "std": 0.01928114431831815,
-        "ci95_half_width": 0.1732314172531734
+        "ci95_half_width": 0.10802308086756107,
+        "ci95_clamped_to_bounds": true
       },
       "complexity_ast_nodes": {
         "n": 2,
@@ -4768,13 +4775,15 @@
         "n": 3,
         "mean": 0.06537684519705181,
         "std": 0.4887805232412717,
-        "ci95_half_width": 1.2142961293723797
+        "ci95_half_width": 0.9346231548029482,
+        "ci95_clamped_to_bounds": true
       },
       "test_spearman": {
         "n": 3,
         "mean": -0.010576364892886029,
         "std": 0.5102539462014946,
-        "ci95_half_width": 1.2676433744959408
+        "ci95_half_width": 0.989423635107114,
+        "ci95_clamped_to_bounds": true
       },
       "complexity_ast_nodes": {
         "n": 3,
@@ -4796,13 +4805,15 @@
         "n": 3,
         "mean": 0.10643129903765307,
         "std": 0.4197292426629487,
-        "ci95_half_width": 1.0427493946980229
+        "ci95_half_width": 0.893568700962347,
+        "ci95_clamped_to_bounds": true
       },
       "test_spearman": {
         "n": 3,
         "mean": 0.03138232470291517,
         "std": 0.4375934265445207,
-        "ci95_half_width": 1.0871300692755193
+        "ci95_half_width": 0.9686176752970849,
+        "ci95_clamped_to_bounds": true
       },
       "complexity_ast_nodes": {
         "n": 3,
@@ -4852,7 +4863,8 @@
         "n": 3,
         "mean": 0.8990794247478165,
         "std": 0.05166843857770515,
-        "ci95_half_width": 0.12836187612298092
+        "ci95_half_width": 0.10092057525218345,
+        "ci95_clamped_to_bounds": true
       },
       "test_spearman": {
         "n": 3,
@@ -4931,6 +4943,9 @@
       ]
     }
   },
+  "appendix_seed_notes": {
+    "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium": "algebraic_connectivity_medium uses 2/3 completed seeds; missing seed_11 (missing phase1_summary.json (pathological runtime; marked failed))."
+  },
   "appendix_small_data_tradeoff": {
     "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium": {
       "seed_count": 3,
@@ -4968,7 +4983,8 @@
         "n": 3,
         "mean": 0.8990794247478165,
         "std": 0.05166843857770515,
-        "ci95_half_width": 0.12836187612298092
+        "ci95_half_width": 0.10092057525218345,
+        "ci95_clamped_to_bounds": true
       },
       "test_spearman": {
         "n": 3,

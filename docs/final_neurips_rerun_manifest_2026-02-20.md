@@ -2,6 +2,9 @@
 
 This manifest records the exact commands and artifact paths used for the final
 analysis/paper refresh pass on branch `chore/final-matrix-results-refresh`.
+The filename date (`2026-02-20`) is retained for continuity with the original
+roadmap checkpoint; the recorded rerun artifacts are from `2026-02-21` and the
+run completed on `2026-02-22`.
 
 ## Branch and base
 
@@ -36,6 +39,8 @@ Run completion status:
 
 - Completed runs: 17/18
 - Incomplete run: `algebraic_connectivity_medium/seed_11` (pathological runtime hang; recorded as failed status in matrix summary)
+- Day1 profile rationale: larger validation/test sets and `migration_interval == max_generations`
+  were used intentionally for stable evaluation under a one-day compute budget.
 
 ## Analysis and figure refresh commands
 

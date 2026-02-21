@@ -4551,6 +4551,8 @@
         "ci95_half_width": 0.10802308086756107,
         "ci95_clamped_to_bounds": true
       },
+      "val_ci95_clamped_to_bounds": false,
+      "test_ci95_clamped_to_bounds": true,
       "complexity_ast_nodes": {
         "n": 2,
         "mean": 234.5,
@@ -4580,6 +4582,8 @@
         "ci95_half_width": 0.989423635107114,
         "ci95_clamped_to_bounds": true
       },
+      "val_ci95_clamped_to_bounds": true,
+      "test_ci95_clamped_to_bounds": true,
       "complexity_ast_nodes": {
         "n": 3,
         "mean": 29.666666666666668,
@@ -4610,6 +4614,8 @@
         "ci95_half_width": 0.9686176752970849,
         "ci95_clamped_to_bounds": true
       },
+      "val_ci95_clamped_to_bounds": true,
+      "test_ci95_clamped_to_bounds": true,
       "complexity_ast_nodes": {
         "n": 3,
         "mean": 28.0,
@@ -4638,6 +4644,8 @@
         "std": 0.2640609866961979,
         "ci95_half_width": 0.6560167985768252
       },
+      "val_ci95_clamped_to_bounds": false,
+      "test_ci95_clamped_to_bounds": false,
       "complexity_ast_nodes": {
         "n": 3,
         "mean": 29.0,
@@ -4667,6 +4675,8 @@
         "std": 0.02889896608739953,
         "ci95_half_width": 0.07179480563195613
       },
+      "val_ci95_clamped_to_bounds": true,
+      "test_ci95_clamped_to_bounds": false,
       "complexity_ast_nodes": {
         "n": 3,
         "mean": 267.6666666666667,
@@ -4695,6 +4705,8 @@
         "std": 0.04473744007339433,
         "ci95_half_width": 0.11114293171689225
       },
+      "val_ci95_clamped_to_bounds": false,
+      "test_ci95_clamped_to_bounds": false,
       "complexity_ast_nodes": {
         "n": 3,
         "mean": 143.33333333333334,
@@ -4723,6 +4735,8 @@
         "std": 0.030395475610547385,
         "ci95_half_width": 0.037734917338794305
       },
+      "val_ci95_clamped_to_bounds": false,
+      "test_ci95_clamped_to_bounds": false,
       "complexity_ast_nodes": {
         "n": 0,
         "mean": null,
@@ -4756,6 +4770,8 @@
         "ci95_half_width": 0.10802308086756107,
         "ci95_clamped_to_bounds": true
       },
+      "val_ci95_clamped_to_bounds": false,
+      "test_ci95_clamped_to_bounds": true,
       "complexity_ast_nodes": {
         "n": 2,
         "mean": 234.5,
@@ -4785,6 +4801,8 @@
         "ci95_half_width": 0.989423635107114,
         "ci95_clamped_to_bounds": true
       },
+      "val_ci95_clamped_to_bounds": true,
+      "test_ci95_clamped_to_bounds": true,
       "complexity_ast_nodes": {
         "n": 3,
         "mean": 29.666666666666668,
@@ -4815,6 +4833,8 @@
         "ci95_half_width": 0.9686176752970849,
         "ci95_clamped_to_bounds": true
       },
+      "val_ci95_clamped_to_bounds": true,
+      "test_ci95_clamped_to_bounds": true,
       "complexity_ast_nodes": {
         "n": 3,
         "mean": 28.0,
@@ -4843,6 +4863,8 @@
         "std": 0.2640609866961979,
         "ci95_half_width": 0.6560167985768252
       },
+      "val_ci95_clamped_to_bounds": false,
+      "test_ci95_clamped_to_bounds": false,
       "complexity_ast_nodes": {
         "n": 3,
         "mean": 29.0,
@@ -4872,6 +4894,8 @@
         "std": 0.02889896608739953,
         "ci95_half_width": 0.07179480563195613
       },
+      "val_ci95_clamped_to_bounds": true,
+      "test_ci95_clamped_to_bounds": false,
       "complexity_ast_nodes": {
         "n": 3,
         "mean": 267.6666666666667,
@@ -4900,6 +4924,8 @@
         "std": 0.04473744007339433,
         "ci95_half_width": 0.11114293171689225
       },
+      "val_ci95_clamped_to_bounds": false,
+      "test_ci95_clamped_to_bounds": false,
       "complexity_ast_nodes": {
         "n": 3,
         "mean": 143.33333333333334,
@@ -4928,6 +4954,8 @@
         "std": 0.030395475610547385,
         "ci95_half_width": 0.037734917338794305
       },
+      "val_ci95_clamped_to_bounds": false,
+      "test_ci95_clamped_to_bounds": false,
       "complexity_ast_nodes": {
         "n": 0,
         "mean": null,
@@ -4963,6 +4991,8 @@
         "std": 0.2640609866961979,
         "ci95_half_width": 0.6560167985768252
       },
+      "val_ci95_clamped_to_bounds": false,
+      "test_ci95_clamped_to_bounds": false,
       "complexity_ast_nodes": {
         "n": 3,
         "mean": 29.0,
@@ -4992,6 +5022,8 @@
         "std": 0.02889896608739953,
         "ci95_half_width": 0.07179480563195613
       },
+      "val_ci95_clamped_to_bounds": true,
+      "test_ci95_clamped_to_bounds": false,
       "complexity_ast_nodes": {
         "n": 3,
         "mean": 267.6666666666667,

@@ -127,9 +127,24 @@ def _clamp_ci95_to_metric_bounds(
 
 def _normalize_candidate_code_for_report(code: str) -> str:
     """Ensure emitted candidate snippets are self-contained for readers."""
-    if "np." in code and "import numpy as np" not in code:
+    if "np." in code and not re.search(
+        r"(^|\n)\s*(import\s+numpy\s+as\s+np|from\s+numpy\s+import\s+)", code
+    ):
         return f"import numpy as np\n\n{code}"
     return code
+
+
+def _status_code(value: Any, default: int = 1) -> int:
+    """Parse matrix run status into a numeric return-code style integer."""
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        stripped = value.strip()
+        if re.fullmatch(r"[+-]?\d+", stripped):
+            return int(stripped)
+    return default
 
 
 # ── Analysis functions ───────────────────────────────────────────────
@@ -442,6 +457,8 @@ def build_seed_aggregates(experiments: dict[str, dict]) -> dict[str, dict[str, A
             "success_rate": (successes / len(entries)) if entries else 0.0,
             "val_spearman": val_stats,
             "test_spearman": test_stats,
+            "val_ci95_clamped_to_bounds": bool(val_stats.get("ci95_clamped_to_bounds", False)),
+            "test_ci95_clamped_to_bounds": bool(test_stats.get("ci95_clamped_to_bounds", False)),
             "complexity_ast_nodes": mean_std_ci95(complexity),
             "seed_keys": [name for name, _ in entries],
         }
@@ -496,21 +513,23 @@ def build_appendix_payload(
             if not isinstance(experiment, str) or not experiment:
                 continue
             grouped_runs[experiment].append(run)
-            completion_by_experiment[experiment]["total"] += 1
-            if int(run.get("status", 1)) == 0:
-                completion_by_experiment[experiment]["completed"] += 1
+            group_key = f"{matrix_root}/{experiment}"
+            status = _status_code(run.get("status", 1), default=1)
+            completion_by_experiment[group_key]["total"] += 1
+            if status == 0:
+                completion_by_experiment[group_key]["completed"] += 1
             if bool(run.get("success", False)):
-                completion_by_experiment[experiment]["criteria_success"] += 1
+                completion_by_experiment[group_key]["criteria_success"] += 1
             duration = safe_float(run.get("duration_sec"))
             if duration is not None:
-                runtime_by_experiment[experiment].append(duration)
+                runtime_by_experiment[group_key].append(duration)
 
         for experiment, exp_runs in grouped_runs.items():
             total = len(exp_runs)
-            completed = sum(1 for run in exp_runs if int(run.get("status", 1)) == 0)
+            completed = sum(1 for run in exp_runs if _status_code(run.get("status", 1)) == 0)
             if total == 0 or completed == total:
                 continue
-            missing = [run for run in exp_runs if int(run.get("status", 1)) != 0]
+            missing = [run for run in exp_runs if _status_code(run.get("status", 1)) != 0]
             missing_seeds = ", ".join(
                 f"seed_{run.get('seed')}"
                 for run in missing
@@ -531,9 +550,9 @@ def build_appendix_payload(
             )
 
     runtime_summary: dict[str, dict[str, Any]] = {}
-    for experiment, durations in sorted(runtime_by_experiment.items()):
-        counts = completion_by_experiment[experiment]
-        runtime_summary[experiment] = {
+    for group_key, durations in sorted(runtime_by_experiment.items()):
+        counts = completion_by_experiment[group_key]
+        runtime_summary[group_key] = {
             "duration_sec": mean_std_ci95(durations),
             "total_runs": counts["total"],
             "completed_runs": counts["completed"],
@@ -639,7 +658,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
                 [
                     "  \\vspace{2pt}",
                     "  \\raggedright\\footnotesize "
-                    + "; ".join(
+                    + " \\\\ ".join(
                         "\\textsuperscript{\\dag}" + _escape_latex_text(note)
                         for _, note in sorted(seed_notes.items())
                     ),
@@ -760,12 +779,18 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
     if aggregates:
         lines.extend(["## Multi-Seed Aggregates", ""])
         lines.append(
-            "| Experiment Group | Seeds | Val mean±std | Val CI95 | Test mean±std | Test CI95 |"
+            "| Experiment Group | Seeds | Val mean±std | Val CI95 | "
+            "Test mean±std | Test CI95 | CI clamp |"
         )
-        lines.append("| --- | --- | --- | --- | --- | --- |")
+        lines.append("| --- | --- | --- | --- | --- | --- | --- |")
         for group, payload in sorted(aggregates.items()):
             val = payload["val_spearman"]
             test = payload["test_spearman"]
+            clamp_parts: list[str] = []
+            if payload.get("val_ci95_clamped_to_bounds", False):
+                clamp_parts.append("val")
+            if payload.get("test_ci95_clamped_to_bounds", False):
+                clamp_parts.append("test")
             val_mean_std = (
                 f"{val['mean']:.4f} ± {val['std']:.4f}" if val.get("mean") is not None else "N/A"
             )
@@ -784,13 +809,14 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
             )
             lines.append(
                 "| {group} | {seed_count} | {val_mean_std} | {val_ci} | "
-                "{test_mean_std} | {test_ci} |".format(
+                "{test_mean_std} | {test_ci} | {clamp} |".format(
                     group=group,
                     seed_count=payload["seed_count"],
                     val_mean_std=val_mean_std,
                     val_ci=val_ci,
                     test_mean_std=test_mean_std,
                     test_ci=test_ci,
+                    clamp="+".join(clamp_parts) if clamp_parts else "none",
                 )
             )
         lines.append("")

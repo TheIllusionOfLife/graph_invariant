@@ -120,6 +120,9 @@ For this day-scale profile, evaluation-heavy splits and sparse migration are
 intentional to maximize stability of comparison metrics under a strict runtime
 budget.
 
+For a full-profile matrix (longer runtime, broader evidence), use the
+`configs/neurips_matrix/*_full.json` configs with 5 seeds and higher parallelism.
+
 ## CLI Commands
 
 - `uv run python -m graph_invariant.cli phase1 --config <config.json> [--resume <checkpoint.json>]`

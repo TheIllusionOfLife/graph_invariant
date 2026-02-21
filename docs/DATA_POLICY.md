@@ -48,6 +48,23 @@ For each major experiment release:
    - license and access conditions.
 3. Capture the DOI and record URL in repository docs.
 
+### Execution Runbook (Recommended Command Pattern)
+
+Use this pattern to avoid repeated mistakes:
+
+1. Build archive and checksums:
+   - `tar -czf zenodo_staging/<release>/<bundle>.tar.gz artifacts/<run_root>`
+   - `shasum -a 256 zenodo_staging/<release>/<bundle>.tar.gz > docs/zenodo_<release>_archive_sha256.txt`
+   - `find artifacts/<run_root> -type f | sort | while read -r f; do shasum -a 256 "$f"; done > docs/zenodo_<release>_sha256s.txt`
+2. Publish via Zenodo API with token loaded in interactive zsh:
+   - `zsh -ic 'echo ${ZENODO_TOKEN:+present}'` should print `present`.
+   - If non-interactive shells cannot see the token, run publish commands via `zsh -ic '<command>'`.
+3. After publish, record:
+   - DOI,
+   - record URL,
+   - record ID,
+   in release docs and paper citation files.
+
 ## Paper-Ready Release Checklist (Required)
 
 Before calling a paper PR submission-ready:

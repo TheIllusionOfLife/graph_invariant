@@ -64,6 +64,12 @@ Before calling a paper PR submission-ready:
    - add Zenodo DOI/URL to repository docs and `paper/references.bib`,
    - ensure commands/configs in docs reproduce the archived run family.
 
+Example implementation for this repository:
+
+- `docs/zenodo_release_neurips_day1_2026-02-22.md`
+- `docs/zenodo_neurips_day1_archive_sha256_2026-02-22.txt`
+- `docs/zenodo_neurips_day1_sha256s_2026-02-22.txt`
+
 ## Citation in the Paper
 
 - Cite the Zenodo dataset DOI in the paper's data availability section.

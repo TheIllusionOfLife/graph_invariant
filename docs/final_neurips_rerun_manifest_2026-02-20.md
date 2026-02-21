@@ -62,3 +62,14 @@ cd paper && tectonic -r 2 main.tex
 - `paper/figures/*`
 - `paper/main.pdf`
 - `docs/final_neurips_rerun_manifest_2026-02-20.md`
+
+## Zenodo archival handoff (prepared)
+
+- Local archive bundle (ignored by Git, upload this file to Zenodo):
+  - `zenodo_staging/neurips_day1_2026-02-22/neurips_matrix_day1_2026-02-21_artifacts.tar.gz`
+- Archive SHA256 (tracked):
+  - `docs/zenodo_neurips_day1_archive_sha256_2026-02-22.txt`
+- Per-file SHA256 manifest for raw artifacts (tracked):
+  - `docs/zenodo_neurips_day1_sha256s_2026-02-22.txt`
+- Raw artifact source included in the bundle:
+  - `artifacts/neurips_matrix_day1_2026-02-21/`

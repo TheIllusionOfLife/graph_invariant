@@ -162,9 +162,11 @@ Benchmark outputs:
 ## Data Policy (Zenodo)
 
 - Heavy raw experimental data is archived on Zenodo, not committed to Git.
-- This repository stores code, configs, and lightweight summaries/figures.
-- Dataset DOI/record links should be documented and cited from the paper.
+- This repository stores code, configs, manuscript assets, and lightweight summaries/figures.
+- Split policy: GitHub for lightweight paper package, Zenodo for raw experimental evidence.
+- Dataset DOI/record links and checksum manifests must be documented and cited from the paper.
 - Policy details: `docs/DATA_POLICY.md`
+- Current release handoff example: `docs/zenodo_release_neurips_day1_2026-02-22.md`
 
 ## Documentation Map
 

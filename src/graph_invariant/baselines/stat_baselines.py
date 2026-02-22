@@ -4,7 +4,7 @@ import networkx as nx
 import numpy as np
 
 from ..scoring import compute_metrics
-from .features import FEATURE_ORDER, features_from_graphs
+from .features import FEATURE_ORDER, features_from_dict, features_from_graphs
 
 # Features that can be targets — must be excluded from baseline inputs when used as targets.
 _LEAKABLE_FEATURES = frozenset(FEATURE_ORDER)
@@ -103,23 +103,52 @@ def run_stat_baselines(
     y_test: list[float],
     target_name: str | None = None,
     enable_spectral_feature_pack: bool = True,
+    known_invariants_train: dict[str, list[float]] | None = None,
+    known_invariants_val: dict[str, list[float]] | None = None,
+    known_invariants_test: dict[str, list[float]] | None = None,
 ) -> dict[str, object]:
     exclude = (target_name,) if target_name and target_name in _LEAKABLE_FEATURES else None
-    x_train = _features_from_graphs(
-        train_graphs,
-        exclude,
-        enable_spectral_feature_pack=enable_spectral_feature_pack,
-    )
-    x_val = _features_from_graphs(
-        val_graphs,
-        exclude,
-        enable_spectral_feature_pack=enable_spectral_feature_pack,
-    )
-    x_test = _features_from_graphs(
-        test_graphs,
-        exclude,
-        enable_spectral_feature_pack=enable_spectral_feature_pack,
-    )
+    if known_invariants_train is not None:
+        x_train = features_from_dict(
+            known_invariants_train,
+            len(train_graphs),
+            exclude,
+            enable_spectral_feature_pack=enable_spectral_feature_pack,
+        )
+    else:
+        x_train = _features_from_graphs(
+            train_graphs,
+            exclude,
+            enable_spectral_feature_pack=enable_spectral_feature_pack,
+        )
+
+    if known_invariants_val is not None:
+        x_val = features_from_dict(
+            known_invariants_val,
+            len(val_graphs),
+            exclude,
+            enable_spectral_feature_pack=enable_spectral_feature_pack,
+        )
+    else:
+        x_val = _features_from_graphs(
+            val_graphs,
+            exclude,
+            enable_spectral_feature_pack=enable_spectral_feature_pack,
+        )
+
+    if known_invariants_test is not None:
+        x_test = features_from_dict(
+            known_invariants_test,
+            len(test_graphs),
+            exclude,
+            enable_spectral_feature_pack=enable_spectral_feature_pack,
+        )
+    else:
+        x_test = _features_from_graphs(
+            test_graphs,
+            exclude,
+            enable_spectral_feature_pack=enable_spectral_feature_pack,
+        )
     y_train_np = np.asarray(y_train, dtype=float)
     y_val_np = np.asarray(y_val, dtype=float)
     y_test_np = np.asarray(y_test, dtype=float)

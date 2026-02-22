@@ -49,5 +49,29 @@ def features_from_graphs(
         graphs,
         include_spectral_feature_pack=enable_spectral_feature_pack,
     )
+    return features_from_dict(
+        values,
+        num_graphs=len(graphs),
+        exclude_features=exclude_features,
+        enable_spectral_feature_pack=enable_spectral_feature_pack,
+    )
+
+
+def features_from_dict(
+    values: dict[str, list[float]],
+    num_graphs: int,
+    exclude_features: tuple[str, ...] | None = None,
+    enable_spectral_feature_pack: bool = True,
+) -> np.ndarray:
+    order = feature_order(enable_spectral_feature_pack=enable_spectral_feature_pack)
+    if exclude_features:
+        exclude_set = frozenset(exclude_features)
+        selected = tuple(f for f in order if f not in exclude_set)
+    else:
+        selected = order
+
+    if not selected or num_graphs == 0:
+        return np.empty((num_graphs, len(selected)), dtype=float)
+
     cols = [values[name] for name in selected]
     return np.asarray(list(zip(*cols, strict=True)), dtype=float)

@@ -1,6 +1,7 @@
 import argparse
 import json
 import re
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -306,6 +307,385 @@ def _topology_descriptor(
     return max(0.0, min(1.0, axis_density)), max(0.0, min(1.0, axis_cluster))
 
 
+@dataclass(frozen=True)
+class GenerationContext:
+    cfg: Phase1Config
+    state: CheckpointState
+    evaluator: SandboxEvaluator
+    features_train: list[dict[str, Any]]
+    features_val: list[dict[str, Any]]
+    y_true_train: list[float]
+    y_true_val: list[float]
+    known_invariants_val: dict[str, list[float]]
+    rng: np.random.Generator
+    log_path: Path
+    self_correction_stats: dict[str, Any]
+    primary_archive: MapElitesArchive | None
+    topology_archive: MapElitesArchive | None
+
+
+def _select_exemplars(
+    primary_archive: MapElitesArchive | None,
+    topology_archive: MapElitesArchive | None,
+    island_id: int,
+    rng: np.random.Generator,
+) -> list[str] | None:
+    exemplar_pool: list[Candidate] = []
+    if primary_archive is not None:
+        exemplar_pool.extend(
+            sample_diverse_exemplars(primary_archive, rng, count=2, exclude_island=island_id)
+        )
+    if topology_archive is not None:
+        exemplar_pool.extend(
+            sample_diverse_exemplars(topology_archive, rng, count=2, exclude_island=island_id)
+        )
+    if not exemplar_pool:
+        return None
+
+    seen_ids: set[str] = set()
+    deduped: list[Candidate] = []
+    for exemplar in exemplar_pool:
+        if exemplar.id in seen_ids:
+            continue
+        seen_ids.add(exemplar.id)
+        deduped.append(exemplar)
+    return [candidate.code for candidate in deduped]
+
+
+def _handle_rejection(
+    ctx: GenerationContext,
+    island_id: int,
+    pop_idx: int,
+    attempt_idx: int,
+    rejection_reason: str,
+    failure_feedback: str | None,
+    base_prompt: str,
+    code: str,
+    max_attempts: int,
+    repairable: bool,
+    train_signal: float | None = None,
+) -> tuple[bool, str | None]:
+    failure_categories = ctx.self_correction_stats.setdefault("failure_categories", {})
+    failure_categories[rejection_reason] = int(failure_categories.get(rejection_reason, 0)) + 1
+
+    _record_recent_failure(
+        ctx.state,
+        island_id=island_id,
+        failure_text=f"{rejection_reason}: {failure_feedback}",
+        max_items=ctx.cfg.self_correction_feedback_window,
+    )
+    rejected_payload: dict[str, Any] = {
+        "generation": ctx.state.generation,
+        "island_id": island_id,
+        "population_idx": pop_idx,
+        "attempt_index": attempt_idx,
+        "reason": rejection_reason,
+        "failure_feedback": failure_feedback,
+        "model_name": ctx.cfg.model_name,
+    }
+    if train_signal is not None:
+        rejected_payload["train_signal"] = train_signal
+    append_jsonl("candidate_rejected", rejected_payload, ctx.log_path)
+
+    if repairable and attempt_idx + 1 < max_attempts:
+        ctx.self_correction_stats["attempted_repairs"] = (
+            int(ctx.self_correction_stats.get("attempted_repairs", 0)) + 1
+        )
+        append_jsonl(
+            "candidate_repair_attempted",
+            {
+                "generation": ctx.state.generation,
+                "island_id": island_id,
+                "population_idx": pop_idx,
+                "attempt_index": attempt_idx,
+                "reason": rejection_reason,
+                "failure_feedback": failure_feedback,
+                "model_name": ctx.cfg.model_name,
+            },
+            ctx.log_path,
+        )
+        next_prompt = _build_repair_prompt(
+            original_prompt=base_prompt,
+            candidate_code=code,
+            failure_feedback=failure_feedback or rejection_reason,
+        )
+        return True, next_prompt
+
+    if attempt_idx > 0:
+        ctx.self_correction_stats["failed_repairs"] = (
+            int(ctx.self_correction_stats.get("failed_repairs", 0)) + 1
+        )
+        append_jsonl(
+            "candidate_repair_result",
+            {
+                "generation": ctx.state.generation,
+                "island_id": island_id,
+                "population_idx": pop_idx,
+                "status": "failed",
+                "reason": rejection_reason,
+                "model_name": ctx.cfg.model_name,
+            },
+            ctx.log_path,
+        )
+    return False, None
+
+
+def _produce_candidate(
+    ctx: GenerationContext,
+    island_id: int,
+    pop_idx: int,
+    base_prompt: str,
+) -> tuple[Candidate | None, bool]:
+    current_prompt = base_prompt
+    max_attempts = 1 + (
+        ctx.cfg.self_correction_max_retries if ctx.cfg.enable_self_correction else 0
+    )
+    had_valid_train_candidate = False
+
+    for attempt_idx in range(max_attempts):
+        code, llm_response = _generate_candidate(
+            cfg=ctx.cfg,
+            prompt=current_prompt,
+            temperature=ctx.cfg.island_temperatures[island_id],
+        )
+        train_details = ctx.evaluator.evaluate_detailed(code, ctx.features_train)
+        y_pred_train_raw = [payload.get("value") for payload in train_details]
+        train_pairs = [
+            (idx, yt, yp)
+            for idx, (yt, yp) in enumerate(zip(ctx.y_true_train, y_pred_train_raw, strict=True))
+            if isinstance(yp, float)
+        ]
+        rejection_reason: str | None = None
+        failure_feedback: str | None = None
+        train_signal: float | None = None
+
+        is_bounds = ctx.cfg.fitness_mode in ("upper_bound", "lower_bound")
+
+        if not train_pairs:
+            rejection_reason = "no_valid_train_predictions"
+            failure_feedback = _summarize_error_details(train_details)
+        else:
+            _, y_t_train, y_p_train = zip(*train_pairs, strict=True)
+            if is_bounds:
+                train_bound = compute_bound_metrics(
+                    list(y_t_train),
+                    list(y_p_train),
+                    mode=ctx.cfg.fitness_mode,
+                    tolerance=ctx.cfg.bound_tolerance,
+                )
+                train_signal = train_bound.bound_score
+            else:
+                train_metrics = compute_metrics(list(y_t_train), list(y_p_train))
+                train_signal = abs(train_metrics.rho_spearman)
+            if train_signal <= ctx.cfg.train_score_threshold:
+                rejection_reason = "below_train_threshold"
+                failure_feedback = f"train_signal={train_signal:.6f}"
+
+        if rejection_reason is not None:
+            should_retry, next_prompt = _handle_rejection(
+                ctx=ctx,
+                island_id=island_id,
+                pop_idx=pop_idx,
+                attempt_idx=attempt_idx,
+                rejection_reason=rejection_reason,
+                failure_feedback=failure_feedback,
+                base_prompt=base_prompt,
+                code=code,
+                max_attempts=max_attempts,
+                repairable=rejection_reason == "no_valid_train_predictions",
+                train_signal=train_signal,
+            )
+            if should_retry and next_prompt is not None:
+                current_prompt = next_prompt
+                continue
+            break
+
+        had_valid_train_candidate = True
+        val_details = ctx.evaluator.evaluate_detailed(code, ctx.features_val)
+        y_pred_val_raw = [payload.get("value") for payload in val_details]
+        val_pairs = [
+            (idx, yt, yp)
+            for idx, (yt, yp) in enumerate(zip(ctx.y_true_val, y_pred_val_raw, strict=True))
+            if isinstance(yp, float)
+        ]
+        if not val_pairs:
+            rejection_reason = "no_valid_val_predictions"
+            failure_feedback = _summarize_error_details(val_details)
+            should_retry, next_prompt = _handle_rejection(
+                ctx=ctx,
+                island_id=island_id,
+                pop_idx=pop_idx,
+                attempt_idx=attempt_idx,
+                rejection_reason=rejection_reason,
+                failure_feedback=failure_feedback,
+                base_prompt=base_prompt,
+                code=code,
+                max_attempts=max_attempts,
+                repairable=True,
+            )
+            if should_retry and next_prompt is not None:
+                current_prompt = next_prompt
+                continue
+            break
+
+        valid_indices, y_t_val, y_p_val = zip(*val_pairs, strict=True)
+        simplicity = compute_simplicity_score(code)
+        known_subset = {
+            name: [values[idx] for idx in valid_indices]
+            for name, values in ctx.known_invariants_val.items()
+        }
+        novelty_bonus = compute_novelty_bonus(list(y_p_val), known_subset)
+        if ctx.cfg.novelty_gate_threshold > 0 and novelty_bonus < ctx.cfg.novelty_gate_threshold:
+            should_retry, next_prompt = _handle_rejection(
+                ctx=ctx,
+                island_id=island_id,
+                pop_idx=pop_idx,
+                attempt_idx=attempt_idx,
+                rejection_reason="below_novelty_threshold",
+                failure_feedback=f"novelty_bonus={novelty_bonus:.6f}",
+                base_prompt=base_prompt,
+                code=code,
+                max_attempts=max_attempts,
+                repairable=True,
+            )
+            if should_retry and next_prompt is not None:
+                current_prompt = next_prompt
+                continue
+            break
+
+        if is_bounds:
+            val_bound = compute_bound_metrics(
+                list(y_t_val),
+                list(y_p_val),
+                mode=ctx.cfg.fitness_mode,
+                tolerance=ctx.cfg.bound_tolerance,
+            )
+            fitness_signal = val_bound.bound_score
+        else:
+            val_metrics = compute_metrics(list(y_t_val), list(y_p_val))
+            fitness_signal = abs(val_metrics.rho_spearman)
+
+        total = compute_total_score(
+            fitness_signal,
+            simplicity,
+            novelty_bonus=novelty_bonus,
+            alpha=ctx.cfg.alpha,
+            beta=ctx.cfg.beta,
+            gamma=ctx.cfg.gamma,
+        )
+        candidate = Candidate(
+            id=f"g{ctx.state.generation}_i{island_id}_p{pop_idx}_{int(ctx.rng.integers(1_000_000_000))}",
+            code=code,
+            island_id=island_id,
+            generation=ctx.state.generation,
+            train_score=float(train_signal or 0.0),
+            val_score=total,
+            simplicity_score=simplicity,
+            novelty_bonus=novelty_bonus,
+        )
+
+        if ctx.primary_archive is not None:
+            try_insert(ctx.primary_archive, candidate, fitness_signal)
+        if ctx.topology_archive is not None:
+            descriptor = _topology_descriptor(
+                y_pred_valid=list(y_p_val),
+                features_val=ctx.features_val,
+                valid_indices=valid_indices,
+            )
+            try_insert(
+                ctx.topology_archive,
+                candidate,
+                fitness_signal,
+                descriptor=descriptor,
+            )
+
+        log_payload: dict[str, Any] = {
+            "candidate_id": candidate.id,
+            "generation": ctx.state.generation,
+            "island_id": island_id,
+            "model_name": ctx.cfg.model_name,
+            "train_signal": train_signal,
+            "fitness_mode": ctx.cfg.fitness_mode,
+            "simplicity_score": simplicity,
+            "novelty_bonus": novelty_bonus,
+            "total_score": total,
+            "prompt": current_prompt if ctx.cfg.persist_prompt_and_response_logs else None,
+            "llm_response": llm_response if ctx.cfg.persist_prompt_and_response_logs else None,
+            "extracted_code": code if ctx.cfg.persist_prompt_and_response_logs else None,
+        }
+        if is_bounds:
+            log_payload["bound_score"] = val_bound.bound_score
+            log_payload["satisfaction_rate"] = val_bound.satisfaction_rate
+            log_payload["mean_gap"] = val_bound.mean_gap
+        else:
+            log_payload["spearman"] = val_metrics.rho_spearman
+            log_payload["pearson"] = val_metrics.r_pearson
+            log_payload["rmse"] = val_metrics.rmse
+            log_payload["mae"] = val_metrics.mae
+        append_jsonl("candidate_evaluated", log_payload, ctx.log_path)
+
+        if attempt_idx > 0:
+            ctx.self_correction_stats["successful_repairs"] = (
+                int(ctx.self_correction_stats.get("successful_repairs", 0)) + 1
+            )
+            append_jsonl(
+                "candidate_repair_result",
+                {
+                    "generation": ctx.state.generation,
+                    "island_id": island_id,
+                    "population_idx": pop_idx,
+                    "status": "success",
+                    "model_name": ctx.cfg.model_name,
+                },
+                ctx.log_path,
+            )
+        return candidate, had_valid_train_candidate
+
+    return None, had_valid_train_candidate
+
+
+def _process_island(
+    ctx: GenerationContext,
+    island_id: int,
+) -> None:
+    archive_exemplar_codes = _select_exemplars(
+        primary_archive=ctx.primary_archive,
+        topology_archive=ctx.topology_archive,
+        island_id=island_id,
+        rng=ctx.rng,
+    )
+    new_candidates: list[Candidate] = []
+    had_valid_train_candidate_island = False
+
+    for pop_idx in range(ctx.cfg.population_size):
+        base_prompt = _candidate_prompt(
+            ctx.state,
+            island_id,
+            ctx.cfg.target_name,
+            fitness_mode=ctx.cfg.fitness_mode,
+            enable_spectral_feature_pack=ctx.cfg.enable_spectral_feature_pack,
+            archive_exemplars=archive_exemplar_codes,
+        )
+        candidate, valid_train_signal = _produce_candidate(
+            ctx=ctx,
+            island_id=island_id,
+            pop_idx=pop_idx,
+            base_prompt=base_prompt,
+        )
+        if valid_train_signal:
+            had_valid_train_candidate_island = True
+
+        if candidate is not None:
+            new_candidates.append(candidate)
+
+    merged = ctx.state.islands.get(island_id, []) + new_candidates
+    merged.sort(key=lambda candidate: candidate.val_score, reverse=True)
+    ctx.state.islands[island_id] = merged[: ctx.cfg.population_size]
+    _update_prompt_mode_after_generation(
+        ctx.cfg, ctx.state, island_id, had_valid_train_candidate_island
+    )
+
+
 def _run_one_generation(
     cfg: Phase1Config,
     state: CheckpointState,
@@ -321,318 +701,25 @@ def _run_one_generation(
     primary_archive: MapElitesArchive | None = None,
     topology_archive: MapElitesArchive | None = None,
 ) -> None:
-    failure_categories = self_correction_stats.setdefault("failure_categories", {})
-
-    def _count_failure(reason: str) -> None:
-        failure_categories[reason] = int(failure_categories.get(reason, 0)) + 1
-
-    def _handle_rejection(
-        *,
-        island_id: int,
-        pop_idx: int,
-        attempt_idx: int,
-        rejection_reason: str,
-        failure_feedback: str | None,
-        base_prompt: str,
-        code: str,
-        max_attempts: int,
-        repairable: bool,
-        train_signal: float | None = None,
-    ) -> tuple[bool, str | None]:
-        _count_failure(rejection_reason)
-        _record_recent_failure(
-            state,
-            island_id=island_id,
-            failure_text=f"{rejection_reason}: {failure_feedback}",
-            max_items=cfg.self_correction_feedback_window,
-        )
-        rejected_payload: dict[str, Any] = {
-            "generation": state.generation,
-            "island_id": island_id,
-            "population_idx": pop_idx,
-            "attempt_index": attempt_idx,
-            "reason": rejection_reason,
-            "failure_feedback": failure_feedback,
-            "model_name": cfg.model_name,
-        }
-        if train_signal is not None:
-            rejected_payload["train_signal"] = train_signal
-        append_jsonl("candidate_rejected", rejected_payload, log_path)
-
-        if repairable and attempt_idx + 1 < max_attempts:
-            self_correction_stats["attempted_repairs"] = (
-                int(self_correction_stats.get("attempted_repairs", 0)) + 1
-            )
-            append_jsonl(
-                "candidate_repair_attempted",
-                {
-                    "generation": state.generation,
-                    "island_id": island_id,
-                    "population_idx": pop_idx,
-                    "attempt_index": attempt_idx,
-                    "reason": rejection_reason,
-                    "failure_feedback": failure_feedback,
-                    "model_name": cfg.model_name,
-                },
-                log_path,
-            )
-            next_prompt = _build_repair_prompt(
-                original_prompt=base_prompt,
-                candidate_code=code,
-                failure_feedback=failure_feedback or rejection_reason,
-            )
-            return True, next_prompt
-
-        if attempt_idx > 0:
-            self_correction_stats["failed_repairs"] = (
-                int(self_correction_stats.get("failed_repairs", 0)) + 1
-            )
-            append_jsonl(
-                "candidate_repair_result",
-                {
-                    "generation": state.generation,
-                    "island_id": island_id,
-                    "population_idx": pop_idx,
-                    "status": "failed",
-                    "reason": rejection_reason,
-                    "model_name": cfg.model_name,
-                },
-                log_path,
-            )
-        return False, None
+    ctx = GenerationContext(
+        cfg=cfg,
+        state=state,
+        evaluator=evaluator,
+        features_train=features_train,
+        features_val=features_val,
+        y_true_train=y_true_train,
+        y_true_val=y_true_val,
+        known_invariants_val=known_invariants_val,
+        rng=rng,
+        log_path=log_path,
+        self_correction_stats=self_correction_stats,
+        primary_archive=primary_archive,
+        topology_archive=topology_archive,
+    )
 
     island_ids = sorted(state.islands.keys())
     for island_id in island_ids:
-        archive_exemplar_codes: list[str] | None = None
-        exemplar_pool: list[Candidate] = []
-        if primary_archive is not None:
-            exemplar_pool.extend(
-                sample_diverse_exemplars(primary_archive, rng, count=2, exclude_island=island_id)
-            )
-        if topology_archive is not None:
-            exemplar_pool.extend(
-                sample_diverse_exemplars(topology_archive, rng, count=2, exclude_island=island_id)
-            )
-        if exemplar_pool:
-            seen_ids: set[str] = set()
-            deduped: list[Candidate] = []
-            for exemplar in exemplar_pool:
-                if exemplar.id in seen_ids:
-                    continue
-                seen_ids.add(exemplar.id)
-                deduped.append(exemplar)
-            archive_exemplar_codes = [candidate.code for candidate in deduped]
-        new_candidates: list[Candidate] = []
-        had_valid_train_candidate = False
-        for pop_idx in range(cfg.population_size):
-            base_prompt = _candidate_prompt(
-                state,
-                island_id,
-                cfg.target_name,
-                fitness_mode=cfg.fitness_mode,
-                enable_spectral_feature_pack=cfg.enable_spectral_feature_pack,
-                archive_exemplars=archive_exemplar_codes,
-            )
-            current_prompt = base_prompt
-            max_attempts = 1 + (
-                cfg.self_correction_max_retries if cfg.enable_self_correction else 0
-            )
-            for attempt_idx in range(max_attempts):
-                code, llm_response = _generate_candidate(
-                    cfg=cfg,
-                    prompt=current_prompt,
-                    temperature=cfg.island_temperatures[island_id],
-                )
-                train_details = evaluator.evaluate_detailed(code, features_train)
-                y_pred_train_raw = [payload.get("value") for payload in train_details]
-                train_pairs = [
-                    (idx, yt, yp)
-                    for idx, (yt, yp) in enumerate(zip(y_true_train, y_pred_train_raw, strict=True))
-                    if isinstance(yp, float)
-                ]
-                rejection_reason: str | None = None
-                failure_feedback: str | None = None
-                train_signal: float | None = None
-
-                is_bounds = cfg.fitness_mode in ("upper_bound", "lower_bound")
-
-                if not train_pairs:
-                    rejection_reason = "no_valid_train_predictions"
-                    failure_feedback = _summarize_error_details(train_details)
-                else:
-                    _, y_t_train, y_p_train = zip(*train_pairs, strict=True)
-                    if is_bounds:
-                        train_bound = compute_bound_metrics(
-                            list(y_t_train),
-                            list(y_p_train),
-                            mode=cfg.fitness_mode,
-                            tolerance=cfg.bound_tolerance,
-                        )
-                        train_signal = train_bound.bound_score
-                    else:
-                        train_metrics = compute_metrics(list(y_t_train), list(y_p_train))
-                        train_signal = abs(train_metrics.rho_spearman)
-                    if train_signal <= cfg.train_score_threshold:
-                        rejection_reason = "below_train_threshold"
-                        failure_feedback = f"train_signal={train_signal:.6f}"
-
-                if rejection_reason is not None:
-                    should_retry, next_prompt = _handle_rejection(
-                        island_id=island_id,
-                        pop_idx=pop_idx,
-                        attempt_idx=attempt_idx,
-                        rejection_reason=rejection_reason,
-                        failure_feedback=failure_feedback,
-                        base_prompt=base_prompt,
-                        code=code,
-                        max_attempts=max_attempts,
-                        repairable=rejection_reason == "no_valid_train_predictions",
-                        train_signal=train_signal,
-                    )
-                    if should_retry and next_prompt is not None:
-                        current_prompt = next_prompt
-                        continue
-                    break
-
-                had_valid_train_candidate = True
-                val_details = evaluator.evaluate_detailed(code, features_val)
-                y_pred_val_raw = [payload.get("value") for payload in val_details]
-                val_pairs = [
-                    (idx, yt, yp)
-                    for idx, (yt, yp) in enumerate(zip(y_true_val, y_pred_val_raw, strict=True))
-                    if isinstance(yp, float)
-                ]
-                if not val_pairs:
-                    rejection_reason = "no_valid_val_predictions"
-                    failure_feedback = _summarize_error_details(val_details)
-                    should_retry, next_prompt = _handle_rejection(
-                        island_id=island_id,
-                        pop_idx=pop_idx,
-                        attempt_idx=attempt_idx,
-                        rejection_reason=rejection_reason,
-                        failure_feedback=failure_feedback,
-                        base_prompt=base_prompt,
-                        code=code,
-                        max_attempts=max_attempts,
-                        repairable=True,
-                    )
-                    if should_retry and next_prompt is not None:
-                        current_prompt = next_prompt
-                        continue
-                    break
-
-                valid_indices, y_t_val, y_p_val = zip(*val_pairs, strict=True)
-                simplicity = compute_simplicity_score(code)
-                known_subset = {
-                    name: [values[idx] for idx in valid_indices]
-                    for name, values in known_invariants_val.items()
-                }
-                novelty_bonus = compute_novelty_bonus(list(y_p_val), known_subset)
-                if cfg.novelty_gate_threshold > 0 and novelty_bonus < cfg.novelty_gate_threshold:
-                    should_retry, next_prompt = _handle_rejection(
-                        island_id=island_id,
-                        pop_idx=pop_idx,
-                        attempt_idx=attempt_idx,
-                        rejection_reason="below_novelty_threshold",
-                        failure_feedback=f"novelty_bonus={novelty_bonus:.6f}",
-                        base_prompt=base_prompt,
-                        code=code,
-                        max_attempts=max_attempts,
-                        repairable=True,
-                    )
-                    if should_retry and next_prompt is not None:
-                        current_prompt = next_prompt
-                        continue
-                    break
-                if is_bounds:
-                    val_bound = compute_bound_metrics(
-                        list(y_t_val),
-                        list(y_p_val),
-                        mode=cfg.fitness_mode,
-                        tolerance=cfg.bound_tolerance,
-                    )
-                    fitness_signal = val_bound.bound_score
-                else:
-                    val_metrics = compute_metrics(list(y_t_val), list(y_p_val))
-                    fitness_signal = abs(val_metrics.rho_spearman)
-                total = compute_total_score(
-                    fitness_signal,
-                    simplicity,
-                    novelty_bonus=novelty_bonus,
-                    alpha=cfg.alpha,
-                    beta=cfg.beta,
-                    gamma=cfg.gamma,
-                )
-                candidate = Candidate(
-                    id=f"g{state.generation}_i{island_id}_p{pop_idx}_{int(rng.integers(1_000_000_000))}",
-                    code=code,
-                    island_id=island_id,
-                    generation=state.generation,
-                    train_score=float(train_signal or 0.0),
-                    val_score=total,
-                    simplicity_score=simplicity,
-                    novelty_bonus=novelty_bonus,
-                )
-                new_candidates.append(candidate)
-                if primary_archive is not None:
-                    try_insert(primary_archive, candidate, fitness_signal)
-                if topology_archive is not None:
-                    descriptor = _topology_descriptor(
-                        y_pred_valid=list(y_p_val),
-                        features_val=features_val,
-                        valid_indices=valid_indices,
-                    )
-                    try_insert(
-                        topology_archive,
-                        candidate,
-                        fitness_signal,
-                        descriptor=descriptor,
-                    )
-                log_payload: dict[str, Any] = {
-                    "candidate_id": candidate.id,
-                    "generation": state.generation,
-                    "island_id": island_id,
-                    "model_name": cfg.model_name,
-                    "train_signal": train_signal,
-                    "fitness_mode": cfg.fitness_mode,
-                    "simplicity_score": simplicity,
-                    "novelty_bonus": novelty_bonus,
-                    "total_score": total,
-                    "prompt": current_prompt if cfg.persist_prompt_and_response_logs else None,
-                    "llm_response": llm_response if cfg.persist_prompt_and_response_logs else None,
-                    "extracted_code": code if cfg.persist_prompt_and_response_logs else None,
-                }
-                if is_bounds:
-                    log_payload["bound_score"] = val_bound.bound_score
-                    log_payload["satisfaction_rate"] = val_bound.satisfaction_rate
-                    log_payload["mean_gap"] = val_bound.mean_gap
-                else:
-                    log_payload["spearman"] = val_metrics.rho_spearman
-                    log_payload["pearson"] = val_metrics.r_pearson
-                    log_payload["rmse"] = val_metrics.rmse
-                    log_payload["mae"] = val_metrics.mae
-                append_jsonl("candidate_evaluated", log_payload, log_path)
-                if attempt_idx > 0:
-                    self_correction_stats["successful_repairs"] = (
-                        int(self_correction_stats.get("successful_repairs", 0)) + 1
-                    )
-                    append_jsonl(
-                        "candidate_repair_result",
-                        {
-                            "generation": state.generation,
-                            "island_id": island_id,
-                            "population_idx": pop_idx,
-                            "status": "success",
-                            "model_name": cfg.model_name,
-                        },
-                        log_path,
-                    )
-                break
-
-        merged = state.islands.get(island_id, []) + new_candidates
-        merged.sort(key=lambda candidate: candidate.val_score, reverse=True)
-        state.islands[island_id] = merged[: cfg.population_size]
-        _update_prompt_mode_after_generation(cfg, state, island_id, had_valid_train_candidate)
+        _process_island(ctx, island_id)
 
     if cfg.migration_interval > 0 and (state.generation + 1) % cfg.migration_interval == 0:
         migrated = migrate_ring_top1(state)

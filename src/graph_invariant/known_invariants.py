@@ -384,7 +384,9 @@ def compute_dataset_features_and_invariants(
                 known_invariants["laplacian_lambda2"].append(pack["laplacian_lambda2"])
                 known_invariants["laplacian_lambda_max"].append(pack["laplacian_lambda_max"])
                 known_invariants["laplacian_spectral_gap"].append(pack["laplacian_spectral_gap"])
-                known_invariants["normalized_laplacian_lambda2"].append(pack["normalized_laplacian_lambda2"])
+                known_invariants["normalized_laplacian_lambda2"].append(
+                    pack["normalized_laplacian_lambda2"]
+                )
                 known_invariants["laplacian_energy_ratio"].append(pack["laplacian_energy_ratio"])
 
     return features_list, known_invariants

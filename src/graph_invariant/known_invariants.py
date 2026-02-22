@@ -283,3 +283,108 @@ def compute_known_invariant_values(
             out["laplacian_energy_ratio"].append(pack["laplacian_energy_ratio"])
 
     return out
+
+
+def compute_dataset_features_and_invariants(
+    graphs: list[nx.Graph],
+    include_spectral_feature_pack: bool = True,
+    include_extended_invariants: bool = True,
+) -> tuple[list[dict[str, Any]], dict[str, list[float]] | None]:
+    features_list: list[dict[str, Any]] = []
+
+    known_invariants: dict[str, list[float]] | None = None
+    if include_extended_invariants:
+        known_invariants = {
+            "density": [],
+            "clustering_coefficient": [],
+            "degree_assortativity": [],
+            "transitivity": [],
+            "average_degree": [],
+            "max_degree": [],
+            "spectral_radius": [],
+            "diameter": [],
+            "algebraic_connectivity": [],
+        }
+        if include_spectral_feature_pack:
+            known_invariants.update(
+                {
+                    "laplacian_lambda2": [],
+                    "laplacian_lambda_max": [],
+                    "laplacian_spectral_gap": [],
+                    "normalized_laplacian_lambda2": [],
+                    "laplacian_energy_ratio": [],
+                }
+            )
+
+    for graph in graphs:
+        n = graph.number_of_nodes()
+        m = graph.number_of_edges()
+        degrees = sorted(d for _, d in graph.degree())
+        avg_degree = (2.0 * m / n) if n > 0 else 0.0
+        max_deg = max(degrees) if degrees else 0
+        min_deg = min(degrees) if degrees else 0
+        std_degree = float(np.std(degrees)) if degrees else 0.0
+        try:
+            assortativity = nx.degree_assortativity_coefficient(graph)
+        except (nx.NetworkXError, ValueError, ZeroDivisionError):
+            assortativity = 0.0
+
+        density = nx.density(graph)
+        avg_clustering = nx.average_clustering(graph)
+        transitivity = nx.transitivity(graph)
+        triangle_counts = nx.triangles(graph)
+
+        pack = {}
+        if include_spectral_feature_pack:
+            pack = _spectral_pack(graph)
+
+        feat = {
+            "n": n,
+            "m": m,
+            "density": _safe_float(density),
+            "avg_degree": _safe_float(avg_degree),
+            "max_degree": max_deg,
+            "min_degree": min_deg,
+            "std_degree": _safe_float(std_degree),
+            "avg_clustering": _safe_float(avg_clustering),
+            "transitivity": _safe_float(transitivity),
+            "degree_assortativity": _safe_float(assortativity),
+            "num_triangles": sum(triangle_counts.values()) // 3,
+            "degrees": degrees,
+        }
+        if include_spectral_feature_pack:
+            feat.update(pack)
+        features_list.append(feat)
+
+        if include_extended_invariants and known_invariants is not None:
+            spectral_radius = _spectral_radius_sparse(graph)
+            try:
+                diameter = float(nx.diameter(graph))
+            except nx.NetworkXError:
+                diameter = 0.0
+
+            algebraic = 0.0
+            if n >= 2 and nx.is_connected(graph):
+                if n >= 10 and include_spectral_feature_pack:
+                    algebraic = pack.get("laplacian_lambda2", 0.0)
+                else:
+                    algebraic = _algebraic_connectivity_sparse(graph)
+
+            known_invariants["density"].append(_safe_float(density))
+            known_invariants["clustering_coefficient"].append(_safe_float(avg_clustering))
+            known_invariants["degree_assortativity"].append(_safe_float(assortativity))
+            known_invariants["transitivity"].append(_safe_float(transitivity))
+            known_invariants["average_degree"].append(_safe_float(avg_degree))
+            known_invariants["max_degree"].append(_safe_float(float(max_deg)))
+            known_invariants["spectral_radius"].append(_safe_float(spectral_radius))
+            known_invariants["diameter"].append(_safe_float(diameter))
+            known_invariants["algebraic_connectivity"].append(_safe_float(algebraic))
+
+            if include_spectral_feature_pack:
+                known_invariants["laplacian_lambda2"].append(pack["laplacian_lambda2"])
+                known_invariants["laplacian_lambda_max"].append(pack["laplacian_lambda_max"])
+                known_invariants["laplacian_spectral_gap"].append(pack["laplacian_spectral_gap"])
+                known_invariants["normalized_laplacian_lambda2"].append(pack["normalized_laplacian_lambda2"])
+                known_invariants["laplacian_energy_ratio"].append(pack["laplacian_energy_ratio"])
+
+    return features_list, known_invariants

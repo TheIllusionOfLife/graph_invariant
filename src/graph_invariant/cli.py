@@ -15,8 +15,6 @@ from .data import generate_phase1_datasets
 from .evolution import migrate_ring_top1
 from .known_invariants import (
     compute_dataset_features_and_invariants,
-    compute_feature_dicts,
-    compute_known_invariant_values,
 )
 from .llm_ollama import (
     IslandStrategy,

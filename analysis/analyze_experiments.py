@@ -578,22 +578,27 @@ def build_appendix_payload(
 
     # --- Compute profile ---
     compute_profile: dict[str, dict] = {}
-    _islands = 4  # K = 4 islands (constant in the system)
-    _pop = 5  # P = 5 population per island
     for name, data in sorted(experiments.items()):
         summary = data.get("summary", {})
         gens = summary.get("final_generation")
         if not isinstance(gens, int):
             continue
+        cfg = summary.get("config", {}) if isinstance(summary.get("config"), dict) else {}
+        # Read islands and population from persisted config; fall back to system defaults
+        island_temps = cfg.get("island_temperatures", [])
+        islands = len(island_temps) if island_temps else 4
+        pop = int(cfg.get("population_size", 5))
+        pysr_sec = cfg.get("pysr_timeout_in_seconds")
+        pysr_budget = f"{int(pysr_sec)} s" if isinstance(pysr_sec, (int, float)) else "60 s"
         sc_stats = summary.get("self_correction_stats", {})
         repair_calls = sc_stats.get("attempted_repairs", 0) if isinstance(sc_stats, dict) else 0
-        gen_calls = gens * _islands * _pop
+        gen_calls = gens * islands * pop
         compute_profile[name] = {
             "generations": gens,
             "llm_gen_calls": gen_calls,
             "repair_calls": repair_calls,
             "total_calls": gen_calls + repair_calls,
-            "pysr_budget": "60 s",
+            "pysr_budget": pysr_budget,
         }
 
     return {
@@ -807,10 +812,10 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
                 "    {name} & {attempted} & {no_valid} & {below_train}"
                 " & {below_novelty} \\\\".format(
                     name=_escape_latex_text(name),
-                    attempted=payload.get("attempted", "N/A"),
-                    no_valid=payload.get("no_valid_train_predictions", "N/A"),
-                    below_train=payload.get("below_train_threshold", "N/A"),
-                    below_novelty=payload.get("below_novelty_threshold", "N/A"),
+                    attempted=_escape_latex_text(payload.get("attempted", "N/A")),
+                    no_valid=_escape_latex_text(payload.get("no_valid_train_predictions", "N/A")),
+                    below_train=_escape_latex_text(payload.get("below_train_threshold", "N/A")),
+                    below_novelty=_escape_latex_text(payload.get("below_novelty_threshold", "N/A")),
                 )
             )
     else:
@@ -849,11 +854,11 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
             lines.append(
                 "    {name} & {gens} & {gen_calls} & {repair} & {total} & {pysr} \\\\".format(
                     name=_escape_latex_text(name),
-                    gens=payload.get("generations", "N/A"),
-                    gen_calls=payload.get("llm_gen_calls", "N/A"),
-                    repair=payload.get("repair_calls", "N/A"),
-                    total=payload.get("total_calls", "N/A"),
-                    pysr=payload.get("pysr_budget", "60 s"),
+                    gens=_escape_latex_text(payload.get("generations", "N/A")),
+                    gen_calls=_escape_latex_text(payload.get("llm_gen_calls", "N/A")),
+                    repair=_escape_latex_text(payload.get("repair_calls", "N/A")),
+                    total=_escape_latex_text(payload.get("total_calls", "N/A")),
+                    pysr=_escape_latex_text(payload.get("pysr_budget", "60 s")),
                 )
             )
     else:

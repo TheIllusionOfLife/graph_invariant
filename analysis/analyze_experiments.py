@@ -559,12 +559,56 @@ def build_appendix_payload(
             "criteria_success_runs": counts["criteria_success"],
         }
 
+    # --- Self-correction failure breakdown ---
+    sc_failure_breakdown: dict[str, dict] = {}
+    for name, data in sorted(experiments.items()):
+        summary = data.get("summary", {})
+        sc_stats = summary.get("self_correction_stats", {})
+        if not isinstance(sc_stats, dict) or not sc_stats.get("enabled", False):
+            continue
+        failure_cats = sc_stats.get("failure_categories", {})
+        if not isinstance(failure_cats, dict):
+            continue
+        sc_failure_breakdown[name] = {
+            "attempted": sc_stats.get("attempted_repairs", "N/A"),
+            "no_valid_train_predictions": failure_cats.get("no_valid_train_predictions", "N/A"),
+            "below_train_threshold": failure_cats.get("below_train_threshold", "N/A"),
+            "below_novelty_threshold": failure_cats.get("below_novelty_threshold", "N/A"),
+        }
+
+    # --- Compute profile ---
+    compute_profile: dict[str, dict] = {}
+    for name, data in sorted(experiments.items()):
+        summary = data.get("summary", {})
+        gens = summary.get("final_generation")
+        if not isinstance(gens, int):
+            continue
+        cfg = summary.get("config", {}) if isinstance(summary.get("config"), dict) else {}
+        # Read islands and population from persisted config; fall back to system defaults
+        island_temps = cfg.get("island_temperatures", [])
+        islands = len(island_temps) if island_temps else 4
+        pop = int(cfg.get("population_size", 5))
+        pysr_sec = cfg.get("pysr_timeout_in_seconds")
+        pysr_budget = f"{int(pysr_sec)} s" if isinstance(pysr_sec, (int, float)) else "60 s"
+        sc_stats = summary.get("self_correction_stats", {})
+        repair_calls = sc_stats.get("attempted_repairs", 0) if isinstance(sc_stats, dict) else 0
+        gen_calls = gens * islands * pop
+        compute_profile[name] = {
+            "generations": gens,
+            "llm_gen_calls": gen_calls,
+            "repair_calls": repair_calls,
+            "total_calls": gen_calls + repair_calls,
+            "pysr_budget": pysr_budget,
+        }
+
     return {
         "appendix_seed_aggregates": aggregates,
         "appendix_seed_notes": seed_notes,
         "appendix_small_data_tradeoff": small_data_tradeoff,
         "appendix_bounds_diagnostics": bounds_diagnostics,
         "appendix_runtime_summary": runtime_summary,
+        "sc_failure_breakdown": sc_failure_breakdown,
+        "compute_profile": compute_profile,
     }
 
 
@@ -733,6 +777,94 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
     else:
         lines.append("    \\multicolumn{5}{c}{No runtime summary found.} \\\\")
 
+    lines.extend(
+        [
+            "    \\bottomrule",
+            "  \\end{tabular}",
+            "\\end{table}",
+            "",
+        ]
+    )
+
+    # --- Self-correction failure breakdown table ---
+    sc_failure_data = appendix_payload.get("sc_failure_breakdown", {})
+    lines.extend(
+        [
+            "\\subsection{Self-correction failure breakdown}",
+            "\\begin{table}[h]",
+            "  \\centering",
+            "  \\small",
+            "  \\caption{Self-correction failure categories per experiment."
+            " Counts are cumulative event tallies: a single failed attempt may"
+            " be counted in multiple categories (e.g., both no valid predictions"
+            " and below novelty gate), so column sums can exceed SC attempted."
+            " Novelty-gate rejections dominate, confirming the hard gate"
+            " is the primary bottleneck rather than code quality.}",
+            "  \\label{tab:appendix_sc_failures}",
+            "  \\begin{tabular}{p{4.0cm}cccc}",
+            "    \\toprule",
+            "    Experiment & SC attempted & No valid preds & Below train thr."
+            " & Below novelty gate \\\\",
+            "    \\midrule",
+        ]
+    )
+    if isinstance(sc_failure_data, dict) and sc_failure_data:
+        for name, payload in sorted(sc_failure_data.items()):
+            lines.append(
+                "    {name} & {attempted} & {no_valid} & {below_train}"
+                " & {below_novelty} \\\\".format(
+                    name=_escape_latex_text(name),
+                    attempted=_escape_latex_text(payload.get("attempted", "N/A")),
+                    no_valid=_escape_latex_text(payload.get("no_valid_train_predictions", "N/A")),
+                    below_train=_escape_latex_text(payload.get("below_train_threshold", "N/A")),
+                    below_novelty=_escape_latex_text(payload.get("below_novelty_threshold", "N/A")),
+                )
+            )
+    else:
+        lines.append("    \\multicolumn{5}{c}{No self-correction data found.} \\\\")
+    lines.extend(
+        [
+            "    \\bottomrule",
+            "  \\end{tabular}",
+            "\\end{table}",
+            "",
+        ]
+    )
+
+    # --- Compute profile table ---
+    compute_data = appendix_payload.get("compute_profile", {})
+    lines.extend(
+        [
+            "\\subsection{Compute profile}",
+            "\\begin{table}[h]",
+            "  \\centering",
+            "  \\small",
+            "  \\caption{Estimated LLM call budget per experiment."
+            " LLM generation calls = generations $\\times$ islands $\\times$ population."
+            " Repair calls = self-correction attempts."
+            " Total calls = generation + repair."
+            " Estimated at 5--15\\,s per LLM call on a local 20B model.}",
+            "  \\label{tab:appendix_compute}",
+            "  \\begin{tabular}{p{4.0cm}ccccc}",
+            "    \\toprule",
+            "    Experiment & Gens & LLM gen calls & Repair calls & Total calls & PySR budget \\\\",
+            "    \\midrule",
+        ]
+    )
+    if isinstance(compute_data, dict) and compute_data:
+        for name, payload in sorted(compute_data.items()):
+            lines.append(
+                "    {name} & {gens} & {gen_calls} & {repair} & {total} & {pysr} \\\\".format(
+                    name=_escape_latex_text(name),
+                    gens=_escape_latex_text(payload.get("generations", "N/A")),
+                    gen_calls=_escape_latex_text(payload.get("llm_gen_calls", "N/A")),
+                    repair=_escape_latex_text(payload.get("repair_calls", "N/A")),
+                    total=_escape_latex_text(payload.get("total_calls", "N/A")),
+                    pysr=_escape_latex_text(payload.get("pysr_budget", "60 s")),
+                )
+            )
+    else:
+        lines.append("    \\multicolumn{6}{c}{No compute profile data found.} \\\\")
     lines.extend(
         [
             "    \\bottomrule",

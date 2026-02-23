@@ -10,6 +10,7 @@
     \toprule
     Group & Seeds & Success & Val mean$\pm$std & Test mean$\pm$std & Test CI95 \\
     \midrule
+    ablation\_sc\_off & 3 & 3/3 & 0.883$\pm$0.018 & 0.943$\pm$0.004 & $\pm$0.010 \\
     benchmark/\allowbreak benchmark\_20260215T230550Z & 5 & 5/5 & 0.927$\pm$0.012 & 0.921$\pm$0.030 & $\pm$0.038 \\
     neurips\_matrix\_day1\_2026-02-21/\allowbreak algebraic\_connectivity\_medium\textsuperscript{\dag} & 2 & 0/2 & 0.899$\pm$0.000 & 0.892$\pm$0.019 & $\pm$0.108 \\
     neurips\_matrix\_day1\_2026-02-21/\allowbreak benchmark\_aspl\_medium & 3 & 0/3 & 0.065$\pm$0.489 & -0.011$\pm$0.510 & $\pm$0.989 \\
@@ -101,6 +102,9 @@
     \toprule
     Experiment & Gens & LLM gen calls & Repair calls & Total calls & PySR budget \\
     \midrule
+    ablation\_sc\_off/seed\_11 & 20 & 400 & 0 & 400 & 60 s \\
+    ablation\_sc\_off/seed\_22 & 20 & 400 & 0 & 400 & 60 s \\
+    ablation\_sc\_off/seed\_33 & 20 & 400 & 0 & 400 & 60 s \\
     experiment\_algebraic\_connectivity & 20 & 400 & 75 & 475 & 60 s \\
     experiment\_map\_elites\_aspl & 30 & 600 & 164 & 764 & 60 s \\
     experiment\_upper\_bound\_aspl & 20 & 400 & 56 & 456 & 60 s \\

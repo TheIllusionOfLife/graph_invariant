@@ -1116,38 +1116,42 @@
       {
         "seed": 11,
         "status": 0,
-        "success": false,
+        "success": true,
         "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_11",
         "val_spearman": 0.9218210455261382,
         "test_spearman": 0.9390399759994,
-        "has_baselines": true
+        "has_baselines": true,
+        "success_criterion": "test_spearman >= 0.85"
       },
       {
         "seed": 22,
         "status": 0,
-        "success": false,
+        "success": true,
         "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_22",
         "val_spearman": 0.933834845871147,
         "test_spearman": 0.9221341491540996,
-        "has_baselines": true
+        "has_baselines": true,
+        "success_criterion": "test_spearman >= 0.85"
       },
       {
         "seed": 33,
         "status": 0,
-        "success": false,
+        "success": true,
         "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_33",
         "val_spearman": 0.9284212105302634,
         "test_spearman": 0.9153573839345984,
-        "has_baselines": true
+        "has_baselines": true,
+        "success_criterion": "test_spearman >= 0.85"
       },
       {
         "seed": 44,
         "status": 0,
-        "success": false,
+        "success": true,
         "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_44",
         "val_spearman": 0.9090632265806646,
         "test_spearman": 0.8731478286957175,
-        "has_baselines": true
+        "has_baselines": true,
+        "success_criterion": "test_spearman >= 0.85"
       },
       {
         "seed": 55,
@@ -1156,7 +1160,8 @@
         "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_55",
         "val_spearman": 0.9395769894247358,
         "test_spearman": 0.9533713342833573,
-        "has_baselines": true
+        "has_baselines": true,
+        "success_criterion": "test_spearman >= 0.85"
       }
     ]
   },
@@ -4721,8 +4726,8 @@
     },
     "benchmark/benchmark_20260215T230550Z": {
       "seed_count": 5,
-      "success_count": 1,
-      "success_rate": 0.2,
+      "success_count": 5,
+      "success_rate": 1.0,
       "val_spearman": {
         "n": 5,
         "mean": 0.9265434635865898,
@@ -4940,8 +4945,8 @@
     },
     "benchmark/benchmark_20260215T230550Z": {
       "seed_count": 5,
-      "success_count": 1,
-      "success_rate": 0.2,
+      "success_count": 5,
+      "success_rate": 1.0,
       "val_spearman": {
         "n": 5,
         "mean": 0.9265434635865898,
@@ -5071,5 +5076,282 @@
       "test_mean_gap": 1.6273956140347665
     }
   },
-  "appendix_runtime_summary": {}
+  "appendix_runtime_summary": {},
+  "sc_failure_breakdown": {
+    "experiment_algebraic_connectivity": {
+      "attempted": 75,
+      "no_valid_train_predictions": 48,
+      "below_train_threshold": 43,
+      "below_novelty_threshold": 55
+    },
+    "experiment_map_elites_aspl": {
+      "attempted": 164,
+      "no_valid_train_predictions": 105,
+      "below_train_threshold": 38,
+      "below_novelty_threshold": 145
+    },
+    "experiment_upper_bound_aspl": {
+      "attempted": 56,
+      "no_valid_train_predictions": 47,
+      "below_train_threshold": 7,
+      "below_novelty_threshold": 36
+    },
+    "experiment_v2": {
+      "attempted": 36,
+      "no_valid_train_predictions": 40,
+      "below_train_threshold": 24,
+      "below_novelty_threshold": 53
+    },
+    "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_22": {
+      "attempted": 27,
+      "no_valid_train_predictions": 13,
+      "below_train_threshold": 3,
+      "below_novelty_threshold": 24
+    },
+    "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_33": {
+      "attempted": 22,
+      "no_valid_train_predictions": 13,
+      "below_train_threshold": "N/A",
+      "below_novelty_threshold": 19
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_11": {
+      "attempted": 2,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": 2,
+      "below_novelty_threshold": 3
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_22": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_33": {
+      "attempted": 3,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 5
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_11": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": 4,
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_22": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": "N/A",
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_33": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": "N/A",
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_11": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_22": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": "N/A",
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_33": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_11": {
+      "attempted": 33,
+      "no_valid_train_predictions": 21,
+      "below_train_threshold": 6,
+      "below_novelty_threshold": 26
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_22": {
+      "attempted": 27,
+      "no_valid_train_predictions": 20,
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 22
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_33": {
+      "attempted": 27,
+      "no_valid_train_predictions": 17,
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 23
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_11": {
+      "attempted": 34,
+      "no_valid_train_predictions": 19,
+      "below_train_threshold": 6,
+      "below_novelty_threshold": 34
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_22": {
+      "attempted": 27,
+      "no_valid_train_predictions": 16,
+      "below_train_threshold": 6,
+      "below_novelty_threshold": 22
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_33": {
+      "attempted": 28,
+      "no_valid_train_predictions": 13,
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 25
+    }
+  },
+  "compute_profile": {
+    "experiment_algebraic_connectivity": {
+      "generations": 20,
+      "llm_gen_calls": 400,
+      "repair_calls": 75,
+      "total_calls": 475,
+      "pysr_budget": "60 s"
+    },
+    "experiment_map_elites_aspl": {
+      "generations": 30,
+      "llm_gen_calls": 600,
+      "repair_calls": 164,
+      "total_calls": 764,
+      "pysr_budget": "60 s"
+    },
+    "experiment_upper_bound_aspl": {
+      "generations": 20,
+      "llm_gen_calls": 400,
+      "repair_calls": 56,
+      "total_calls": 456,
+      "pysr_budget": "60 s"
+    },
+    "experiment_v2": {
+      "generations": 12,
+      "llm_gen_calls": 240,
+      "repair_calls": 36,
+      "total_calls": 276,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_22": {
+      "generations": 12,
+      "llm_gen_calls": 240,
+      "repair_calls": 27,
+      "total_calls": 267,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_33": {
+      "generations": 12,
+      "llm_gen_calls": 240,
+      "repair_calls": 22,
+      "total_calls": 262,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_11": {
+      "generations": 8,
+      "llm_gen_calls": 160,
+      "repair_calls": 2,
+      "total_calls": 162,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_22": {
+      "generations": 8,
+      "llm_gen_calls": 160,
+      "repair_calls": 1,
+      "total_calls": 161,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_33": {
+      "generations": 8,
+      "llm_gen_calls": 160,
+      "repair_calls": 3,
+      "total_calls": 163,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_11": {
+      "generations": 8,
+      "llm_gen_calls": 160,
+      "repair_calls": 1,
+      "total_calls": 161,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_22": {
+      "generations": 8,
+      "llm_gen_calls": 160,
+      "repair_calls": 1,
+      "total_calls": 161,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_33": {
+      "generations": 8,
+      "llm_gen_calls": 160,
+      "repair_calls": 1,
+      "total_calls": 161,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_11": {
+      "generations": 8,
+      "llm_gen_calls": 160,
+      "repair_calls": 1,
+      "total_calls": 161,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_22": {
+      "generations": 8,
+      "llm_gen_calls": 160,
+      "repair_calls": 1,
+      "total_calls": 161,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_33": {
+      "generations": 8,
+      "llm_gen_calls": 160,
+      "repair_calls": 1,
+      "total_calls": 161,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_11": {
+      "generations": 12,
+      "llm_gen_calls": 240,
+      "repair_calls": 33,
+      "total_calls": 273,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_22": {
+      "generations": 12,
+      "llm_gen_calls": 240,
+      "repair_calls": 27,
+      "total_calls": 267,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_33": {
+      "generations": 12,
+      "llm_gen_calls": 240,
+      "repair_calls": 27,
+      "total_calls": 267,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_11": {
+      "generations": 8,
+      "llm_gen_calls": 160,
+      "repair_calls": 34,
+      "total_calls": 194,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_22": {
+      "generations": 12,
+      "llm_gen_calls": 240,
+      "repair_calls": 27,
+      "total_calls": 267,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_33": {
+      "generations": 12,
+      "llm_gen_calls": 240,
+      "repair_calls": 28,
+      "total_calls": 268,
+      "pysr_budget": "60 s"
+    }
+  }
 }

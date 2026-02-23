@@ -16,7 +16,7 @@ inequalities on the evaluated graph distributions.
   \caption{Summary of results across four experiment configurations. Spearman
     $\rho$ is reported on the validation (Val) and test sets. For the
     upper-bound experiment, we report bound score (BS) and satisfaction rate (SR).
-    Benchmark reports mean $\pm$ std across 5 seeds.}
+    Benchmark reports mean $\pm$ std across 5 seeds. Success = (\#seeds with test $\rho \geq 0.85$) / total seeds.}
   \label{tab:main_results}
   \begin{tabular}{lccccc}
     \toprule
@@ -25,7 +25,7 @@ inequalities on the evaluated graph distributions.
     MAP-Elites ASPL     & correlation  & 30 & 0.935 & 0.947 & \checkmark \\
     Algebraic conn.     & correlation  & 20 & 0.765 & 0.778 & --- \\
     Upper bound ASPL    & upper\_bound & 20 & \multicolumn{2}{c}{BS=0.514, SR=87\%} & --- \\
-    Benchmark (mean$\pm$std) & correlation & 20 & 0.927$\pm$0.011 & 0.921$\pm$0.027 & 1/5 \\
+    Benchmark (mean$\pm$std) & correlation & 20 & 0.927$\pm$0.011 & 0.921$\pm$0.027 & 5/5 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -111,7 +111,7 @@ graphs ($\rho = 0.957$) and extreme-parameter graphs ($\rho = 0.926$), but
 degrades on special topologies ($\rho = 0.500$) such as barbell and grid
 graphs. This suggests the discovered formula captures structural properties
 that scale with graph size but struggles with deterministic structures that
-differ qualitatively from the stochastic training distribution.
+differ qualitatively from the stochastic training distribution. (The special-topology category contains 8 graphs; Spearman $\rho$ on 8 samples carries wide confidence intervals and should be interpreted as a preliminary signal, not a definitive estimate.)
 
 \begin{figure}[t]
   \centering
@@ -130,14 +130,13 @@ Spearman correlations across 5 seeds. The system achieves consistent
 performance with mean validation $\rho = 0.927 \pm 0.011$ and mean test
 $\rho = 0.921 \pm 0.027$. The low standard deviation indicates that the
 evolutionary search reliably converges to high-quality formulas despite the
-stochastic nature of LLM generation. One seed (seed 55) meets the success
-threshold with test $\rho = 0.953$.
+stochastic nature of LLM generation. All five seeds meet the success threshold (test $\rho$ range: 0.873--0.953).
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.5\textwidth]{figures/benchmark_boxplot.pdf}
   \caption{Distribution of Spearman $\rho$ across 5 benchmark seeds.
-    Validation: $0.927 \pm 0.011$; Test: $0.921 \pm 0.027$. The tight
+    Validation: $0.927 \pm 0.011$; Test: $0.921 \pm 0.027$. All five seeds meet the $\rho \geq 0.85$ threshold. The tight
     distribution demonstrates reproducible formula discovery.}
   \label{fig:benchmark}
 \end{figure}

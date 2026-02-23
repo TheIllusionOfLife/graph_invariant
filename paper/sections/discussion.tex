@@ -65,6 +65,23 @@ provide little mathematical insight. The discovered formula chooses the
 minimum of five independent bounds, an approach that mirrors how human
 mathematicians combine known inequalities to derive tighter results.
 
+\paragraph{Why LLMs over symbolic regression?}
+PySR optimizes for correlation alone; LLMs bring prior knowledge of mathematical
+structure---harmonic means, Moore bounds, min-of-bounds compositions---allowing
+the system to propose candidates that are plausible starting points for proof,
+not just fitted curves. This structural prior enables the bounds mode to discover
+formulas that mirror classical mathematical reasoning (combining known
+inequalities to derive tighter results), a capability outside the reach of
+correlation-only symbolic regression.
+
+\paragraph{Connections to classical results.}
+The upper-bound formula explicitly contains $(n+1)/3$, the classical exact ASPL
+for path graphs---a direct rediscovery of a known result. The dominant terms of
+the MAP-Elites ASPL formula ($\sqrt{n}/({\bar{d}}+1) \cdot 1/\text{density}$)
+approximate $n^2/(2m)$, the mean-field ASPL for sparse graphs, echoing known
+order-of-magnitude arguments. These connections strengthen the claim that LLM
+search recovers mathematically meaningful structure, not merely curve-fitting.
+
 \subsection{Limitations}
 
 \begin{itemize}[leftmargin=1.5em,itemsep=2pt]
@@ -84,6 +101,11 @@ mathematicians combine known inequalities to derive tighter results.
     may be overly conservative for small feature vectors, potentially
     rejecting candidates that are genuinely novel but happen to correlate
     moderately with known invariants on the evaluation graphs.
+    Across experiments, novelty-gate rejections dominate self-correction
+    failure categories (e.g., 145 of 288 failure events in MAP-Elites ASPL),
+    confirming the hard gate is the primary bottleneck rather than code quality.
+    A soft penalty bonus---reducing the novelty weight rather than hard-rejecting
+    candidates---is a promising fix that could improve discovery throughput.
   \item \textbf{Single LLM}: All experiments use a single local model
     (\texttt{gpt-oss:20b}). Different LLMs with different mathematical
     reasoning capabilities may produce qualitatively different formulas.

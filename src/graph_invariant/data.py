@@ -116,11 +116,19 @@ def generate_ood_extreme_params(rng: np.random.Generator, count: int) -> list[nx
 def generate_ood_special_topology() -> list[nx.Graph]:
     """Deterministic structures for structural generalization.
 
-    Returns a fixed pool of 8 connected, integer-labeled topology archetypes.
+    Returns a fixed pool of 16 connected, integer-labeled topology archetypes,
+    selected by four principled criteria:
+    - Classical archetypes: graphs already in the original set (barbell, grid, etc.)
+    - Density extremes: path/complete/cycle stress-test ASPL at min/max density
+    - Degree distribution extremes: star (max heterogeneity), bipartite, regular
+    - Known closed-form ASPL: path graph has ASPL = (n+1)/3 exactly, enabling
+      direct verification of the upper-bound formula's rediscovery of this result
+
     Phase1 train/val injection samples from this pool with replacement; in
     practice, keep `ood_*_special_topology_ratio <= 0.2` to limit duplication.
     """
     graphs: list[nx.Graph] = []
+    # --- Original 8 archetypes ---
     graphs.append(nx.barbell_graph(20, 5))
     graphs.append(nx.grid_2d_graph(8, 8))
     graphs.append(nx.circular_ladder_graph(30))
@@ -129,6 +137,18 @@ def generate_ood_special_topology() -> list[nx.Graph]:
     graphs.append(nx.karate_club_graph())
     graphs.append(nx.les_miserables_graph())
     graphs.append(nx.florentine_families_graph())
+    # --- Density extremes: stress-test ASPL formula at boundaries ---
+    graphs.append(nx.path_graph(100))  # max ASPL for n nodes; ASPL = (n+1)/3 exactly
+    graphs.append(nx.complete_graph(50))  # min ASPL; all pairwise distances = 1
+    graphs.append(nx.cycle_graph(100))  # known ASPL formula
+    # --- Degree distribution extremes ---
+    graphs.append(nx.star_graph(99))  # max degree heterogeneity; ASPL ~ 2
+    graphs.append(nx.complete_bipartite_graph(25, 25))  # bipartite; known structural gap
+    # --- Degree-regular extremes (complement existing 4-regular) ---
+    graphs.append(nx.random_regular_graph(3, 50, seed=1))  # sparse regular
+    graphs.append(nx.random_regular_graph(6, 50, seed=1))  # denser regular
+    # --- Hierarchical topology ---
+    graphs.append(nx.wheel_graph(100))  # hub + outer ring; known ASPL formula
     # Ensure all connected and integer-labeled (e.g. grid_2d_graph uses tuple labels)
     return [nx.convert_node_labels_to_integers(connected_subgraph(g)) for g in graphs]
 

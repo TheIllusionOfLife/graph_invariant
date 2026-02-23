@@ -26,11 +26,15 @@
 | neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_11 | upper_bound | False | 0.4136 | 0.4433 | 8 |
 | neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_22 | upper_bound | False | 0.3125 | 0.4122 | 12 |
 | neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_33 | upper_bound | False | 0.4194 | 0.3551 | 12 |
+| ablation_sc_off/seed_11 | correlation | True | 0.9019 | 0.9413 | 20 |
+| ablation_sc_off/seed_22 | correlation | True | 0.8668 | 0.9410 | 20 |
+| ablation_sc_off/seed_33 | correlation | True | 0.8792 | 0.9482 | 20 |
 
 ## Multi-Seed Aggregates
 
 | Experiment Group | Seeds | Val mean±std | Val CI95 | Test mean±std | Test CI95 | CI clamp |
 | --- | --- | --- | --- | --- | --- | --- |
+| ablation_sc_off | 3 | 0.8827 ± 0.0178 | ±0.0442 | 0.9435 ± 0.0040 | ±0.0101 | none |
 | benchmark/benchmark_20260215T230550Z | 5 | 0.9265 ± 0.0118 | ±0.0146 | 0.9206 ± 0.0304 | ±0.0377 | none |
 | neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium | 2 | 0.8987 ± 0.0004 | ±0.0039 | 0.8920 ± 0.0193 | ±0.1080 | test |
 | neurips_matrix_day1_2026-02-21/benchmark_aspl_medium | 3 | 0.0654 ± 0.4888 | ±0.9346 | -0.0106 ± 0.5103 | ±0.9894 | val+test |
@@ -1673,5 +1677,303 @@ def new_invariant(s):
 
     # Return the tightest safe upper bound
     return min(bound_min, bound_lam, bound_exp)
+```
+
+## ablation_sc_off/seed_11
+
+- Fitness mode: correlation
+- Success: True
+- Stop reason: max_generations_reached
+- Final generation: 20
+- Validation Spearman: 0.9019
+- Test Spearman: 0.9413
+- Best formula AST nodes: 422
+
+### Bounds Diagnostics
+
+- test_bound_score: None
+- test_mean_gap: None
+- test_satisfaction_rate: None
+- val_bound_score: None
+- val_mean_gap: None
+- val_satisfaction_rate: None
+- Convergence: 0.459 -> 0.543
+
+### Acceptance Funnel
+
+- Final generation attempted: 20
+- Final generation accepted: 16
+- Final generation acceptance rate: 0.800
+
+### Repair Breakdown
+
+- Repair attempts: 0
+- Repair successes: 0
+- Repair failures: 0
+
+### Best Candidate Code
+
+```python
+def new_invariant(s):
+    """
+    Estimate the average shortest path length from a compact combination
+    of pre‑computed graph features.
+
+    Parameters
+    ----------
+    s : dict
+        Dictionary of graph features. Expected keys:
+        n, m, density, avg_degree, max_degree, min_degree, std_degree,
+        avg_clustering, transitivity, degree_assortativity,
+        num_triangles, degrees, laplacian_lambda2, laplacian_lambda_max,
+        laplacian_spectral_gap, normalized_laplacian_lambda2,
+        laplacian_energy_ratio.
+
+    Returns
+    -------
+    float
+        Estimated average shortest path length.
+    """
+    # Basic statistics
+    n          = s['n']
+    avg_deg    = s['avg_degree']
+    max_deg    = s['max_degree']
+    min_deg    = s['min_degree']
+    std_deg    = s['std_degree']
+    clust      = s['avg_clustering']
+    trans      = s['transitivity']
+    density    = s['density']
+    assort     = s['degree_assortativity']
+    num_tri    = s['num_triangles']
+    lam_gap    = s['laplacian_spectral_gap']
+    norm_lam2  = s['normalized_laplacian_lambda2']
+    energy     = s['laplacian_energy_ratio']
+    lam_max    = s['laplacian_lambda_max']
+    degrees    = s['degrees']
+
+    # Base size‑degree scaling
+    base = n / (avg_deg + 1)
+
+    # Density factor – denser graphs usually have shorter paths
+    density_factor = 1 / (1 + density)
+
+    # Spectral connectivity factor – larger gaps imply better connectivity
+    spectral_factor = 1 / (1 + lam_gap + norm_lam2)
+
+    # Clustering and transitivity tend to inflate path lengths
+    clustering_factor = 1 + clust / 2
+    trans_factor      = 1 + trans / 2
+
+    # Assortativity – more assortative networks tend to have shorter paths
+    assort_factor = 1 + (assort + 1) / 3
+
+    # Minimum‑degree bottleneck
+    min_factor = 1 + (1 - min_deg / (avg_deg + 1)) / 3
+
+    # Degree variance – high variance (hubs) usually shorten paths
+    std_factor = 1 / (1 + std_deg / (avg_deg + 1))
+
+    # Triangle density – more triangles usually shorten paths
+    if n > 1:
+        max_tri = n * (n - 1) / 2
+        tri_factor = 1 + num_tri / max_tri
+    else:
+        tri_factor = 1
+
+    # Presence of hubs
+    hub_factor = 1 + max_deg / (avg_deg + 1) / 4
+
+    # Energy ratio – higher energy indicates irregularity, slightly reducing paths
+    energy_factor = 1 + energy / 8
+
+    # Spectral maximum ratio – larger λ_max relative to n indicates denser connectivity
+    lambda_max_factor = 1 + lam_max / (n + 1) / 4
+
+    # Fraction of nodes with degree above average (high‑degree fraction)
+    high_deg_count = sum(1 for d in degrees if d > avg_deg)
+    high_deg_fraction = high_deg_count / n if n else 0
+    high_deg_factor = 1 + high_deg_fraction / 3
+
+    # Combine all factors multiplicatively
+    result = (base * density_factor * spectral_factor * clustering_factor *
+              trans_factor * assort_factor * min_factor * std_factor *
+              tri_factor * hub_factor * energy_factor *
+              lambda_max_factor * high_deg_factor)
+
+    return result
+```
+
+## ablation_sc_off/seed_22
+
+- Fitness mode: correlation
+- Success: True
+- Stop reason: max_generations_reached
+- Final generation: 20
+- Validation Spearman: 0.8668
+- Test Spearman: 0.9410
+- Best formula AST nodes: 329
+
+### Bounds Diagnostics
+
+- test_bound_score: None
+- test_mean_gap: None
+- test_satisfaction_rate: None
+- val_bound_score: None
+- val_mean_gap: None
+- val_satisfaction_rate: None
+- Convergence: 0.487 -> 0.533
+
+### Acceptance Funnel
+
+- Final generation attempted: 20
+- Final generation accepted: 18
+- Final generation acceptance rate: 0.900
+
+### Repair Breakdown
+
+- Repair attempts: 0
+- Repair successes: 0
+- Repair failures: 0
+
+### Best Candidate Code
+
+```python
+import numpy as np
+
+def new_invariant(s):
+    eps = 1e-6
+    n = s['n']
+    avg_deg = s['avg_degree']
+    min_deg = s['min_degree']
+    max_deg = s['max_degree']
+    std_deg = s['std_degree']
+    density = s['density']
+    assort = s['degree_assortativity']
+    clustering = s['avg_clustering']
+    trans = s['transitivity']
+    num_tri = s['num_triangles']
+    lam2 = s['laplacian_lambda2']
+    lam_max = s['laplacian_lambda_max']
+    lap_gap = s['laplacian_spectral_gap']
+    norm_lam2 = s['normalized_laplacian_lambda2']
+    energy_ratio = s['laplacian_energy_ratio']
+
+    # Factors that tend to increase the average shortest path length
+    numer = (np.sqrt(n) *
+             np.log(n + eps) *
+             (1 + clustering) *
+             (1 + trans) *
+             (1 + num_tri / (n * avg_deg + eps)) *
+             (1 + std_deg / (avg_deg + eps)))
+
+    # Factors that tend to decrease the average shortest path length
+    denom = ((avg_deg + eps) ** 1.0 *
+             np.log(avg_deg + eps) *
+             (lap_gap + eps) *
+             (density + eps) *
+             (1 + abs(assort)) *
+             (1 + norm_lam2) *
+             (1 + lam2 / (lam_max + eps)) *
+             (1 + energy_ratio) *
+             (1 + min_deg / (avg_deg + eps)) *
+             (1 + max_deg / (avg_deg + eps)) *
+             np.sqrt(density + eps))
+
+    return numer / denom
+```
+
+## ablation_sc_off/seed_33
+
+- Fitness mode: correlation
+- Success: True
+- Stop reason: max_generations_reached
+- Final generation: 20
+- Validation Spearman: 0.8792
+- Test Spearman: 0.9482
+- Best formula AST nodes: 176
+
+### Bounds Diagnostics
+
+- test_bound_score: None
+- test_mean_gap: None
+- test_satisfaction_rate: None
+- val_bound_score: None
+- val_mean_gap: None
+- val_satisfaction_rate: None
+- Convergence: 0.504 -> 0.562
+
+### Acceptance Funnel
+
+- Final generation attempted: 20
+- Final generation accepted: 13
+- Final generation acceptance rate: 0.650
+
+### Repair Breakdown
+
+- Repair attempts: 0
+- Repair successes: 0
+- Repair failures: 0
+
+### Best Candidate Code
+
+```python
+def new_invariant(s):
+    """
+    Estimate of the average shortest‑path length using only pre‑computed
+    graph statistics.  The formula combines several structural modifiers
+    that are known to influence typical distances (density, clustering,
+    degree heterogeneity, triangles, assortativity, algebraic connectivity,
+    normalized Laplacian gap, spectral energy ratio).  No external libraries
+    or graph traversal algorithms are used.
+
+    Parameters
+    ----------
+    s : dict
+        Dictionary containing the following keys:
+        n, m, density, avg_degree, max_degree, min_degree,
+        std_degree, avg_clustering, transitivity,
+        degree_assortativity, num_triangles, degrees,
+        laplacian_lambda2, laplacian_lambda_max,
+        laplacian_spectral_gap, normalized_laplacian_lambda2,
+        laplacian_energy_ratio
+
+    Returns
+    -------
+    float
+        Approximate average shortest‑path length (positive, at least 1.0).
+    """
+    n = s['n']
+    avg_deg = s['avg_degree'] if s['avg_degree'] else 1e-6  # guard against zero
+    base = n / (avg_deg + 1)                                # size / connectivity
+
+    # 1. Clustering tends to increase distances
+    base *= (1 + s['avg_clustering'])
+
+    # 2. Denser graphs are more tightly connected → shorter paths
+    base *= (1 - s['density'] / 2)
+
+    # 3. Algebraic connectivity (spectral gap) reduces path lengths
+    base /= (1 + s['laplacian_spectral_gap'])
+
+    # 4. Degree heterogeneity can lengthen distances
+    base *= (1 + (s['std_degree'] + 1) ** 0.5)
+
+    # 5. More triangles provide shortcut opportunities
+    base *= (1 + s['num_triangles'] / (n * n))
+
+    # 6. Positive assortativity slightly reduces distances
+    base *= (1 + 0.1 * s['degree_assortativity'])
+
+    # 7. Normalized Laplacian spectral gap also shortens paths
+    base /= (1 + s['normalized_laplacian_lambda2'])
+
+    # 8. Larger spectral energy ratio tends to lengthen paths
+    base *= (1 + 1 / (s['laplacian_energy_ratio'] + 1))
+
+    # Ensure the estimate is at least 1.0
+    if base < 1.0:
+        base = 1.0
+
+    return base
 ```
 

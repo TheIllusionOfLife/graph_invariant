@@ -56,8 +56,7 @@ def reeval_benchmark_summary(bench_dir: Path, threshold: float = 0.85) -> dict:
 
     summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     print(
-        f"  {bench_dir.name}: {success_count}/{len(runs)} seeds successful "
-        f"(threshold={threshold})"
+        f"  {bench_dir.name}: {success_count}/{len(runs)} seeds successful (threshold={threshold})"
     )
     return summary
 

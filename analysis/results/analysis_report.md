@@ -82,7 +82,7 @@
 
 - large_random: spearman=0.9568 (100/100 valid)
 - extreme_params: spearman=0.9263 (50/50 valid)
-- special_topology: spearman=0.5000 (8/8 valid)
+- special_topology: spearman=0.4652 (16/16 valid)
 
 ### Best Candidate Code
 
@@ -296,7 +296,7 @@ def new_invariant(s):
 
 - large_random: spearman=N/A (97/100 valid)
 - extreme_params: spearman=N/A (49/50 valid)
-- special_topology: spearman=N/A (8/8 valid)
+- special_topology: spearman=N/A (14/16 valid)
 
 ### Best Candidate Code
 

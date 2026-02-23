@@ -74,10 +74,10 @@ Rationale: the system is well-designed and aligned with interpretability goals, 
 Run the same ASPL and algebraic-connectivity setups with equal total LLM calls:
 
 1. **Base:** single population, no migration, no MAP-Elites, no self-correction, no novelty gate
-2. * **Island model** only (4 islands + migration)
-3. * **Self-correction** (report repair rate + impact on acceptance rate and final ρ)
-4. * **Novelty gate/bonus**
-5. * **MAP-Elites**
+2. **Island model** only (4 islands + migration)
+3. **Self-correction** (report repair rate + impact on acceptance rate and final ρ)
+4. **Novelty gate/bonus**
+5. **MAP-Elites**
 
 **Report:**
 

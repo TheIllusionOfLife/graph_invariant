@@ -5236,121 +5236,121 @@
     },
     "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_22": {
       "generations": 12,
-      "llm_gen_calls": 240,
+      "llm_gen_calls": 108,
       "repair_calls": 27,
-      "total_calls": 267,
+      "total_calls": 135,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_33": {
       "generations": 12,
-      "llm_gen_calls": 240,
+      "llm_gen_calls": 108,
       "repair_calls": 22,
-      "total_calls": 262,
+      "total_calls": 130,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_11": {
       "generations": 8,
-      "llm_gen_calls": 160,
+      "llm_gen_calls": 48,
       "repair_calls": 2,
-      "total_calls": 162,
+      "total_calls": 50,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_22": {
       "generations": 8,
-      "llm_gen_calls": 160,
+      "llm_gen_calls": 48,
       "repair_calls": 1,
-      "total_calls": 161,
+      "total_calls": 49,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_33": {
       "generations": 8,
-      "llm_gen_calls": 160,
+      "llm_gen_calls": 48,
       "repair_calls": 3,
-      "total_calls": 163,
+      "total_calls": 51,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_11": {
       "generations": 8,
-      "llm_gen_calls": 160,
+      "llm_gen_calls": 48,
       "repair_calls": 1,
-      "total_calls": 161,
+      "total_calls": 49,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_22": {
       "generations": 8,
-      "llm_gen_calls": 160,
+      "llm_gen_calls": 48,
       "repair_calls": 1,
-      "total_calls": 161,
+      "total_calls": 49,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_33": {
       "generations": 8,
-      "llm_gen_calls": 160,
+      "llm_gen_calls": 48,
       "repair_calls": 1,
-      "total_calls": 161,
+      "total_calls": 49,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_11": {
       "generations": 8,
-      "llm_gen_calls": 160,
+      "llm_gen_calls": 48,
       "repair_calls": 1,
-      "total_calls": 161,
+      "total_calls": 49,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_22": {
       "generations": 8,
-      "llm_gen_calls": 160,
+      "llm_gen_calls": 48,
       "repair_calls": 1,
-      "total_calls": 161,
+      "total_calls": 49,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_33": {
       "generations": 8,
-      "llm_gen_calls": 160,
+      "llm_gen_calls": 48,
       "repair_calls": 1,
-      "total_calls": 161,
+      "total_calls": 49,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_11": {
       "generations": 12,
-      "llm_gen_calls": 240,
+      "llm_gen_calls": 108,
       "repair_calls": 33,
-      "total_calls": 273,
+      "total_calls": 141,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_22": {
       "generations": 12,
-      "llm_gen_calls": 240,
+      "llm_gen_calls": 108,
       "repair_calls": 27,
-      "total_calls": 267,
+      "total_calls": 135,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_33": {
       "generations": 12,
-      "llm_gen_calls": 240,
+      "llm_gen_calls": 108,
       "repair_calls": 27,
-      "total_calls": 267,
+      "total_calls": 135,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_11": {
       "generations": 8,
-      "llm_gen_calls": 160,
+      "llm_gen_calls": 72,
       "repair_calls": 34,
-      "total_calls": 194,
+      "total_calls": 106,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_22": {
       "generations": 12,
-      "llm_gen_calls": 240,
+      "llm_gen_calls": 108,
       "repair_calls": 27,
-      "total_calls": 267,
+      "total_calls": 135,
       "pysr_budget": "60 s"
     },
     "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_33": {
       "generations": 12,
-      "llm_gen_calls": 240,
+      "llm_gen_calls": 108,
       "repair_calls": 28,
-      "total_calls": 268,
+      "total_calls": 136,
       "pysr_budget": "60 s"
     }
   }

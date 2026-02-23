@@ -795,7 +795,9 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
             "  \\centering",
             "  \\small",
             "  \\caption{Self-correction failure categories per experiment."
-            " Counts are cumulative across all generations."
+            " Counts are cumulative event tallies: a single failed attempt may"
+            " be counted in multiple categories (e.g., both no valid predictions"
+            " and below novelty gate), so column sums can exceed SC attempted."
             " Novelty-gate rejections dominate, confirming the hard gate"
             " is the primary bottleneck rather than code quality.}",
             "  \\label{tab:appendix_sc_failures}",

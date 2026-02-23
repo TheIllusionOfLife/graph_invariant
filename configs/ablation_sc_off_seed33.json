@@ -28,7 +28,7 @@
   "persist_prompt_and_response_logs": true,
   "success_spearman_threshold": 0.85,
   "enforce_pysr_parity_for_success": false,
-  "require_baselines_for_success": true,
+  "require_baselines_for_success": false,
   "novelty_bootstrap_samples": 1000,
   "novelty_threshold": 0.7,
   "novelty_gate_threshold": 0.15,

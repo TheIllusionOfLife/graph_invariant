@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
-from experiment_analysis import (
+# Ensure analysis/ is on sys.path so sibling modules resolve when this
+# file is imported directly (not via analyze_experiments.py entry point).
+_analysis_dir = Path(__file__).resolve().parent
+if str(_analysis_dir) not in sys.path:
+    sys.path.insert(0, str(_analysis_dir))
+
+from experiment_analysis import (  # noqa: E402
     _ast_node_count,
     _get_spearman,
     _normalize_candidate_code_for_report,
@@ -15,7 +22,7 @@ from experiment_analysis import (
     build_seed_aggregates,
 )
 
-from graph_invariant.stats_utils import mean_std_ci95, safe_float  # noqa: F401
+from graph_invariant.stats_utils import mean_std_ci95, safe_float  # noqa: F401,E402
 
 # ── LaTeX helpers ─────────────────────────────────────────────────────
 

@@ -98,10 +98,9 @@ def test_run_phase1_uses_configured_score_weights(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", fake_total)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.7)
 
@@ -164,10 +163,9 @@ def test_run_phase1_rotates_generation_checkpoints(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
 
@@ -210,10 +208,9 @@ def test_run_phase1_resume_continues_from_saved_generation(monkeypatch, tmp_path
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
 
@@ -291,10 +288,9 @@ def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
 
@@ -403,10 +399,9 @@ def test_run_phase1_self_correction_repairs_failed_candidate_once(monkeypatch, t
     )
     monkeypatch.setattr("graph_invariant.cli.generate_candidate_code", _fake_generate)
     _patch_sandbox_evaluator(monkeypatch, _fake_eval)
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
 
@@ -673,10 +668,9 @@ def test_run_phase1_success_threshold_is_configurable(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
 
@@ -713,13 +707,13 @@ def test_run_phase1_with_zero_generations_does_not_initialize_sandbox_pool(monke
 
 
 def test_dataset_fingerprint_depends_on_graph_counts():
-    from graph_invariant.cli import _dataset_fingerprint
+    from graph_invariant.evaluation import dataset_fingerprint
 
     cfg_a = Phase1Config(num_train_graphs=1, num_val_graphs=2, num_test_graphs=3)
     cfg_b = Phase1Config(num_train_graphs=2, num_val_graphs=2, num_test_graphs=3)
 
-    fp_a = _dataset_fingerprint(cfg_a, [1.0], [2.0], [3.0])
-    fp_b = _dataset_fingerprint(cfg_b, [1.0], [2.0], [3.0])
+    fp_a = dataset_fingerprint(cfg_a, [1.0], [2.0], [3.0])
+    fp_b = dataset_fingerprint(cfg_b, [1.0], [2.0], [3.0])
     assert fp_a != fp_b
 
 
@@ -809,10 +803,9 @@ def test_run_phase1_summary_enforces_pysr_parity(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
     monkeypatch.setattr(
@@ -865,10 +858,9 @@ def test_run_phase1_pysr_parity_allows_small_epsilon_gap(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
     monkeypatch.setattr(
@@ -918,10 +910,9 @@ def test_run_phase1_requires_healthy_baselines_when_configured(monkeypatch, tmp_
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
     monkeypatch.setattr(
@@ -975,10 +966,9 @@ def test_run_phase1_accepts_single_healthy_baseline_when_required(monkeypatch, t
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
     monkeypatch.setattr(
@@ -1070,10 +1060,9 @@ def test_generation_rejects_candidate_below_novelty_gate(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     # Return very low novelty — below the 0.15 gate
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.08)
@@ -1125,10 +1114,9 @@ def test_novelty_gate_rejection_triggers_self_correction(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     # Novelty below threshold → should trigger repair attempt
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.08)
@@ -1171,10 +1159,9 @@ def test_generation_accepts_candidate_above_novelty_gate(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     # Return novelty above the 0.15 gate
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
@@ -1216,10 +1203,9 @@ def test_novelty_gate_disabled_when_zero(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     # Very low novelty, but gate is disabled (threshold=0.0)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.01)
@@ -1434,10 +1420,9 @@ def test_run_phase1_persists_prompt_and_response_when_enabled(monkeypatch, tmp_p
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
 
@@ -1489,10 +1474,9 @@ def test_run_phase1_with_map_elites_populates_archive(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
 
@@ -1542,10 +1526,9 @@ def test_run_phase1_without_map_elites_omits_archive(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
 
@@ -1593,10 +1576,9 @@ def test_run_phase1_map_elites_checkpoint_roundtrip(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 1) for i in range(len(graphs))],
     )
-    monkeypatch.setattr(
-        "graph_invariant.cli.compute_metrics",
-        lambda *_args, **_kwargs: EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0),
-    )
+    def fake_metrics(*_args, **_kwargs): return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
+    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
 

@@ -2,7 +2,6 @@ import argparse
 import json
 import re
 from datetime import UTC, datetime
-from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +11,10 @@ import numpy as np
 from .baselines import run_pysr_baseline, run_stat_baselines
 from .config import Phase1Config
 from .data import generate_phase1_datasets
+from .evaluation import (
+    dataset_fingerprint,
+    global_best_score,
+)
 from .evolution import migrate_ring_top1
 from .known_invariants import compute_feature_dicts, compute_known_invariant_values
 from .llm_ollama import (
@@ -41,10 +44,10 @@ from .scoring import (
     compute_bound_metrics,
     compute_metrics,
     compute_novelty_bonus,
-    compute_novelty_ci,
     compute_simplicity_score,
     compute_total_score,
 )
+from .summary import write_phase1_summary
 from .targets import target_values
 from .types import Candidate, CheckpointState
 
@@ -59,22 +62,6 @@ _CONSTRAINED_SUFFIX = (
 def _new_experiment_id() -> str:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     return f"phase1_{stamp}"
-
-
-def _global_best_score(state: CheckpointState) -> float:
-    scores = [
-        candidate.val_score for candidates in state.islands.values() for candidate in candidates
-    ]
-    if not scores:
-        return 0.0
-    return max(scores)
-
-
-def _best_candidate(state: CheckpointState) -> Candidate | None:
-    all_candidates = [candidate for island in state.islands.values() for candidate in island]
-    if not all_candidates:
-        return None
-    return max(all_candidates, key=lambda c: c.val_score)
 
 
 def _restore_rng(state: CheckpointState) -> np.random.Generator:
@@ -647,338 +634,6 @@ def _run_one_generation(
         )
 
 
-def _evaluate_split(
-    code: str,
-    features_list: list[dict[str, Any]],
-    y_true: list[float],
-    cfg: Phase1Config,
-    evaluator: SandboxEvaluator,
-    known_invariants: dict[str, list[float]] | None = None,
-) -> dict[str, float | int | None]:
-    y_pred_raw = evaluator.evaluate(code, features_list)
-    valid_pairs = [
-        (idx, yt, yp)
-        for idx, (yt, yp) in enumerate(zip(y_true, y_pred_raw, strict=True))
-        if yp is not None
-    ]
-    if not valid_pairs:
-        return {
-            "spearman": 0.0,
-            "pearson": 0.0,
-            "rmse": 0.0,
-            "mae": 0.0,
-            "valid_count": 0,
-            "novelty_bonus": None,
-        }
-
-    valid_indices, y_true_valid, y_pred_valid = zip(*valid_pairs, strict=True)
-    metrics = compute_metrics(list(y_true_valid), list(y_pred_valid))
-    novelty = None
-    if known_invariants is not None:
-        known_subset = {
-            name: [values[idx] for idx in valid_indices]
-            for name, values in known_invariants.items()
-        }
-        novelty = compute_novelty_bonus(list(y_pred_valid), known_subset)
-
-    return {
-        "spearman": metrics.rho_spearman,
-        "pearson": metrics.r_pearson,
-        "rmse": metrics.rmse,
-        "mae": metrics.mae,
-        "valid_count": metrics.valid_count,
-        "novelty_bonus": novelty,
-    }
-
-
-def _evaluate_bound_split(
-    code: str,
-    features_list: list[dict[str, Any]],
-    y_true: list[float],
-    evaluator: SandboxEvaluator,
-    fitness_mode: str,
-    tolerance: float = 1e-9,
-) -> dict[str, float | int]:
-    """Evaluate a candidate against a data split in bounds mode."""
-    y_pred_raw = evaluator.evaluate(code, features_list)
-    valid_pairs = [(yt, yp) for yt, yp in zip(y_true, y_pred_raw, strict=True) if yp is not None]
-    if not valid_pairs:
-        return {
-            "bound_score": 0.0,
-            "satisfaction_rate": 0.0,
-            "mean_gap": 0.0,
-            "violation_count": 0,
-            "valid_count": 0,
-        }
-    y_t, y_p = zip(*valid_pairs, strict=True)
-    bm = compute_bound_metrics(list(y_t), list(y_p), mode=fitness_mode, tolerance=tolerance)
-    return {
-        "bound_score": bm.bound_score,
-        "satisfaction_rate": bm.satisfaction_rate,
-        "mean_gap": bm.mean_gap,
-        "violation_count": bm.violation_count,
-        "valid_count": bm.valid_count,
-    }
-
-
-def _dataset_fingerprint(
-    cfg: Phase1Config, y_train: list[float], y_val: list[float], y_test: list[float]
-) -> str:
-    payload = {
-        "seed": cfg.seed,
-        "target_name": cfg.target_name,
-        "model_name": cfg.model_name,
-        "num_train_graphs": cfg.num_train_graphs,
-        "num_val_graphs": cfg.num_val_graphs,
-        "num_test_graphs": cfg.num_test_graphs,
-        "train": y_train,
-        "val": y_val,
-        "test": y_test,
-    }
-    text = json.dumps(payload, sort_keys=True, ensure_ascii=False)
-    return sha256(text.encode("utf-8")).hexdigest()
-
-
-def _write_phase1_summary(
-    cfg: Phase1Config,
-    state: CheckpointState,
-    evaluator: SandboxEvaluator,
-    artifacts_dir: Path,
-    stop_reason: str,
-    features_train: list[dict[str, Any]],
-    features_val: list[dict[str, Any]],
-    features_test: list[dict[str, Any]],
-    features_sanity: list[dict[str, Any]],
-    datasets_val: list[nx.Graph],
-    datasets_test: list[nx.Graph],
-    datasets_sanity: list[nx.Graph],
-    y_true_train: list[float],
-    y_true_val: list[float],
-    y_true_test: list[float],
-    baseline_results: dict[str, object] | None,
-    self_correction_stats: dict[str, Any],
-) -> None:
-    def _extract_spearman(metrics: dict[str, object] | None) -> float | None:
-        if not isinstance(metrics, dict):
-            return None
-        value = metrics.get("spearman")
-        if isinstance(value, (int, float)):
-            return float(value)
-        return None
-
-    def _baseline_health(
-        baseline_payload: dict[str, object] | None,
-    ) -> tuple[bool, bool, str, float | None, float | None]:
-        if not isinstance(baseline_payload, dict):
-            return False, False, "missing", None, None
-        pysr_payload = baseline_payload.get("pysr_baseline")
-        stat_payload = baseline_payload.get("stat_baselines")
-
-        if isinstance(pysr_payload, dict):
-            pysr_status = str(pysr_payload.get("status", "missing"))
-            pysr_val_spearman = _extract_spearman(pysr_payload.get("val_metrics"))
-            pysr_test_spearman = _extract_spearman(pysr_payload.get("test_metrics"))
-        else:
-            pysr_status = "missing"
-            pysr_val_spearman = None
-            pysr_test_spearman = None
-
-        stat_ok = False
-        if isinstance(stat_payload, dict):
-            stat_ok = any(
-                isinstance(result, dict) and str(result.get("status")) == "ok"
-                for result in stat_payload.values()
-            )
-
-        pysr_ok = pysr_status == "ok"
-        return stat_ok, pysr_ok, pysr_status, pysr_val_spearman, pysr_test_spearman
-
-    best = _best_candidate(state)
-    summary_path = artifacts_dir / "phase1_summary.json"
-    if best is None:
-        payload = {
-            "experiment_id": state.experiment_id,
-            "success": False,
-            "reason": "no_candidates",
-            "stop_reason": stop_reason,
-        }
-        write_json(payload, summary_path)
-        return
-
-    known_val = compute_known_invariant_values(
-        datasets_val,
-        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
-    )
-    known_test = compute_known_invariant_values(
-        datasets_test,
-        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
-    )
-    y_sanity = target_values(datasets_sanity, cfg.target_name)
-    val_metrics = _evaluate_split(best.code, features_val, y_true_val, cfg, evaluator, known_val)
-    test_metrics = _evaluate_split(
-        best.code, features_test, y_true_test, cfg, evaluator, known_test
-    )
-    train_metrics = _evaluate_split(best.code, features_train, y_true_train, cfg, evaluator)
-    sanity_metrics = _evaluate_split(best.code, features_sanity, y_sanity, cfg, evaluator)
-
-    def _novelty_ci_for_split(
-        split_features: list[dict[str, Any]],
-        known_values: dict[str, list[float]],
-        seed_offset: int,
-    ) -> dict[str, object]:
-        y_pred_raw = evaluator.evaluate(best.code, split_features)
-        valid_pairs = [(idx, yp) for idx, yp in enumerate(y_pred_raw) if yp is not None]
-        if not valid_pairs:
-            return {
-                "max_ci_upper_abs_rho": 0.0,
-                "novelty_passed": False,
-                "threshold": cfg.novelty_threshold,
-                "per_invariant": {},
-            }
-        valid_indices, y_pred_valid = zip(*valid_pairs, strict=True)
-        known_subset = {
-            name: [values[idx] for idx in valid_indices] for name, values in known_values.items()
-        }
-        return compute_novelty_ci(
-            candidate_values=list(y_pred_valid),
-            known_invariants=known_subset,
-            n_bootstrap=cfg.novelty_bootstrap_samples,
-            seed=cfg.seed + seed_offset,
-            novelty_threshold=cfg.novelty_threshold,
-        )
-
-    novelty_ci = {
-        "validation": _novelty_ci_for_split(features_val, known_val, seed_offset=17),
-        "test": _novelty_ci_for_split(features_test, known_test, seed_offset=29),
-    }
-
-    is_bounds = cfg.fitness_mode in ("upper_bound", "lower_bound")
-
-    if is_bounds:
-        val_bound_metrics = _evaluate_bound_split(
-            best.code,
-            features_val,
-            y_true_val,
-            evaluator,
-            fitness_mode=cfg.fitness_mode,
-            tolerance=cfg.bound_tolerance,
-        )
-        test_bound_metrics = _evaluate_bound_split(
-            best.code,
-            features_test,
-            y_true_test,
-            evaluator,
-            fitness_mode=cfg.fitness_mode,
-            tolerance=cfg.bound_tolerance,
-        )
-        bounds_success = (
-            val_bound_metrics["bound_score"] >= cfg.success_bound_score_threshold
-            and val_bound_metrics["satisfaction_rate"] >= cfg.success_satisfaction_threshold
-        )
-        success = bounds_success
-        success_criteria = None
-        success_criteria_bounds = {
-            "bound_score_threshold": cfg.success_bound_score_threshold,
-            "satisfaction_threshold": cfg.success_satisfaction_threshold,
-            "val_bound_score": val_bound_metrics["bound_score"],
-            "val_satisfaction_rate": val_bound_metrics["satisfaction_rate"],
-            "passed": bounds_success,
-        }
-        baseline_comparison = None
-        schema_version = 4
-    else:
-        stat_ok, pysr_ok, pysr_status, pysr_val_spearman, pysr_test_spearman = _baseline_health(
-            baseline_results
-        )
-        candidate_val_spearman = float(val_metrics.get("spearman", 0.0))
-        candidate_test_spearman = float(test_metrics.get("spearman", 0.0))
-
-        threshold_passed = abs(candidate_val_spearman) >= cfg.success_spearman_threshold
-        baselines_available = baseline_results is not None
-        baselines_healthy = stat_ok or pysr_ok
-        baselines_passed = (not cfg.require_baselines_for_success) or (
-            baselines_available and baselines_healthy
-        )
-        pysr_parity_passed = True
-        pysr_parity_reason = "disabled"
-        if cfg.enforce_pysr_parity_for_success:
-            if pysr_status != "ok" or pysr_val_spearman is None:
-                pysr_parity_passed = False
-                pysr_parity_reason = "pysr_missing_or_unavailable"
-            else:
-                pysr_parity_passed = (
-                    candidate_val_spearman + cfg.pysr_parity_epsilon >= pysr_val_spearman
-                )
-                pysr_parity_reason = "ok"
-
-        success_criteria = {
-            "success_spearman_threshold": cfg.success_spearman_threshold,
-            "threshold_passed": threshold_passed,
-            "require_baselines_for_success": cfg.require_baselines_for_success,
-            "baselines_available": baselines_available,
-            "baselines_healthy": baselines_healthy,
-            "stat_baseline_ok": stat_ok,
-            "pysr_ok": pysr_ok,
-            "baselines_passed": baselines_passed,
-            "enforce_pysr_parity_for_success": cfg.enforce_pysr_parity_for_success,
-            "pysr_parity_epsilon": cfg.pysr_parity_epsilon,
-            "pysr_status": pysr_status,
-            "candidate_val_spearman": candidate_val_spearman,
-            "pysr_val_spearman": pysr_val_spearman,
-            "pysr_parity_passed": pysr_parity_passed,
-            "pysr_parity_reason": pysr_parity_reason,
-        }
-        success = threshold_passed and baselines_passed and pysr_parity_passed
-
-        baseline_comparison = {
-            "candidate": {
-                "val_spearman": candidate_val_spearman,
-                "test_spearman": candidate_test_spearman,
-            },
-            "pysr": {
-                "status": pysr_status,
-                "val_spearman": pysr_val_spearman,
-                "test_spearman": pysr_test_spearman,
-            },
-        }
-        val_bound_metrics = None
-        test_bound_metrics = None
-        success_criteria_bounds = None
-        schema_version = 3
-
-    payload: dict[str, Any] = {
-        "schema_version": schema_version,
-        "experiment_id": state.experiment_id,
-        "fitness_mode": cfg.fitness_mode,
-        "model_name": cfg.model_name,
-        "best_candidate_id": best.id,
-        "best_candidate_code_sha256": sha256(best.code.encode("utf-8")).hexdigest(),
-        "best_val_score": state.best_val_score,
-        "stop_reason": stop_reason,
-        "success": success,
-        "config": cfg.to_dict(),
-        "final_generation": state.generation,
-        "island_candidate_counts": {
-            str(island_id): len(candidates) for island_id, candidates in state.islands.items()
-        },
-        "train_metrics": train_metrics,
-        "val_metrics": val_metrics,
-        "test_metrics": test_metrics,
-        "sanity_metrics": sanity_metrics,
-        "novelty_ci": novelty_ci,
-        "dataset_fingerprint": _dataset_fingerprint(cfg, y_true_train, y_true_val, y_true_test),
-        "self_correction_stats": self_correction_stats,
-    }
-    if baseline_comparison is not None:
-        payload["baseline_comparison"] = baseline_comparison
-    if success_criteria is not None:
-        payload["success_criteria"] = success_criteria
-    if is_bounds:
-        payload["bounds_metrics"] = {"val": val_bound_metrics, "test": test_bound_metrics}
-        payload["success_criteria_bounds"] = success_criteria_bounds
-    if cfg.persist_candidate_code_in_summary:
-        payload["best_candidate_code"] = best.code
-    write_json(payload, summary_path)
 
 
 def _write_baseline_summary(
@@ -1105,7 +760,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
             "experiment_id": experiment_id,
             "resume": resume,
             "model_name": cfg.model_name,
-            "dataset_fingerprint": _dataset_fingerprint(cfg, y_true_train, y_true_val, y_true_test),
+            "dataset_fingerprint": dataset_fingerprint(cfg, y_true_train, y_true_val, y_true_test),
         },
         log_path,
     )
@@ -1181,7 +836,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
                 primary_archive=primary_archive,
                 topology_archive=topology_archive,
             )
-            current_best = _global_best_score(state)
+            current_best = global_best_score(state)
             improved = current_best > state.best_val_score + 1e-12
             if improved:
                 state.best_val_score = current_best
@@ -1222,7 +877,7 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
                 stop_reason = "early_stop"
                 break
 
-        _write_phase1_summary(
+        write_phase1_summary(
             cfg=cfg,
             state=state,
             evaluator=evaluator,

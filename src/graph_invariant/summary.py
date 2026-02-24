@@ -127,19 +127,13 @@ def write_phase1_summary(
     )
     y_sanity = target_values(datasets_sanity, cfg.target_name)
     val_metrics = evaluate_split(best.code, features_val, y_true_val, cfg, evaluator, known_val)
-    test_metrics = evaluate_split(
-        best.code, features_test, y_true_test, cfg, evaluator, known_test
-    )
+    test_metrics = evaluate_split(best.code, features_test, y_true_test, cfg, evaluator, known_test)
     train_metrics = evaluate_split(best.code, features_train, y_true_train, cfg, evaluator)
     sanity_metrics = evaluate_split(best.code, features_sanity, y_sanity, cfg, evaluator)
 
     novelty_ci = {
-        "validation": _novelty_ci_for_split(
-            best.code, features_val, known_val, 17, cfg, evaluator
-        ),
-        "test": _novelty_ci_for_split(
-            best.code, features_test, known_test, 29, cfg, evaluator
-        ),
+        "validation": _novelty_ci_for_split(best.code, features_val, known_val, 17, cfg, evaluator),
+        "test": _novelty_ci_for_split(best.code, features_test, known_test, 29, cfg, evaluator),
     }
 
     is_bounds = cfg.fitness_mode in ("upper_bound", "lower_bound")
@@ -256,9 +250,7 @@ def write_phase1_summary(
         "test_metrics": test_metrics,
         "sanity_metrics": sanity_metrics,
         "novelty_ci": novelty_ci,
-        "dataset_fingerprint": dataset_fingerprint(
-            cfg, y_true_train, y_true_val, y_true_test
-        ),
+        "dataset_fingerprint": dataset_fingerprint(cfg, y_true_train, y_true_val, y_true_test),
         "self_correction_stats": self_correction_stats,
     }
     if baseline_comparison is not None:

@@ -634,8 +634,6 @@ def _run_one_generation(
         )
 
 
-
-
 def _write_baseline_summary(
     payload: dict[str, object] | None,
     artifacts_dir: Path,

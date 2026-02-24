@@ -1,8 +1,9 @@
 import ipaddress
 import re
+import socket
 import time
 from enum import StrEnum
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 import requests
 
@@ -197,7 +198,7 @@ def generate_candidate_payload(
     timeout_sec: float = 60.0,
     max_retries: int = 3,
 ) -> dict[str, str]:
-    validate_ollama_url(url, allow_remote=allow_remote)
+    safe_url, headers = validate_ollama_url(url, allow_remote=allow_remote)
     payload = {
         "model": model,
         "prompt": prompt,
@@ -208,7 +209,13 @@ def generate_candidate_payload(
     attempts = max(1, max_retries)
     for attempt in range(attempts):
         try:
-            response = requests.post(url, json=payload, timeout=timeout_sec, allow_redirects=False)
+            response = requests.post(
+                safe_url,
+                json=payload,
+                headers=headers,
+                timeout=timeout_sec,
+                allow_redirects=False,
+            )
             response.raise_for_status()
             body = response.json()
             text = str(body.get("response", "")).strip()
@@ -239,34 +246,107 @@ def _tags_endpoint(generate_url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}{path}"
 
 
-def validate_ollama_url(generate_url: str, allow_remote: bool) -> None:
+def validate_ollama_url(generate_url: str, allow_remote: bool) -> tuple[str, dict[str, str]]:
     parsed = urlparse(generate_url)
     if parsed.scheme not in {"http", "https"}:
         raise ValueError("ollama_url must use http or https")
     if not parsed.netloc:
         raise ValueError("ollama_url must include a host")
-    if allow_remote:
-        return
 
-    host = parsed.hostname
-    if host is None:
+    hostname = parsed.hostname
+    port = parsed.port
+
+    if not hostname:
         raise ValueError("ollama_url must include a valid hostname")
-    if host in {"localhost", "127.0.0.1", "::1"}:
-        return
+
     try:
-        ip = ipaddress.ip_address(host)
+        infos = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
+    except socket.gaierror:
+        raise ValueError(f"Could not resolve hostname: {hostname}") from None
+
+    if not infos:
+        raise ValueError(f"No IP address found for: {hostname}")
+
+    # Pick the first resolved IP
+    _, _, _, _, sockaddr = infos[0]
+    ip_str = sockaddr[0]
+
+    # Strip IPv6 zone index if present
+    if "%" in ip_str:
+        ip_str = ip_str.split("%")[0]
+
+    try:
+        ip = ipaddress.ip_address(ip_str)
     except ValueError:
-        raise ValueError(
-            "ollama_url must target localhost unless allow_remote_ollama is true"
-        ) from None
-    if ip.is_loopback:
-        return
-    raise ValueError("ollama_url must target localhost unless allow_remote_ollama is true")
+        raise ValueError(f"Resolved address is not a valid IP: {ip_str}") from None
+
+    if not allow_remote:
+        if not ip.is_loopback:
+            raise ValueError("ollama_url must target localhost unless allow_remote_ollama is true")
+    else:
+        # Remote allowed: Block dangerous IPs
+        if ip.is_link_local:
+            raise ValueError(f"ollama_url targets link-local address {ip_str}, which is forbidden")
+        if ip.is_multicast:
+            raise ValueError(f"ollama_url targets multicast address {ip_str}, which is forbidden")
+        if ip.is_reserved:
+            raise ValueError(f"ollama_url targets reserved address {ip_str}, which is forbidden")
+
+    headers = {}
+    if parsed.scheme == "https":
+        return generate_url, headers
+
+    # For HTTP, replace hostname with IP to prevent DNS rebinding
+    host_header = hostname
+    try:
+        # Check if hostname is an IPv6 literal (without brackets)
+        # urlparse strips brackets from hostname for IPv6
+        if isinstance(ipaddress.ip_address(hostname), ipaddress.IPv6Address):
+            host_header = f"[{hostname}]"
+    except ValueError:
+        pass
+
+    if port:
+        host_header += f":{port}"
+    headers["Host"] = host_header
+
+    new_netloc = ""
+    if parsed.username:
+        new_netloc += parsed.username
+        if parsed.password:
+            new_netloc += f":{parsed.password}"
+        new_netloc += "@"
+
+    if isinstance(ip, ipaddress.IPv6Address):
+        new_netloc += f"[{ip_str}]"
+    else:
+        new_netloc += ip_str
+
+    if port:
+        new_netloc += f":{port}"
+
+    new_url = urlunparse(
+        (
+            parsed.scheme,
+            new_netloc,
+            parsed.path,
+            parsed.params,
+            parsed.query,
+            parsed.fragment,
+        )
+    )
+
+    return new_url, headers
 
 
 def list_available_models(generate_url: str, allow_remote: bool = False) -> list[str]:
-    validate_ollama_url(generate_url, allow_remote=allow_remote)
-    response = requests.get(_tags_endpoint(generate_url), timeout=30, allow_redirects=False)
+    safe_url, headers = validate_ollama_url(generate_url, allow_remote=allow_remote)
+    response = requests.get(
+        _tags_endpoint(safe_url),
+        headers=headers,
+        timeout=30,
+        allow_redirects=False,
+    )
     response.raise_for_status()
     body = response.json()
     models = body.get("models", [])

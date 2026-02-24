@@ -315,8 +315,6 @@ def validate_ollama_url(generate_url: str, allow_remote: bool) -> tuple[str, dic
 
     if port:
         new_netloc += f":{port}"
-    elif parsed.port is not None:
-        pass
 
     new_url = urlunparse(
         (

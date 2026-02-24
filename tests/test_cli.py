@@ -91,7 +91,7 @@ def test_run_phase1_uses_configured_score_weights(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return 1.0",
     )
     _patch_sandbox_evaluator(
@@ -102,10 +102,10 @@ def test_run_phase1_uses_configured_score_weights(monkeypatch, tmp_path):
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", fake_total)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.7)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", fake_total)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.7)
 
     assert run_phase1(cfg) == 0
     assert captured == {"alpha": 0.9, "beta": 0.05, "gamma": 0.05}
@@ -159,7 +159,7 @@ def test_run_phase1_rotates_generation_checkpoints(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return 1.0",
     )
     _patch_sandbox_evaluator(
@@ -170,10 +170,10 @@ def test_run_phase1_rotates_generation_checkpoints(monkeypatch, tmp_path):
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
 
     assert run_phase1(cfg) == 0
 
@@ -207,7 +207,7 @@ def test_run_phase1_resume_continues_from_saved_generation(monkeypatch, tmp_path
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return 1.0",
     )
     _patch_sandbox_evaluator(
@@ -218,10 +218,10 @@ def test_run_phase1_resume_continues_from_saved_generation(monkeypatch, tmp_path
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
 
     assert run_phase1(cfg) == 0
     ckpt_root = Path(cfg.artifacts_dir) / "checkpoints"
@@ -290,7 +290,7 @@ def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
@@ -301,10 +301,10 @@ def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
 
     assert run_phase1(cfg) == 0
 
@@ -359,7 +359,7 @@ def test_run_phase1_activates_constrained_prompt_after_stagnation(monkeypatch, t
         "graph_invariant.cli.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_candidate_code", fake_generate)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.generate_candidate_code", fake_generate)
     _patch_sandbox_evaluator(
         monkeypatch,
         lambda _code, graphs, **_kw: [None for _ in graphs],
@@ -409,16 +409,16 @@ def test_run_phase1_self_correction_repairs_failed_candidate_once(monkeypatch, t
         "graph_invariant.cli.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_candidate_code", _fake_generate)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.generate_candidate_code", _fake_generate)
     _patch_sandbox_evaluator(monkeypatch, _fake_eval)
 
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
 
     assert run_phase1(cfg) == 0
     assert calls["count"] == 5
@@ -548,7 +548,7 @@ def test_main_benchmark_command_invokes_runner(monkeypatch, tmp_path):
 
 
 def test_constrained_mode_allows_late_recovery_by_default():
-    from graph_invariant.cli import _update_prompt_mode_after_generation
+    from graph_invariant.candidate_pipeline import _update_prompt_mode_after_generation
     from graph_invariant.types import CheckpointState
 
     cfg = Phase1Config(
@@ -569,7 +569,7 @@ def test_constrained_mode_allows_late_recovery_by_default():
 
 
 def test_constrained_mode_can_forbid_late_recovery():
-    from graph_invariant.cli import _update_prompt_mode_after_generation
+    from graph_invariant.candidate_pipeline import _update_prompt_mode_after_generation
     from graph_invariant.types import CheckpointState
 
     cfg = Phase1Config(
@@ -604,7 +604,7 @@ def test_target_values_handles_disconnected_graph():
 
 
 def test_summarize_error_details_uses_detail_for_top_category():
-    from graph_invariant.cli import _summarize_error_details
+    from graph_invariant.candidate_pipeline import _summarize_error_details
 
     details = [
         {
@@ -629,7 +629,7 @@ def test_summarize_error_details_uses_detail_for_top_category():
 
 
 def test_record_recent_failure_deduplicates_and_keeps_recency():
-    from graph_invariant.cli import _record_recent_failure
+    from graph_invariant.candidate_pipeline import _record_recent_failure
 
     state = CheckpointState(experiment_id="exp", generation=0, islands={0: []})
     _record_recent_failure(state, island_id=0, failure_text="a", max_items=3)
@@ -640,7 +640,7 @@ def test_record_recent_failure_deduplicates_and_keeps_recency():
 
 
 def test_topology_descriptor_handles_missing_feature_keys():
-    from graph_invariant.cli import _topology_descriptor
+    from graph_invariant.candidate_pipeline import _topology_descriptor
 
     descriptor = _topology_descriptor(
         y_pred_valid=[1.0, 2.0, 3.0],
@@ -676,7 +676,7 @@ def test_run_phase1_success_threshold_is_configurable(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
@@ -687,10 +687,10 @@ def test_run_phase1_success_threshold_is_configurable(monkeypatch, tmp_path):
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
 
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
@@ -814,7 +814,7 @@ def test_run_phase1_summary_enforces_pysr_parity(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
@@ -825,10 +825,10 @@ def test_run_phase1_summary_enforces_pysr_parity(monkeypatch, tmp_path):
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
     monkeypatch.setattr(
         "graph_invariant.cli.run_pysr_baseline",
         lambda **_kwargs: {
@@ -872,7 +872,7 @@ def test_run_phase1_pysr_parity_allows_small_epsilon_gap(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
@@ -883,10 +883,10 @@ def test_run_phase1_pysr_parity_allows_small_epsilon_gap(monkeypatch, tmp_path):
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
     monkeypatch.setattr(
         "graph_invariant.cli.run_pysr_baseline",
         lambda **_kwargs: {
@@ -927,7 +927,7 @@ def test_run_phase1_requires_healthy_baselines_when_configured(monkeypatch, tmp_
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
@@ -938,10 +938,10 @@ def test_run_phase1_requires_healthy_baselines_when_configured(monkeypatch, tmp_
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
     monkeypatch.setattr(
         "graph_invariant.cli.run_pysr_baseline",
         lambda **_kwargs: {"status": "error", "reason": "boom"},
@@ -986,7 +986,7 @@ def test_run_phase1_accepts_single_healthy_baseline_when_required(monkeypatch, t
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
@@ -997,10 +997,10 @@ def test_run_phase1_accepts_single_healthy_baseline_when_required(monkeypatch, t
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
     monkeypatch.setattr(
         "graph_invariant.cli.run_pysr_baseline",
         lambda **_kwargs: {"status": "error", "reason": "boom"},
@@ -1023,7 +1023,7 @@ def test_run_phase1_accepts_single_healthy_baseline_when_required(monkeypatch, t
 
 
 def test_candidate_prompt_maps_island_0_to_refinement():
-    from graph_invariant.cli import _candidate_prompt
+    from graph_invariant.candidate_pipeline import _candidate_prompt
 
     state = CheckpointState(
         experiment_id="exp",
@@ -1035,7 +1035,7 @@ def test_candidate_prompt_maps_island_0_to_refinement():
 
 
 def test_candidate_prompt_maps_island_1_to_combination():
-    from graph_invariant.cli import _candidate_prompt
+    from graph_invariant.candidate_pipeline import _candidate_prompt
 
     state = CheckpointState(
         experiment_id="exp",
@@ -1047,7 +1047,7 @@ def test_candidate_prompt_maps_island_1_to_combination():
 
 
 def test_candidate_prompt_maps_island_3_to_novel():
-    from graph_invariant.cli import _candidate_prompt
+    from graph_invariant.candidate_pipeline import _candidate_prompt
 
     state = CheckpointState(
         experiment_id="exp",
@@ -1083,7 +1083,7 @@ def test_generation_rejects_candidate_below_novelty_gate(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
@@ -1094,11 +1094,11 @@ def test_generation_rejects_candidate_below_novelty_gate(monkeypatch, tmp_path):
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
     # Return very low novelty — below the 0.15 gate
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.08)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.08)
 
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
@@ -1140,7 +1140,7 @@ def test_novelty_gate_rejection_triggers_self_correction(monkeypatch, tmp_path):
         return "def new_invariant(s):\n    return float(s['n'])"
 
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         _counting_generate,
     )
     _patch_sandbox_evaluator(
@@ -1151,11 +1151,11 @@ def test_novelty_gate_rejection_triggers_self_correction(monkeypatch, tmp_path):
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
     # Novelty below threshold → should trigger repair attempt
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.08)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.08)
 
     assert run_phase1(cfg) == 0
     # 4 islands × 1 candidate × 2 attempts (original + repair) = 8 generate calls.
@@ -1188,7 +1188,7 @@ def test_generation_accepts_candidate_above_novelty_gate(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
@@ -1199,11 +1199,11 @@ def test_generation_accepts_candidate_above_novelty_gate(monkeypatch, tmp_path):
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
     # Return novelty above the 0.15 gate
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
 
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
@@ -1235,7 +1235,7 @@ def test_novelty_gate_disabled_when_zero(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
@@ -1246,11 +1246,11 @@ def test_novelty_gate_disabled_when_zero(monkeypatch, tmp_path):
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
     # Very low novelty, but gate is disabled (threshold=0.0)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.01)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.01)
 
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
@@ -1336,14 +1336,14 @@ def test_run_phase1_bounds_mode_uses_bound_score(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n']) * 10",
     )
     _patch_sandbox_evaluator(
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 100) for i in range(len(graphs))],
     )
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
 
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
@@ -1380,14 +1380,14 @@ def test_run_phase1_bounds_mode_summary_schema(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return 0.1",
     )
     _patch_sandbox_evaluator(
         monkeypatch,
         lambda _code, graphs, **_kw: [0.1 for _ in range(len(graphs))],
     )
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
 
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
@@ -1404,7 +1404,7 @@ def test_candidate_prompt_passes_fitness_mode(monkeypatch):
     """_candidate_prompt should forward fitness_mode to build_prompt."""
     import inspect
 
-    from graph_invariant.cli import _candidate_prompt
+    from graph_invariant.candidate_pipeline import _candidate_prompt
     from graph_invariant.llm_ollama import build_prompt as original_build
 
     captured: dict[str, str] = {}
@@ -1416,7 +1416,7 @@ def test_candidate_prompt_passes_fitness_mode(monkeypatch):
         captured["fitness_mode"] = bound.arguments["fitness_mode"]
         return original_build(*args, **kwargs)
 
-    monkeypatch.setattr("graph_invariant.cli.build_prompt", spy_build)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.build_prompt", spy_build)
 
     state = CheckpointState(
         experiment_id="exp",
@@ -1452,7 +1452,7 @@ def test_run_phase1_persists_prompt_and_response_when_enabled(monkeypatch, tmp_p
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_payload",
+        "graph_invariant.candidate_pipeline.generate_candidate_payload",
         lambda *_args, **_kwargs: {
             "response": "llm text",
             "code": "def new_invariant(s):\n    return 1.0",
@@ -1466,10 +1466,10 @@ def test_run_phase1_persists_prompt_and_response_when_enabled(monkeypatch, tmp_p
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
 
     assert run_phase1(cfg) == 0
     events_path = Path(cfg.artifacts_dir) / "logs" / "events.jsonl"
@@ -1512,7 +1512,7 @@ def test_run_phase1_with_map_elites_populates_archive(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
@@ -1523,10 +1523,10 @@ def test_run_phase1_with_map_elites_populates_archive(monkeypatch, tmp_path):
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
 
     assert run_phase1(cfg) == 0
 
@@ -1567,7 +1567,7 @@ def test_run_phase1_without_map_elites_omits_archive(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
@@ -1578,10 +1578,10 @@ def test_run_phase1_without_map_elites_omits_archive(monkeypatch, tmp_path):
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
 
     assert run_phase1(cfg) == 0
 
@@ -1620,7 +1620,7 @@ def test_run_phase1_map_elites_checkpoint_roundtrip(monkeypatch, tmp_path):
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.generate_candidate_code",
+        "graph_invariant.candidate_pipeline.generate_candidate_code",
         lambda *_args, **_kwargs: "def new_invariant(s):\n    return float(s['n'])",
     )
     _patch_sandbox_evaluator(
@@ -1631,10 +1631,10 @@ def test_run_phase1_map_elites_checkpoint_roundtrip(monkeypatch, tmp_path):
     def fake_metrics(*_args, **_kwargs):
         return EvaluationResult(0.9, 0.9, 0.1, 0.1, 2, 0)
 
-    monkeypatch.setattr("graph_invariant.cli.compute_metrics", fake_metrics)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.cli.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.cli.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
 
     assert run_phase1(cfg) == 0
 
@@ -1651,7 +1651,7 @@ def test_run_phase1_map_elites_checkpoint_roundtrip(monkeypatch, tmp_path):
 
 
 def test_candidate_prompt_includes_archive_exemplars():
-    from graph_invariant.cli import _candidate_prompt
+    from graph_invariant.candidate_pipeline import _candidate_prompt
 
     state = CheckpointState(
         experiment_id="exp",

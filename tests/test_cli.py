@@ -55,7 +55,7 @@ def _patch_sandbox_evaluator(monkeypatch, evaluate_fn):  # noqa: ANN001
                     )
             return details
 
-    monkeypatch.setattr("graph_invariant.cli.SandboxEvaluator", FakeSandboxEvaluator)
+    monkeypatch.setattr("graph_invariant.phase1_loop.SandboxEvaluator", FakeSandboxEvaluator)
 
 
 def test_run_phase1_uses_configured_score_weights(monkeypatch, tmp_path):
@@ -85,9 +85,9 @@ def test_run_phase1_uses_configured_score_weights(monkeypatch, tmp_path):
         captured["gamma"] = gamma
         return 0.5
 
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -124,9 +124,9 @@ def test_run_phase1_fails_fast_when_ollama_model_is_missing(monkeypatch, tmp_pat
         test=[nx.path_graph(4)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gemma3:4b"],
     )
 
@@ -153,9 +153,9 @@ def test_run_phase1_rotates_generation_checkpoints(monkeypatch, tmp_path):
         test=[nx.path_graph(4)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -201,9 +201,9 @@ def test_run_phase1_resume_continues_from_saved_generation(monkeypatch, tmp_path
         test=[nx.path_graph(4)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -256,9 +256,9 @@ def test_run_phase1_rejects_invalid_experiment_id(monkeypatch, tmp_path):
         test=[nx.path_graph(4)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
 
@@ -284,9 +284,9 @@ def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -354,9 +354,9 @@ def test_run_phase1_activates_constrained_prompt_after_stagnation(monkeypatch, t
         prompts.append(prompt)
         return "def new_invariant(s):\n    return 1.0"
 
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr("graph_invariant.candidate_pipeline.generate_candidate_code", fake_generate)
@@ -404,9 +404,9 @@ def test_run_phase1_self_correction_repairs_failed_candidate_once(monkeypatch, t
             return [None for _ in graphs]
         return [float(i + 1) for i in range(len(graphs))]
 
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr("graph_invariant.candidate_pipeline.generate_candidate_code", _fake_generate)
@@ -448,9 +448,9 @@ def test_run_phase1_writes_baseline_summary(monkeypatch, tmp_path):
         test=[nx.path_graph(4)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
 
@@ -670,9 +670,9 @@ def test_run_phase1_success_threshold_is_configurable(monkeypatch, tmp_path):
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -711,9 +711,9 @@ def test_run_phase1_with_zero_generations_does_not_initialize_sandbox_pool(monke
         test=[nx.path_graph(4)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -808,9 +808,9 @@ def test_run_phase1_summary_enforces_pysr_parity(monkeypatch, tmp_path):
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -830,7 +830,7 @@ def test_run_phase1_summary_enforces_pysr_parity(monkeypatch, tmp_path):
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
     monkeypatch.setattr(
-        "graph_invariant.cli.run_pysr_baseline",
+        "graph_invariant.phase1_loop.run_pysr_baseline",
         lambda **_kwargs: {
             "status": "ok",
             "val_metrics": {"spearman": 0.95},
@@ -866,9 +866,9 @@ def test_run_phase1_pysr_parity_allows_small_epsilon_gap(monkeypatch, tmp_path):
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -888,7 +888,7 @@ def test_run_phase1_pysr_parity_allows_small_epsilon_gap(monkeypatch, tmp_path):
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
     monkeypatch.setattr(
-        "graph_invariant.cli.run_pysr_baseline",
+        "graph_invariant.phase1_loop.run_pysr_baseline",
         lambda **_kwargs: {
             "status": "ok",
             "val_metrics": {"spearman": 0.9005},
@@ -921,9 +921,9 @@ def test_run_phase1_requires_healthy_baselines_when_configured(monkeypatch, tmp_
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -943,11 +943,11 @@ def test_run_phase1_requires_healthy_baselines_when_configured(monkeypatch, tmp_
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
     monkeypatch.setattr(
-        "graph_invariant.cli.run_pysr_baseline",
+        "graph_invariant.phase1_loop.run_pysr_baseline",
         lambda **_kwargs: {"status": "error", "reason": "boom"},
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.run_stat_baselines",
+        "graph_invariant.phase1_loop.run_stat_baselines",
         lambda **_kwargs: {
             "linear_regression": {"status": "error", "reason": "bad"},
             "random_forest": {"status": "skipped", "reason": "missing"},
@@ -980,9 +980,9 @@ def test_run_phase1_accepts_single_healthy_baseline_when_required(monkeypatch, t
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -1002,11 +1002,11 @@ def test_run_phase1_accepts_single_healthy_baseline_when_required(monkeypatch, t
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
     monkeypatch.setattr(
-        "graph_invariant.cli.run_pysr_baseline",
+        "graph_invariant.phase1_loop.run_pysr_baseline",
         lambda **_kwargs: {"status": "error", "reason": "boom"},
     )
     monkeypatch.setattr(
-        "graph_invariant.cli.run_stat_baselines",
+        "graph_invariant.phase1_loop.run_stat_baselines",
         lambda **_kwargs: {
             "linear_regression": {"status": "ok", "val_metrics": {"spearman": 0.2}},
             "random_forest": {"status": "skipped", "reason": "missing"},
@@ -1077,9 +1077,9 @@ def test_generation_rejects_candidate_below_novelty_gate(monkeypatch, tmp_path):
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -1128,9 +1128,9 @@ def test_novelty_gate_rejection_triggers_self_correction(monkeypatch, tmp_path):
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     generate_call_count = {"count": 0}
@@ -1182,9 +1182,9 @@ def test_generation_accepts_candidate_above_novelty_gate(monkeypatch, tmp_path):
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -1229,9 +1229,9 @@ def test_novelty_gate_disabled_when_zero(monkeypatch, tmp_path):
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -1330,9 +1330,9 @@ def test_run_phase1_bounds_mode_uses_bound_score(monkeypatch, tmp_path):
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -1374,9 +1374,9 @@ def test_run_phase1_bounds_mode_summary_schema(monkeypatch, tmp_path):
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -1446,9 +1446,9 @@ def test_run_phase1_persists_prompt_and_response_when_enabled(monkeypatch, tmp_p
         test=[nx.path_graph(4)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -1506,9 +1506,9 @@ def test_run_phase1_with_map_elites_populates_archive(monkeypatch, tmp_path):
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -1561,9 +1561,9 @@ def test_run_phase1_without_map_elites_omits_archive(monkeypatch, tmp_path):
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(
@@ -1614,9 +1614,9 @@ def test_run_phase1_map_elites_checkpoint_roundtrip(monkeypatch, tmp_path):
         test=[nx.path_graph(4), nx.path_graph(5)],
         sanity=[nx.path_graph(4)],
     )
-    monkeypatch.setattr("graph_invariant.cli.generate_phase1_datasets", lambda _cfg: bundle)
+    monkeypatch.setattr("graph_invariant.phase1_loop.generate_phase1_datasets", lambda _cfg: bundle)
     monkeypatch.setattr(
-        "graph_invariant.cli.list_available_models",
+        "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
     monkeypatch.setattr(

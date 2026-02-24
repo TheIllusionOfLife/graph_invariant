@@ -57,7 +57,7 @@ def test_generate_candidate_code_parses_response(monkeypatch):
         def json(self) -> dict[str, str]:
             return {"response": "```python\ndef new_invariant(G):\n    return 7\n```"}
 
-    def fake_post(url, json, timeout, allow_redirects):  # noqa: ANN001
+    def fake_post(url, json, timeout, allow_redirects, headers=None):  # noqa: ANN001
         assert "model" in json
         assert timeout == 60
         assert isinstance(url, str)
@@ -79,9 +79,9 @@ def test_generate_candidate_code_respects_timeout(monkeypatch):
 
     captured: dict[str, object] = {}
 
-    def fake_post(url, json, timeout, allow_redirects):  # noqa: ANN001
+    def fake_post(url, json, timeout, allow_redirects, headers=None):  # noqa: ANN001
         captured["timeout"] = timeout
-        del url, json, allow_redirects
+        del url, json, allow_redirects, headers
         return DummyResponse()
 
     monkeypatch.setattr("graph_invariant.llm_ollama.requests.post", fake_post)
@@ -108,6 +108,9 @@ def test_validate_ollama_url_rejects_non_local_hosts():
 def test_generate_candidate_code_retries_on_read_timeout(monkeypatch):
     import requests as req
 
+    from graph_invariant import llm_ollama
+
+    monkeypatch.setattr(llm_ollama.time, "sleep", lambda x: None)
     call_count = 0
 
     class DummyResponse:
@@ -117,7 +120,7 @@ def test_generate_candidate_code_retries_on_read_timeout(monkeypatch):
         def json(self) -> dict[str, str]:
             return {"response": "def new_invariant(G):\n    return 1"}
 
-    def fake_post(url, json, timeout, allow_redirects):  # noqa: ANN001
+    def fake_post(url, json, timeout, allow_redirects, headers=None):  # noqa: ANN001
         nonlocal call_count
         call_count += 1
         if call_count == 1:
@@ -133,9 +136,12 @@ def test_generate_candidate_code_retries_on_read_timeout(monkeypatch):
 def test_generate_candidate_code_fails_after_max_retries(monkeypatch):
     import requests as req
 
+    from graph_invariant import llm_ollama
+
+    monkeypatch.setattr(llm_ollama.time, "sleep", lambda x: None)
     call_count = 0
 
-    def fake_post(url, json, timeout, allow_redirects):  # noqa: ANN001
+    def fake_post(url, json, timeout, allow_redirects, headers=None):  # noqa: ANN001
         nonlocal call_count
         call_count += 1
         raise req.exceptions.ReadTimeout("timed out")
@@ -146,12 +152,17 @@ def test_generate_candidate_code_fails_after_max_retries(monkeypatch):
     assert call_count == 3
 
 
-def test_generate_candidate_code_no_retry_on_connection_error(monkeypatch):
+def test_generate_candidate_code_retries_on_connection_error(monkeypatch):
     import requests as req
+
+    from graph_invariant import llm_ollama
+
+    # Mock time.sleep to avoid waiting
+    monkeypatch.setattr(llm_ollama.time, "sleep", lambda x: None)
 
     call_count = 0
 
-    def fake_post(url, json, timeout, allow_redirects):  # noqa: ANN001
+    def fake_post(url, json, timeout, allow_redirects, headers=None):  # noqa: ANN001
         nonlocal call_count
         call_count += 1
         raise req.exceptions.ConnectionError("refused")
@@ -159,7 +170,102 @@ def test_generate_candidate_code_no_retry_on_connection_error(monkeypatch):
     monkeypatch.setattr("graph_invariant.llm_ollama.requests.post", fake_post)
     with pytest.raises(req.exceptions.ConnectionError):
         generate_candidate_code("p", "m", 0.3, "http://localhost:11434/api/generate")
+    # Should retry default 3 times
+    assert call_count == 3
+
+
+def test_generate_candidate_payload_max_retries_zero(monkeypatch):
+    import requests as req
+
+    from graph_invariant.llm_ollama import generate_candidate_payload
+
+    call_count = 0
+
+    def fake_post(url, json, timeout, allow_redirects, headers=None):  # noqa: ANN001
+        nonlocal call_count
+        call_count += 1
+        del url, json, timeout, allow_redirects, headers
+        raise req.exceptions.ReadTimeout("timed out")
+
+    monkeypatch.setattr("graph_invariant.llm_ollama.requests.post", fake_post)
+
+    # max_retries=0 should still attempt once
+    with pytest.raises(req.exceptions.ReadTimeout):
+        generate_candidate_payload(
+            "p", "m", 0.3, "http://localhost:11434/api/generate", max_retries=0
+        )
     assert call_count == 1
+
+
+def test_generate_candidate_payload_no_retry_on_400(monkeypatch):
+    import requests as req
+
+    from graph_invariant import llm_ollama
+    from graph_invariant.llm_ollama import generate_candidate_payload
+
+    monkeypatch.setattr(llm_ollama.time, "sleep", lambda x: None)
+    call_count = 0
+
+    class BadResponse:
+        status_code = 400
+
+        def raise_for_status(self) -> None:
+            raise req.exceptions.HTTPError("Bad Request", response=self)
+
+    def fake_post(url, json, timeout, allow_redirects, headers=None):  # noqa: ANN001
+        nonlocal call_count
+        call_count += 1
+        del url, json, timeout, allow_redirects, headers
+        return BadResponse()
+
+    monkeypatch.setattr("graph_invariant.llm_ollama.requests.post", fake_post)
+
+    with pytest.raises(req.exceptions.HTTPError):
+        generate_candidate_payload(
+            "p", "m", 0.3, "http://localhost:11434/api/generate", max_retries=3
+        )
+    # Should fail immediately on 400
+    assert call_count == 1
+
+
+def test_generate_candidate_payload_retries_on_500(monkeypatch):
+    import requests as req
+
+    from graph_invariant import llm_ollama
+    from graph_invariant.llm_ollama import generate_candidate_payload
+
+    monkeypatch.setattr(llm_ollama.time, "sleep", lambda x: None)
+    call_count = 0
+
+    class ErrorResponse:
+        status_code = 500
+
+        def raise_for_status(self) -> None:
+            raise req.exceptions.HTTPError("Internal Server Error", response=self)
+
+    class SuccessResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, str]:
+            return {"response": "def new_invariant(G):\n    return 1"}
+
+    def fake_post(url, json, timeout, allow_redirects, headers=None):  # noqa: ANN001
+        nonlocal call_count
+        call_count += 1
+        del url, json, timeout, allow_redirects, headers
+        if call_count < 3:
+            return ErrorResponse()
+        return SuccessResponse()
+
+    monkeypatch.setattr("graph_invariant.llm_ollama.requests.post", fake_post)
+
+    result = generate_candidate_payload(
+        "p", "m", 0.3, "http://localhost:11434/api/generate", max_retries=3
+    )
+    assert "def new_invariant" in result["code"]
+    # Should retry: 1st (fail), 2nd (fail), 3rd (success)
+    assert call_count == 3
 
 
 def test_build_prompt_refinement_strategy():
@@ -262,10 +368,11 @@ def test_list_available_models_uses_no_redirects(monkeypatch):
 
     captured: dict[str, object] = {}
 
-    def fake_get(url, timeout, allow_redirects):  # noqa: ANN001
+    def fake_get(url, timeout, allow_redirects, headers=None):  # noqa: ANN001
         captured["url"] = url
         captured["timeout"] = timeout
         captured["allow_redirects"] = allow_redirects
+        captured["headers"] = headers
         return DummyResponse()
 
     monkeypatch.setattr("graph_invariant.llm_ollama.requests.get", fake_get)

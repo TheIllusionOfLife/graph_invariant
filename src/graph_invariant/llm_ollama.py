@@ -1,5 +1,6 @@
 import ipaddress
 import re
+import time
 from enum import StrEnum
 from urllib.parse import urlparse
 
@@ -203,19 +204,27 @@ def generate_candidate_payload(
         "stream": False,
         "options": {"temperature": temperature},
     }
-    last_exc: requests.exceptions.ReadTimeout | None = None
-    for attempt in range(max_retries):
+    last_exc: requests.exceptions.RequestException | None = None
+    attempts = max(1, max_retries)
+    for attempt in range(attempts):
         try:
             response = requests.post(url, json=payload, timeout=timeout_sec, allow_redirects=False)
             response.raise_for_status()
             body = response.json()
             text = str(body.get("response", "")).strip()
             return {"response": text, "code": _extract_code_block(text)}
-        except requests.exceptions.ReadTimeout as exc:
+        except requests.exceptions.RequestException as exc:
             last_exc = exc
-            if attempt < max_retries - 1:
+            if isinstance(exc, requests.exceptions.HTTPError):
+                status_code = exc.response.status_code if exc.response is not None else 0
+                if 400 <= status_code < 500 and status_code != 429:
+                    raise exc
+            if attempt < attempts - 1:
+                time.sleep(1.0)
                 continue
-    raise last_exc  # type: ignore[misc]
+    if last_exc:
+        raise last_exc
+    raise RuntimeError("Max retries exceeded with no exception captured")
 
 
 def _tags_endpoint(generate_url: str) -> str:

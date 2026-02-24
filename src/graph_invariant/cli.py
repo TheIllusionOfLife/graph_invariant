@@ -15,7 +15,9 @@ from .baselines import run_pysr_baseline, run_stat_baselines
 from .config import Phase1Config
 from .data import generate_phase1_datasets
 from .evolution import migrate_ring_top1
-from .known_invariants import compute_feature_dicts, compute_known_invariant_values
+from .known_invariants import (
+    compute_dataset_features_and_invariants,
+)
 from .llm_ollama import (
     IslandStrategy,
     build_prompt,
@@ -872,6 +874,8 @@ def _write_phase1_summary(
     y_true_test: list[float],
     baseline_results: dict[str, object] | None,
     self_correction_stats: dict[str, Any],
+    known_invariants_val: dict[str, list[float]],
+    known_invariants_test: dict[str, list[float]],
 ) -> None:
     def _extract_spearman(metrics: dict[str, object] | None) -> float | None:
         if not isinstance(metrics, dict):
@@ -920,14 +924,8 @@ def _write_phase1_summary(
         write_json(payload, summary_path)
         return
 
-    known_val = compute_known_invariant_values(
-        datasets_val,
-        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
-    )
-    known_test = compute_known_invariant_values(
-        datasets_test,
-        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
-    )
+    known_val = known_invariants_val
+    known_test = known_invariants_test
     y_sanity = target_values(datasets_sanity, cfg.target_name)
     val_metrics = _evaluate_split(best.code, features_val, y_true_val, evaluator, known_val)
     test_metrics = _evaluate_split(best.code, features_test, y_true_test, evaluator, known_test)
@@ -1113,6 +1111,9 @@ def _collect_baseline_results(
     y_true_val: list[float],
     y_true_test: list[float],
     enable_spectral_feature_pack: bool,
+    known_invariants_train: dict[str, list[float]] | None,
+    known_invariants_val: dict[str, list[float]] | None,
+    known_invariants_test: dict[str, list[float]] | None,
 ) -> dict[str, object] | None:
     if not cfg.run_baselines:
         return None
@@ -1126,6 +1127,9 @@ def _collect_baseline_results(
         y_test=y_true_test,
         target_name=cfg.target_name,
         enable_spectral_feature_pack=enable_spectral_feature_pack,
+        known_invariants_train=known_invariants_train,
+        known_invariants_val=known_invariants_val,
+        known_invariants_test=known_invariants_test,
     )
     pysr = run_pysr_baseline(
         train_graphs=datasets_train,
@@ -1140,6 +1144,9 @@ def _collect_baseline_results(
         timeout_in_seconds=cfg.pysr_timeout_in_seconds,
         target_name=cfg.target_name,
         enable_spectral_feature_pack=enable_spectral_feature_pack,
+        known_invariants_train=known_invariants_train,
+        known_invariants_val=known_invariants_val,
+        known_invariants_test=known_invariants_test,
     )
     return {
         "schema_version": 1,
@@ -1191,25 +1198,28 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
     y_true_train = target_values(datasets.train, cfg.target_name)
     y_true_val = target_values(datasets.val, cfg.target_name)
     y_true_test = target_values(datasets.test, cfg.target_name)
-    known_invariants_val = compute_known_invariant_values(
+    features_val, known_invariants_val = compute_dataset_features_and_invariants(
         datasets.val,
         include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
+        include_extended_invariants=True,
     )
-    features_train = compute_feature_dicts(
-        datasets.train,
-        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
-    )
-    features_val = compute_feature_dicts(
-        datasets.val,
-        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
-    )
-    features_test = compute_feature_dicts(
+
+    features_test, known_invariants_test = compute_dataset_features_and_invariants(
         datasets.test,
         include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
+        include_extended_invariants=True,
     )
-    features_sanity = compute_feature_dicts(
+
+    features_train, known_invariants_train = compute_dataset_features_and_invariants(
+        datasets.train,
+        include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
+        include_extended_invariants=cfg.run_baselines,
+    )
+
+    features_sanity, _ = compute_dataset_features_and_invariants(
         datasets.sanity,
         include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
+        include_extended_invariants=False,
     )
 
     append_jsonl(
@@ -1233,6 +1243,9 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         y_true_val=y_true_val,
         y_true_test=y_true_test,
         enable_spectral_feature_pack=cfg.enable_spectral_feature_pack,
+        known_invariants_train=known_invariants_train,
+        known_invariants_val=known_invariants_val,
+        known_invariants_test=known_invariants_test,
     )
     self_correction_stats: dict[str, Any] = {
         "enabled": cfg.enable_self_correction,
@@ -1353,6 +1366,8 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
             y_true_test=y_true_test,
             baseline_results=baseline_results,
             self_correction_stats=self_correction_stats,
+            known_invariants_val=known_invariants_val,
+            known_invariants_test=known_invariants_test,
         )
     _write_baseline_summary(
         payload=baseline_results,

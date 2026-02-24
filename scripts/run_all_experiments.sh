@@ -23,15 +23,15 @@ echo ""
 
 # Select config prefix based on profile
 if [ "$PROFILE" = "full" ]; then
-    MAP_ELITES_CFG="configs/experiment_map_elites_aspl.json"
-    ALG_CONN_CFG="configs/experiment_algebraic_connectivity.json"
-    UPPER_BOUND_CFG="configs/experiment_upper_bound_aspl.json"
-    BENCHMARK_CFG="configs/benchmark_aspl.json"
+    MAP_ELITES_CFG="configs/full/experiment_map_elites_aspl.json"
+    ALG_CONN_CFG="configs/full/experiment_algebraic_connectivity.json"
+    UPPER_BOUND_CFG="configs/full/experiment_upper_bound_aspl.json"
+    BENCHMARK_CFG="configs/full/benchmark_aspl.json"
 else
-    MAP_ELITES_CFG="configs/quick_map_elites_aspl.json"
-    ALG_CONN_CFG="configs/quick_algebraic_connectivity.json"
-    UPPER_BOUND_CFG="configs/quick_upper_bound_aspl.json"
-    BENCHMARK_CFG="configs/quick_benchmark_aspl.json"
+    MAP_ELITES_CFG="configs/quick/map_elites_aspl.json"
+    ALG_CONN_CFG="configs/quick/algebraic_connectivity.json"
+    UPPER_BOUND_CFG="configs/quick/upper_bound_aspl.json"
+    BENCHMARK_CFG="configs/quick/benchmark_aspl.json"
 fi
 
 # Track which experiments succeed for OOD validation

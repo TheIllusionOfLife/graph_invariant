@@ -639,6 +639,17 @@ def _escape_latex_text(value: Any) -> str:
     return text
 
 
+def _escape_latex_name(name: str) -> str:
+    """Escape a path-like experiment name for LaTeX with line-break hints.
+
+    Adds ``\\allowbreak`` after every ``\\_`` and ``/`` so that LaTeX can
+    wrap long experiment paths inside narrow table columns without producing
+    Overfull \\hbox warnings.
+    """
+    text = _escape_latex_text(name)
+    return text.replace("/", "/\\allowbreak ").replace("\\_", "\\_\\allowbreak ")
+
+
 def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Path) -> None:
     """Write generated appendix tables as LaTeX source."""
     seed_aggregates = appendix_payload.get("appendix_seed_aggregates", {})
@@ -679,7 +690,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
                 "{val_mean}$\\pm${val_std} & {test_mean}$\\pm${test_std} "
                 "& $\\pm${test_ci} \\\\".format(
                     group=(
-                        _escape_latex_text(group).replace("/", "/\\allowbreak ")
+                        _escape_latex_name(group)
                         + ("\\textsuperscript{\\dag}" if group in seed_notes else "")
                     ),
                     seed_count=seed_count,
@@ -729,7 +740,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
         for name, payload in sorted(bounds.items()):
             lines.append(
                 "    {name} & {vbs} & {vsr} & {tbs} & {tsr} \\\\".format(
-                    name=_escape_latex_text(name),
+                    name=_escape_latex_name(name),
                     vbs=_fmt_tex_float(payload.get("val_bound_score"), 3),
                     vsr=_fmt_tex_float(payload.get("val_satisfaction_rate"), 3),
                     tbs=_fmt_tex_float(payload.get("test_bound_score"), 3),
@@ -801,6 +812,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
             " Novelty-gate rejections dominate, confirming the hard gate"
             " is the primary bottleneck rather than code quality.}",
             "  \\label{tab:appendix_sc_failures}",
+            "  \\resizebox{\\linewidth}{!}{%",
             "  \\begin{tabular}{p{4.0cm}cccc}",
             "    \\toprule",
             "    Experiment & SC attempted & No valid preds & Below train thr."
@@ -813,7 +825,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
             lines.append(
                 "    {name} & {attempted} & {no_valid} & {below_train}"
                 " & {below_novelty} \\\\".format(
-                    name=_escape_latex_text(name),
+                    name=_escape_latex_name(name),
                     attempted=_escape_latex_text(payload.get("attempted", "N/A")),
                     no_valid=_escape_latex_text(payload.get("no_valid_train_predictions", "N/A")),
                     below_train=_escape_latex_text(payload.get("below_train_threshold", "N/A")),
@@ -825,7 +837,8 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
     lines.extend(
         [
             "    \\bottomrule",
-            "  \\end{tabular}",
+            "  \\end{tabular}%",
+            "  }",
             "\\end{table}",
             "",
         ]
@@ -845,6 +858,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
             " Total calls = generation + repair."
             " Estimated at 5--15\\,s per LLM call on a local 20B model.}",
             "  \\label{tab:appendix_compute}",
+            "  \\resizebox{\\linewidth}{!}{%",
             "  \\begin{tabular}{p{4.0cm}ccccc}",
             "    \\toprule",
             "    Experiment & Gens & LLM gen calls & Repair calls & Total calls & PySR budget \\\\",
@@ -855,7 +869,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
         for name, payload in sorted(compute_data.items()):
             lines.append(
                 "    {name} & {gens} & {gen_calls} & {repair} & {total} & {pysr} \\\\".format(
-                    name=_escape_latex_text(name),
+                    name=_escape_latex_name(name),
                     gens=_escape_latex_text(payload.get("generations", "N/A")),
                     gen_calls=_escape_latex_text(payload.get("llm_gen_calls", "N/A")),
                     repair=_escape_latex_text(payload.get("repair_calls", "N/A")),
@@ -868,7 +882,8 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
     lines.extend(
         [
             "    \\bottomrule",
-            "  \\end{tabular}",
+            "  \\end{tabular}%",
+            "  }",
             "\\end{table}",
             "",
         ]

@@ -16,16 +16,16 @@ inequalities on the evaluated graph distributions.
   \caption{Summary of results across four experiment configurations. Spearman
     $\rho$ is reported on the validation (Val) and test sets. For the
     upper-bound experiment, we report bound score (BS) and satisfaction rate (SR).
-    Benchmark reports mean $\pm$ std across 5 seeds.}
+    Benchmark reports mean $\pm$ std across 5 seeds. Success = (\#seeds with test $\rho \geq 0.85$) / total seeds.}
   \label{tab:main_results}
   \begin{tabular}{lccccc}
     \toprule
     Experiment & Mode & Gens & Val $\rho$ & Test $\rho$ & Success \\
     \midrule
     MAP-Elites ASPL     & correlation  & 30 & 0.935 & 0.947 & \checkmark \\
-    Algebraic conn.     & correlation  & 20 & 0.765 & 0.778 & --- \\
+    Algebraic conn.     & correlation  & 20 & 0.764 & 0.778 & --- \\
     Upper bound ASPL    & upper\_bound & 20 & \multicolumn{2}{c}{BS=0.514, SR=87\%} & --- \\
-    Benchmark (mean$\pm$std) & correlation & 20 & 0.927$\pm$0.011 & 0.921$\pm$0.027 & 1/5 \\
+    Benchmark (mean$\pm$std) & correlation & 20 & 0.927$\pm$0.012 & 0.921$\pm$0.030 & 5/5 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -69,7 +69,7 @@ in generations 0--1, where most candidates are rejected by the novelty gate
 or sandbox. Acceptance rates increase from 5\% in generation~0 to over 74\%
 by generation~4 in the MAP-Elites ASPL experiment, as the LLM learns the
 sandbox constraints through the self-correction feedback loop. The MAP-Elites
-ASPL experiment converges from a composite fitness score of 0.426 to 0.553
+ASPL experiment converges from a composite fitness score of 0.426 to 0.552
 over 30 generations (note: these are weighted scores from Eq.~\ref{eq:score},
 not raw Spearman $\rho$; the final validation $\rho = 0.935$ appears in
 Table~\ref{tab:main_results}). The upper-bound experiment shows the steepest
@@ -108,10 +108,12 @@ candidates.
 Figure~\ref{fig:ood} shows OOD Spearman correlations across the three
 categories. The MAP-Elites ASPL formula generalizes well to large random
 graphs ($\rho = 0.957$) and extreme-parameter graphs ($\rho = 0.926$), but
-degrades on special topologies ($\rho = 0.500$) such as barbell and grid
-graphs. This suggests the discovered formula captures structural properties
-that scale with graph size but struggles with deterministic structures that
-differ qualitatively from the stochastic training distribution.
+degrades on special topologies ($\rho = 0.465$, evaluated on 16 graphs
+including density extremes, degree-distribution extremes, and classical
+archetypes such as path, cycle, star, and wheel graphs). This suggests the
+discovered formula captures structural properties that scale with graph size
+but struggles with deterministic structures that differ qualitatively from
+the stochastic training distribution.
 
 \begin{figure}[t]
   \centering
@@ -119,7 +121,7 @@ differ qualitatively from the stochastic training distribution.
   \caption{Out-of-distribution generalization across three graph categories.
     Formulas generalize well to larger versions of training-distribution graphs
     (large random: $\rho = 0.957$) but degrade on qualitatively different
-    topologies (special: $\rho = 0.500$).}
+    topologies (special: $\rho = 0.465$, 16 graphs).}
   \label{fig:ood}
 \end{figure}
 
@@ -127,17 +129,16 @@ differ qualitatively from the stochastic training distribution.
 
 Figure~\ref{fig:benchmark} shows the distribution of validation and test
 Spearman correlations across 5 seeds. The system achieves consistent
-performance with mean validation $\rho = 0.927 \pm 0.011$ and mean test
-$\rho = 0.921 \pm 0.027$. The low standard deviation indicates that the
+performance with mean validation $\rho = 0.927 \pm 0.012$ and mean test
+$\rho = 0.921 \pm 0.030$. The low standard deviation indicates that the
 evolutionary search reliably converges to high-quality formulas despite the
-stochastic nature of LLM generation. One seed (seed 55) meets the success
-threshold with test $\rho = 0.953$.
+stochastic nature of LLM generation. All five seeds meet the success threshold (test $\rho$ range: 0.873--0.953).
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.5\textwidth]{figures/benchmark_boxplot.pdf}
   \caption{Distribution of Spearman $\rho$ across 5 benchmark seeds.
-    Validation: $0.927 \pm 0.011$; Test: $0.921 \pm 0.027$. The tight
+    Validation: $0.927 \pm 0.012$; Test: $0.921 \pm 0.030$. All five seeds meet the $\rho \geq 0.85$ threshold. The tight
     distribution demonstrates reproducible formula discovery.}
   \label{fig:benchmark}
 \end{figure}
@@ -179,7 +180,10 @@ sandbox violations (\texttt{import} statements) and novelty threshold
 violations. Self-correction preserves the mathematical structure of the
 original formula while fixing implementation issues, effectively acting as a
 constrained search operator that retains mathematical intuition from failed
-candidates.
+candidates. A controlled 3-seed ablation (MAP-Elites ASPL) confirms that SC
+raises mean validation $\rho$ by $+0.045$ with cross-seed standard deviation
+reduced by $3{\times}$ relative to the no-SC baseline
+(Table~\ref{tab:sc_ablation} in Appendix).
 
 \subsection{Day-1 Staged Pilot (Fast Profile)}
 

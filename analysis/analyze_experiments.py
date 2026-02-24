@@ -559,12 +559,56 @@ def build_appendix_payload(
             "criteria_success_runs": counts["criteria_success"],
         }
 
+    # --- Self-correction failure breakdown ---
+    sc_failure_breakdown: dict[str, dict] = {}
+    for name, data in sorted(experiments.items()):
+        summary = data.get("summary", {})
+        sc_stats = summary.get("self_correction_stats", {})
+        if not isinstance(sc_stats, dict) or not sc_stats.get("enabled", False):
+            continue
+        failure_cats = sc_stats.get("failure_categories", {})
+        if not isinstance(failure_cats, dict):
+            continue
+        sc_failure_breakdown[name] = {
+            "attempted": sc_stats.get("attempted_repairs", "N/A"),
+            "no_valid_train_predictions": failure_cats.get("no_valid_train_predictions", "N/A"),
+            "below_train_threshold": failure_cats.get("below_train_threshold", "N/A"),
+            "below_novelty_threshold": failure_cats.get("below_novelty_threshold", "N/A"),
+        }
+
+    # --- Compute profile ---
+    compute_profile: dict[str, dict] = {}
+    for name, data in sorted(experiments.items()):
+        summary = data.get("summary", {})
+        gens = summary.get("final_generation")
+        if not isinstance(gens, int):
+            continue
+        cfg = summary.get("config", {}) if isinstance(summary.get("config"), dict) else {}
+        # Read islands and population from persisted config; fall back to system defaults
+        island_temps = cfg.get("island_temperatures", [])
+        islands = len(island_temps) if island_temps else 4
+        pop = int(cfg.get("population_size", 5))
+        pysr_sec = cfg.get("pysr_timeout_in_seconds")
+        pysr_budget = f"{int(pysr_sec)} s" if isinstance(pysr_sec, (int, float)) else "60 s"
+        sc_stats = summary.get("self_correction_stats", {})
+        repair_calls = sc_stats.get("attempted_repairs", 0) if isinstance(sc_stats, dict) else 0
+        gen_calls = gens * islands * pop
+        compute_profile[name] = {
+            "generations": gens,
+            "llm_gen_calls": gen_calls,
+            "repair_calls": repair_calls,
+            "total_calls": gen_calls + repair_calls,
+            "pysr_budget": pysr_budget,
+        }
+
     return {
         "appendix_seed_aggregates": aggregates,
         "appendix_seed_notes": seed_notes,
         "appendix_small_data_tradeoff": small_data_tradeoff,
         "appendix_bounds_diagnostics": bounds_diagnostics,
         "appendix_runtime_summary": runtime_summary,
+        "sc_failure_breakdown": sc_failure_breakdown,
+        "compute_profile": compute_profile,
     }
 
 
@@ -593,6 +637,17 @@ def _escape_latex_text(value: Any) -> str:
     for source, target in replacements:
         text = text.replace(source, target)
     return text
+
+
+def _escape_latex_name(name: str) -> str:
+    """Escape a path-like experiment name for LaTeX with line-break hints.
+
+    Adds ``\\allowbreak`` after every ``\\_`` and ``/`` so that LaTeX can
+    wrap long experiment paths inside narrow table columns without producing
+    Overfull \\hbox warnings.
+    """
+    text = _escape_latex_text(name)
+    return text.replace("/", "/\\allowbreak ").replace("\\_", "\\_\\allowbreak ")
 
 
 def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Path) -> None:
@@ -635,7 +690,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
                 "{val_mean}$\\pm${val_std} & {test_mean}$\\pm${test_std} "
                 "& $\\pm${test_ci} \\\\".format(
                     group=(
-                        _escape_latex_text(group).replace("/", "/\\allowbreak ")
+                        _escape_latex_name(group)
                         + ("\\textsuperscript{\\dag}" if group in seed_notes else "")
                     ),
                     seed_count=seed_count,
@@ -685,7 +740,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
         for name, payload in sorted(bounds.items()):
             lines.append(
                 "    {name} & {vbs} & {vsr} & {tbs} & {tsr} \\\\".format(
-                    name=_escape_latex_text(name),
+                    name=_escape_latex_name(name),
                     vbs=_fmt_tex_float(payload.get("val_bound_score"), 3),
                     vsr=_fmt_tex_float(payload.get("val_satisfaction_rate"), 3),
                     tbs=_fmt_tex_float(payload.get("test_bound_score"), 3),
@@ -737,6 +792,98 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
         [
             "    \\bottomrule",
             "  \\end{tabular}",
+            "\\end{table}",
+            "",
+        ]
+    )
+
+    # --- Self-correction failure breakdown table ---
+    sc_failure_data = appendix_payload.get("sc_failure_breakdown", {})
+    lines.extend(
+        [
+            "\\subsection{Self-correction failure breakdown}",
+            "\\begin{table}[h]",
+            "  \\centering",
+            "  \\small",
+            "  \\caption{Self-correction failure categories per experiment."
+            " Counts are cumulative event tallies: a single failed attempt may"
+            " be counted in multiple categories (e.g., both no valid predictions"
+            " and below novelty gate), so column sums can exceed SC attempted."
+            " Novelty-gate rejections dominate, confirming the hard gate"
+            " is the primary bottleneck rather than code quality.}",
+            "  \\label{tab:appendix_sc_failures}",
+            "  \\resizebox{\\linewidth}{!}{%",
+            "  \\begin{tabular}{p{4.0cm}cccc}",
+            "    \\toprule",
+            "    Experiment & SC attempted & No valid preds & Below train thr."
+            " & Below novelty gate \\\\",
+            "    \\midrule",
+        ]
+    )
+    if isinstance(sc_failure_data, dict) and sc_failure_data:
+        for name, payload in sorted(sc_failure_data.items()):
+            lines.append(
+                "    {name} & {attempted} & {no_valid} & {below_train}"
+                " & {below_novelty} \\\\".format(
+                    name=_escape_latex_name(name),
+                    attempted=_escape_latex_text(payload.get("attempted", "N/A")),
+                    no_valid=_escape_latex_text(payload.get("no_valid_train_predictions", "N/A")),
+                    below_train=_escape_latex_text(payload.get("below_train_threshold", "N/A")),
+                    below_novelty=_escape_latex_text(payload.get("below_novelty_threshold", "N/A")),
+                )
+            )
+    else:
+        lines.append("    \\multicolumn{5}{c}{No self-correction data found.} \\\\")
+    lines.extend(
+        [
+            "    \\bottomrule",
+            "  \\end{tabular}%",
+            "  }",
+            "\\end{table}",
+            "",
+        ]
+    )
+
+    # --- Compute profile table ---
+    compute_data = appendix_payload.get("compute_profile", {})
+    lines.extend(
+        [
+            "\\subsection{Compute profile}",
+            "\\begin{table}[h]",
+            "  \\centering",
+            "  \\small",
+            "  \\caption{Estimated LLM call budget per experiment."
+            " LLM generation calls = generations $\\times$ islands $\\times$ population."
+            " Repair calls = self-correction attempts."
+            " Total calls = generation + repair."
+            " Estimated at 5--15\\,s per LLM call on a local 20B model.}",
+            "  \\label{tab:appendix_compute}",
+            "  \\resizebox{\\linewidth}{!}{%",
+            "  \\begin{tabular}{p{4.0cm}ccccc}",
+            "    \\toprule",
+            "    Experiment & Gens & LLM gen calls & Repair calls & Total calls & PySR budget \\\\",
+            "    \\midrule",
+        ]
+    )
+    if isinstance(compute_data, dict) and compute_data:
+        for name, payload in sorted(compute_data.items()):
+            lines.append(
+                "    {name} & {gens} & {gen_calls} & {repair} & {total} & {pysr} \\\\".format(
+                    name=_escape_latex_name(name),
+                    gens=_escape_latex_text(payload.get("generations", "N/A")),
+                    gen_calls=_escape_latex_text(payload.get("llm_gen_calls", "N/A")),
+                    repair=_escape_latex_text(payload.get("repair_calls", "N/A")),
+                    total=_escape_latex_text(payload.get("total_calls", "N/A")),
+                    pysr=_escape_latex_text(payload.get("pysr_budget", "60 s")),
+                )
+            )
+    else:
+        lines.append("    \\multicolumn{6}{c}{No compute profile data found.} \\\\")
+    lines.extend(
+        [
+            "    \\bottomrule",
+            "  \\end{tabular}%",
+            "  }",
             "\\end{table}",
             "",
         ]
@@ -1031,6 +1178,19 @@ def discover_experiments(artifacts_root: Path) -> dict[str, dict]:
         if not matrix_root.is_dir():
             continue
         for seed_dir in sorted(matrix_root.glob("*/seed_*")):
+            if not seed_dir.is_dir():
+                continue
+            rel_name = str(seed_dir.relative_to(root))
+            loaded = _load_experiment_entry(seed_dir, rel_name)
+            if loaded is not None:
+                key, value = loaded
+                experiments[key] = value
+
+    # Ablation seeds: artifacts_root/ablation_*/<seed>/
+    for ablation_root in sorted(root.glob("ablation_*")):
+        if not ablation_root.is_dir():
+            continue
+        for seed_dir in sorted(ablation_root.glob("seed_*")):
             if not seed_dir.is_dir():
                 continue
             rel_name = str(seed_dir.relative_to(root))

@@ -490,6 +490,27 @@ def test_discover_experiments_reads_neurips_matrix_seed_dirs(tmp_path, analyze_m
     assert "neurips_matrix_2026_final/map_elites_aspl_full/seed_11" in experiments
 
 
+def test_discover_experiments_reads_ablation_seed_dirs(tmp_path, analyze_module):
+    seed_dir = tmp_path / "ablation_sc_off" / "seed_11"
+    seed_dir.mkdir(parents=True)
+    (seed_dir / "phase1_summary.json").write_text(
+        json.dumps(
+            {
+                "fitness_mode": "correlation",
+                "success": True,
+                "val_metrics": {"spearman": 0.88},
+                "test_metrics": {"spearman": 0.94},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (seed_dir / "logs").mkdir()
+    (seed_dir / "logs" / "events.jsonl").write_text("", encoding="utf-8")
+
+    experiments = analyze_module.discover_experiments(tmp_path)
+    assert "ablation_sc_off/seed_11" in experiments
+
+
 def test_write_figure_data_json_includes_aggregates(tmp_path, mock_phase1_summary, analyze_module):
     experiments = {
         "neurips_matrix/map_elites_aspl_full/seed_11": {

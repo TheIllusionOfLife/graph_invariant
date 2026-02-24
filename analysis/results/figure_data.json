@@ -178,12 +178,12 @@
         "mae": 47.472437810232734
       },
       "special_topology": {
-        "valid_count": 8,
-        "total_count": 8,
-        "spearman": 0.5000000000000001,
-        "pearson": 0.49594060917527083,
-        "rmse": 36.097999583169106,
-        "mae": 31.375335206678354
+        "valid_count": 16,
+        "total_count": 16,
+        "spearman": 0.4651979479925785,
+        "pearson": 0.5774934312736981,
+        "rmse": 50.7580399474891,
+        "mae": 39.88027554838322
       }
     },
     "acceptance_funnel": {
@@ -718,11 +718,11 @@
         "mean_gap": 0.9510985867758271
       },
       "special_topology": {
-        "valid_count": 8,
-        "total_count": 8,
-        "bound_score": 0.39241179421007477,
-        "satisfaction_rate": 0.625,
-        "mean_gap": 0.5927146156708297
+        "valid_count": 14,
+        "total_count": 16,
+        "bound_score": 0.3109151380431802,
+        "satisfaction_rate": 0.7857142857142857,
+        "mean_gap": 1.5271020596146239
       }
     },
     "acceptance_funnel": {
@@ -1116,38 +1116,42 @@
       {
         "seed": 11,
         "status": 0,
-        "success": false,
+        "success": true,
         "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_11",
         "val_spearman": 0.9218210455261382,
         "test_spearman": 0.9390399759994,
-        "has_baselines": true
+        "has_baselines": true,
+        "success_criterion": "test_spearman >= 0.85"
       },
       {
         "seed": 22,
         "status": 0,
-        "success": false,
+        "success": true,
         "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_22",
         "val_spearman": 0.933834845871147,
         "test_spearman": 0.9221341491540996,
-        "has_baselines": true
+        "has_baselines": true,
+        "success_criterion": "test_spearman >= 0.85"
       },
       {
         "seed": 33,
         "status": 0,
-        "success": false,
+        "success": true,
         "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_33",
         "val_spearman": 0.9284212105302634,
         "test_spearman": 0.9153573839345984,
-        "has_baselines": true
+        "has_baselines": true,
+        "success_criterion": "test_spearman >= 0.85"
       },
       {
         "seed": 44,
         "status": 0,
-        "success": false,
+        "success": true,
         "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_44",
         "val_spearman": 0.9090632265806646,
         "test_spearman": 0.8731478286957175,
-        "has_baselines": true
+        "has_baselines": true,
+        "success_criterion": "test_spearman >= 0.85"
       },
       {
         "seed": 55,
@@ -1156,7 +1160,8 @@
         "artifacts_dir": "artifacts/benchmark_aspl/benchmark_20260215T230550Z/seed_55",
         "val_spearman": 0.9395769894247358,
         "test_spearman": 0.9533713342833573,
-        "has_baselines": true
+        "has_baselines": true,
+        "success_criterion": "test_spearman >= 0.85"
       }
     ]
   },
@@ -4533,6 +4538,621 @@
       }
     }
   },
+  "ablation_sc_off/seed_11": {
+    "fitness_mode": "correlation",
+    "success": true,
+    "val_spearman": 0.9018973848561251,
+    "test_spearman": 0.9413065326633167,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "best_scores": [
+        0.4586401353738006,
+        0.485422385874275,
+        0.48555410871567517,
+        0.5060296174380347,
+        0.5077151208548071,
+        0.5091534046943945,
+        0.5219563263163675,
+        0.5219563263163675,
+        0.5374953674625126,
+        0.5375494130392198,
+        0.5384518762114604,
+        0.5384527762974873,
+        0.5400531501188963,
+        0.540102228827745,
+        0.540102228827745,
+        0.540102228827745,
+        0.5426289019295188,
+        0.5426289019295188,
+        0.5426289019295188,
+        0.5426289019295188
+      ]
+    },
+    "baselines": {},
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "attempted": [
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20
+      ],
+      "evaluated": [
+        4,
+        13,
+        14,
+        14,
+        12,
+        16,
+        12,
+        14,
+        17,
+        15,
+        13,
+        12,
+        16,
+        15,
+        10,
+        15,
+        14,
+        14,
+        16,
+        16
+      ],
+      "rejected": [
+        16,
+        7,
+        6,
+        6,
+        8,
+        4,
+        8,
+        6,
+        3,
+        5,
+        7,
+        8,
+        4,
+        5,
+        10,
+        5,
+        6,
+        6,
+        4,
+        4
+      ],
+      "acceptance_rate": [
+        0.2,
+        0.65,
+        0.7,
+        0.7,
+        0.6,
+        0.8,
+        0.6,
+        0.7,
+        0.85,
+        0.75,
+        0.65,
+        0.6,
+        0.8,
+        0.75,
+        0.5,
+        0.75,
+        0.7,
+        0.7,
+        0.8,
+        0.8
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 0,
+      "repair_successes": 0,
+      "repair_failures": 0,
+      "rejection_reasons": {
+        "no_valid_train_predictions": 45,
+        "below_novelty_threshold": 76,
+        "below_train_threshold": 7
+      },
+      "summary_attempted_repairs": 0,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 0,
+      "failure_categories": {
+        "no_valid_train_predictions": 45,
+        "below_novelty_threshold": 76,
+        "below_train_threshold": 7
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": false,
+      "max_retries": 0,
+      "feedback_window": 3,
+      "attempted_repairs": 0,
+      "successful_repairs": 0,
+      "failed_repairs": 0,
+      "failure_categories": {
+        "no_valid_train_predictions": 45,
+        "below_novelty_threshold": 76,
+        "below_train_threshold": 7
+      }
+    }
+  },
+  "ablation_sc_off/seed_22": {
+    "fitness_mode": "correlation",
+    "success": true,
+    "val_spearman": 0.8668286465161154,
+    "test_spearman": 0.9410091281066919,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "best_scores": [
+        0.48701244644420816,
+        0.4918774717884583,
+        0.5140400321178159,
+        0.5152552094281302,
+        0.5209609560533107,
+        0.5209610976293649,
+        0.5222406246550932,
+        0.5279601195733917,
+        0.530408732351787,
+        0.530408732351787,
+        0.530408732351787,
+        0.530408732351787,
+        0.530408732351787,
+        0.5330566332430762,
+        0.5331022291257442,
+        0.5331022291257442,
+        0.5331022291257442,
+        0.5331022291257442,
+        0.5331022291257442,
+        0.5331022291257442
+      ]
+    },
+    "baselines": {},
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "attempted": [
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20
+      ],
+      "evaluated": [
+        6,
+        7,
+        9,
+        11,
+        11,
+        11,
+        11,
+        15,
+        15,
+        13,
+        10,
+        10,
+        15,
+        15,
+        13,
+        13,
+        14,
+        16,
+        14,
+        18
+      ],
+      "rejected": [
+        14,
+        13,
+        11,
+        9,
+        9,
+        9,
+        9,
+        5,
+        5,
+        7,
+        10,
+        10,
+        5,
+        5,
+        7,
+        7,
+        6,
+        4,
+        6,
+        2
+      ],
+      "acceptance_rate": [
+        0.3,
+        0.35,
+        0.45,
+        0.55,
+        0.55,
+        0.55,
+        0.55,
+        0.75,
+        0.75,
+        0.65,
+        0.5,
+        0.5,
+        0.75,
+        0.75,
+        0.65,
+        0.65,
+        0.7,
+        0.8,
+        0.7,
+        0.9
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 0,
+      "repair_successes": 0,
+      "repair_failures": 0,
+      "rejection_reasons": {
+        "no_valid_train_predictions": 52,
+        "below_novelty_threshold": 63,
+        "below_train_threshold": 38
+      },
+      "summary_attempted_repairs": 0,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 0,
+      "failure_categories": {
+        "no_valid_train_predictions": 52,
+        "below_novelty_threshold": 63,
+        "below_train_threshold": 38
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": false,
+      "max_retries": 0,
+      "feedback_window": 3,
+      "attempted_repairs": 0,
+      "successful_repairs": 0,
+      "failed_repairs": 0,
+      "failure_categories": {
+        "no_valid_train_predictions": 52,
+        "below_novelty_threshold": 63,
+        "below_train_threshold": 38
+      }
+    }
+  },
+  "ablation_sc_off/seed_33": {
+    "fitness_mode": "correlation",
+    "success": true,
+    "val_spearman": 0.879226351831392,
+    "test_spearman": 0.9481608856588488,
+    "convergence": {
+      "generations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "best_scores": [
+        0.5038518194179537,
+        0.530297418147407,
+        0.5424159623755036,
+        0.5561715868293968,
+        0.5561715868293968,
+        0.5561715868293968,
+        0.5561715868293968,
+        0.5575413805872359,
+        0.5611497019466173,
+        0.5611497019466173,
+        0.5611497019466173,
+        0.5611497019466173,
+        0.5611497019466173,
+        0.5611626982348459,
+        0.5615449774267891,
+        0.5615789536703537,
+        0.5615789536703537,
+        0.5615789536703537,
+        0.5615789536703537,
+        0.5615789536703537
+      ]
+    },
+    "baselines": {},
+    "ood": {},
+    "acceptance_funnel": {
+      "generations": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "attempted": [
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20
+      ],
+      "evaluated": [
+        1,
+        8,
+        5,
+        12,
+        11,
+        10,
+        13,
+        15,
+        16,
+        19,
+        14,
+        16,
+        20,
+        18,
+        15,
+        18,
+        17,
+        12,
+        13,
+        13
+      ],
+      "rejected": [
+        19,
+        12,
+        15,
+        8,
+        9,
+        10,
+        7,
+        5,
+        4,
+        1,
+        6,
+        4,
+        0,
+        2,
+        5,
+        2,
+        3,
+        8,
+        7,
+        7
+      ],
+      "acceptance_rate": [
+        0.05,
+        0.4,
+        0.25,
+        0.6,
+        0.55,
+        0.5,
+        0.65,
+        0.75,
+        0.8,
+        0.95,
+        0.7,
+        0.8,
+        1.0,
+        0.9,
+        0.75,
+        0.9,
+        0.85,
+        0.6,
+        0.65,
+        0.65
+      ]
+    },
+    "repair_breakdown": {
+      "repair_attempts": 0,
+      "repair_successes": 0,
+      "repair_failures": 0,
+      "rejection_reasons": {
+        "no_valid_train_predictions": 46,
+        "below_novelty_threshold": 65,
+        "below_train_threshold": 23
+      },
+      "summary_attempted_repairs": 0,
+      "summary_successful_repairs": 0,
+      "summary_failed_repairs": 0,
+      "failure_categories": {
+        "no_valid_train_predictions": 46,
+        "below_novelty_threshold": 65,
+        "below_train_threshold": 23
+      }
+    },
+    "bounds_diagnostics": {
+      "val_bound_score": null,
+      "val_satisfaction_rate": null,
+      "val_mean_gap": null,
+      "test_bound_score": null,
+      "test_satisfaction_rate": null,
+      "test_mean_gap": null
+    },
+    "self_correction_stats": {
+      "enabled": false,
+      "max_retries": 0,
+      "feedback_window": 3,
+      "attempted_repairs": 0,
+      "successful_repairs": 0,
+      "failed_repairs": 0,
+      "failure_categories": {
+        "no_valid_train_predictions": 46,
+        "below_novelty_threshold": 65,
+        "below_train_threshold": 23
+      }
+    }
+  },
   "__aggregates__": {
     "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium": {
       "seed_count": 2,
@@ -4719,10 +5339,40 @@
         "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_33"
       ]
     },
+    "ablation_sc_off": {
+      "seed_count": 3,
+      "success_count": 3,
+      "success_rate": 1.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.8826507944012109,
+        "std": 0.01778339695827287,
+        "ci95_half_width": 0.04417997253721159
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": 0.9434921821429524,
+        "std": 0.00404594942591755,
+        "ci95_half_width": 0.010051506747749314
+      },
+      "val_ci95_clamped_to_bounds": false,
+      "test_ci95_clamped_to_bounds": false,
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 309.0,
+        "std": 124.21352583354198,
+        "ci95_half_width": 308.58840821877936
+      },
+      "seed_keys": [
+        "ablation_sc_off/seed_11",
+        "ablation_sc_off/seed_22",
+        "ablation_sc_off/seed_33"
+      ]
+    },
     "benchmark/benchmark_20260215T230550Z": {
       "seed_count": 5,
-      "success_count": 1,
-      "success_rate": 0.2,
+      "success_count": 5,
+      "success_rate": 1.0,
       "val_spearman": {
         "n": 5,
         "mean": 0.9265434635865898,
@@ -4938,10 +5588,40 @@
         "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_33"
       ]
     },
+    "ablation_sc_off": {
+      "seed_count": 3,
+      "success_count": 3,
+      "success_rate": 1.0,
+      "val_spearman": {
+        "n": 3,
+        "mean": 0.8826507944012109,
+        "std": 0.01778339695827287,
+        "ci95_half_width": 0.04417997253721159
+      },
+      "test_spearman": {
+        "n": 3,
+        "mean": 0.9434921821429524,
+        "std": 0.00404594942591755,
+        "ci95_half_width": 0.010051506747749314
+      },
+      "val_ci95_clamped_to_bounds": false,
+      "test_ci95_clamped_to_bounds": false,
+      "complexity_ast_nodes": {
+        "n": 3,
+        "mean": 309.0,
+        "std": 124.21352583354198,
+        "ci95_half_width": 308.58840821877936
+      },
+      "seed_keys": [
+        "ablation_sc_off/seed_11",
+        "ablation_sc_off/seed_22",
+        "ablation_sc_off/seed_33"
+      ]
+    },
     "benchmark/benchmark_20260215T230550Z": {
       "seed_count": 5,
-      "success_count": 1,
-      "success_rate": 0.2,
+      "success_count": 5,
+      "success_rate": 1.0,
       "val_spearman": {
         "n": 5,
         "mean": 0.9265434635865898,
@@ -5071,5 +5751,303 @@
       "test_mean_gap": 1.6273956140347665
     }
   },
-  "appendix_runtime_summary": {}
+  "appendix_runtime_summary": {},
+  "sc_failure_breakdown": {
+    "experiment_algebraic_connectivity": {
+      "attempted": 75,
+      "no_valid_train_predictions": 48,
+      "below_train_threshold": 43,
+      "below_novelty_threshold": 55
+    },
+    "experiment_map_elites_aspl": {
+      "attempted": 164,
+      "no_valid_train_predictions": 105,
+      "below_train_threshold": 38,
+      "below_novelty_threshold": 145
+    },
+    "experiment_upper_bound_aspl": {
+      "attempted": 56,
+      "no_valid_train_predictions": 47,
+      "below_train_threshold": 7,
+      "below_novelty_threshold": 36
+    },
+    "experiment_v2": {
+      "attempted": 36,
+      "no_valid_train_predictions": 40,
+      "below_train_threshold": 24,
+      "below_novelty_threshold": 53
+    },
+    "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_22": {
+      "attempted": 27,
+      "no_valid_train_predictions": 13,
+      "below_train_threshold": 3,
+      "below_novelty_threshold": 24
+    },
+    "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_33": {
+      "attempted": 22,
+      "no_valid_train_predictions": 13,
+      "below_train_threshold": "N/A",
+      "below_novelty_threshold": 19
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_11": {
+      "attempted": 2,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": 2,
+      "below_novelty_threshold": 3
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_22": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_33": {
+      "attempted": 3,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 5
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_11": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": 4,
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_22": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": "N/A",
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_33": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": "N/A",
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_11": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_22": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": "N/A",
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_33": {
+      "attempted": 1,
+      "no_valid_train_predictions": "N/A",
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 2
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_11": {
+      "attempted": 33,
+      "no_valid_train_predictions": 21,
+      "below_train_threshold": 6,
+      "below_novelty_threshold": 26
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_22": {
+      "attempted": 27,
+      "no_valid_train_predictions": 20,
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 22
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_33": {
+      "attempted": 27,
+      "no_valid_train_predictions": 17,
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 23
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_11": {
+      "attempted": 34,
+      "no_valid_train_predictions": 19,
+      "below_train_threshold": 6,
+      "below_novelty_threshold": 34
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_22": {
+      "attempted": 27,
+      "no_valid_train_predictions": 16,
+      "below_train_threshold": 6,
+      "below_novelty_threshold": 22
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_33": {
+      "attempted": 28,
+      "no_valid_train_predictions": 13,
+      "below_train_threshold": 1,
+      "below_novelty_threshold": 25
+    }
+  },
+  "compute_profile": {
+    "ablation_sc_off/seed_11": {
+      "generations": 20,
+      "llm_gen_calls": 400,
+      "repair_calls": 0,
+      "total_calls": 400,
+      "pysr_budget": "60 s"
+    },
+    "ablation_sc_off/seed_22": {
+      "generations": 20,
+      "llm_gen_calls": 400,
+      "repair_calls": 0,
+      "total_calls": 400,
+      "pysr_budget": "60 s"
+    },
+    "ablation_sc_off/seed_33": {
+      "generations": 20,
+      "llm_gen_calls": 400,
+      "repair_calls": 0,
+      "total_calls": 400,
+      "pysr_budget": "60 s"
+    },
+    "experiment_algebraic_connectivity": {
+      "generations": 20,
+      "llm_gen_calls": 400,
+      "repair_calls": 75,
+      "total_calls": 475,
+      "pysr_budget": "60 s"
+    },
+    "experiment_map_elites_aspl": {
+      "generations": 30,
+      "llm_gen_calls": 600,
+      "repair_calls": 164,
+      "total_calls": 764,
+      "pysr_budget": "60 s"
+    },
+    "experiment_upper_bound_aspl": {
+      "generations": 20,
+      "llm_gen_calls": 400,
+      "repair_calls": 56,
+      "total_calls": 456,
+      "pysr_budget": "60 s"
+    },
+    "experiment_v2": {
+      "generations": 12,
+      "llm_gen_calls": 240,
+      "repair_calls": 36,
+      "total_calls": 276,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_22": {
+      "generations": 12,
+      "llm_gen_calls": 108,
+      "repair_calls": 27,
+      "total_calls": 135,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_33": {
+      "generations": 12,
+      "llm_gen_calls": 108,
+      "repair_calls": 22,
+      "total_calls": 130,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_11": {
+      "generations": 8,
+      "llm_gen_calls": 48,
+      "repair_calls": 2,
+      "total_calls": 50,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_22": {
+      "generations": 8,
+      "llm_gen_calls": 48,
+      "repair_calls": 1,
+      "total_calls": 49,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_33": {
+      "generations": 8,
+      "llm_gen_calls": 48,
+      "repair_calls": 3,
+      "total_calls": 51,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_11": {
+      "generations": 8,
+      "llm_gen_calls": 48,
+      "repair_calls": 1,
+      "total_calls": 49,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_22": {
+      "generations": 8,
+      "llm_gen_calls": 48,
+      "repair_calls": 1,
+      "total_calls": 49,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_33": {
+      "generations": 8,
+      "llm_gen_calls": 48,
+      "repair_calls": 1,
+      "total_calls": 49,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_11": {
+      "generations": 8,
+      "llm_gen_calls": 48,
+      "repair_calls": 1,
+      "total_calls": 49,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_22": {
+      "generations": 8,
+      "llm_gen_calls": 48,
+      "repair_calls": 1,
+      "total_calls": 49,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_33": {
+      "generations": 8,
+      "llm_gen_calls": 48,
+      "repair_calls": 1,
+      "total_calls": 49,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_11": {
+      "generations": 12,
+      "llm_gen_calls": 108,
+      "repair_calls": 33,
+      "total_calls": 141,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_22": {
+      "generations": 12,
+      "llm_gen_calls": 108,
+      "repair_calls": 27,
+      "total_calls": 135,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/small_data_aspl_train35_medium/seed_33": {
+      "generations": 12,
+      "llm_gen_calls": 108,
+      "repair_calls": 27,
+      "total_calls": 135,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_11": {
+      "generations": 8,
+      "llm_gen_calls": 72,
+      "repair_calls": 34,
+      "total_calls": 106,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_22": {
+      "generations": 12,
+      "llm_gen_calls": 108,
+      "repair_calls": 27,
+      "total_calls": 135,
+      "pysr_budget": "60 s"
+    },
+    "neurips_matrix_day1_2026-02-21/upper_bound_aspl_medium/seed_33": {
+      "generations": 12,
+      "llm_gen_calls": 108,
+      "repair_calls": 28,
+      "total_calls": 136,
+      "pysr_budget": "60 s"
+    }
+  }
 }

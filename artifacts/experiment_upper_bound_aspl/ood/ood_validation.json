@@ -14,10 +14,10 @@
     "mean_gap": 0.9510985867758271
   },
   "special_topology": {
-    "valid_count": 8,
-    "total_count": 8,
-    "bound_score": 0.39241179421007477,
-    "satisfaction_rate": 0.625,
-    "mean_gap": 0.5927146156708297
+    "valid_count": 14,
+    "total_count": 16,
+    "bound_score": 0.3109151380431802,
+    "satisfaction_rate": 0.7857142857142857,
+    "mean_gap": 1.5271020596146239
   }
 }

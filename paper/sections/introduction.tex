@@ -6,7 +6,7 @@ combinatorics, and theoretical computer science. Classical invariants such as
 the chromatic number, diameter, and algebraic connectivity encode structural
 information used in fields ranging from chemistry (molecular descriptors) to
 social network analysis. However, discovering compact and interpretable
-\emph{compositions} of known invariants/features that capture structural
+\emph{compositions} of known invariants/features (functions that are themselves invariant to vertex relabeling) that capture structural
 relationships remains a largely manual, expert-driven process.
 
 Recent work has demonstrated that large language models (LLMs) can generate
@@ -30,6 +30,8 @@ mathematical proofs. Unlike pure symbolic regression, our system leverages the
 LLM's prior knowledge of mathematics to navigate the search space more
 effectively.
 
+Specifically, LLMs act as a structured mathematical prior: they compose known constructs (harmonic means, Moore bounds, min-of-bounds) rather than performing blind operator search, enabling candidates that are plausible starting points for proof.
+
 \paragraph{Contributions.}
 \begin{itemize}[leftmargin=1.5em,itemsep=2pt]
   \item An open-source framework for LLM-driven graph feature-composition discovery with
@@ -39,9 +41,12 @@ effectively.
   \item A composite scoring objective balancing predictive accuracy (Spearman
     $\rho$), formula simplicity (AST node count), and novelty relative to known
     graph invariants (bootstrap confidence interval test).
-  \item Systematic evaluation across four experiment configurations with
-    out-of-distribution validation on large-scale and extreme-topology graphs,
-    demonstrating that LLM-discovered formulas are interpretable and achieve
-    strong (though not best-in-class on ASPL) correlations against statistical
-    and symbolic regression baselines.
+  \item Systematic evaluation on ASPL as a benchmark target, demonstrating
+    strong (though not best-in-class) correlation with statistical and symbolic
+    regression baselines across five random seeds with out-of-distribution
+    validation.
+  \item A \emph{bounds mode} for empirical conjecture generation: the system
+    discovers candidate mathematical inequalities (e.g., compositions of
+    path-graph and Moore bounds for ASPL) that are plausible starting points for
+    formal proof.
 \end{itemize}

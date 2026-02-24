@@ -22,7 +22,7 @@ jobs:
         uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081 # v5
 
       - name: Install dependencies
-        run: uv sync --group dev
+        run: uv sync --group dev --extra pysr
 
       - name: Dependency vulnerability audit
         run: uvx --from pip-audit pip-audit

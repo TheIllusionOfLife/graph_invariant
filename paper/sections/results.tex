@@ -108,10 +108,12 @@ candidates.
 Figure~\ref{fig:ood} shows OOD Spearman correlations across the three
 categories. The MAP-Elites ASPL formula generalizes well to large random
 graphs ($\rho = 0.957$) and extreme-parameter graphs ($\rho = 0.926$), but
-degrades on special topologies ($\rho = 0.500$) such as barbell and grid
-graphs. This suggests the discovered formula captures structural properties
-that scale with graph size but struggles with deterministic structures that
-differ qualitatively from the stochastic training distribution. (The special-topology category contains 8 graphs; Spearman $\rho$ on 8 samples carries wide confidence intervals and should be interpreted as a preliminary signal, not a definitive estimate.)
+degrades on special topologies ($\rho = 0.465$, evaluated on 16 graphs
+including density extremes, degree-distribution extremes, and classical
+archetypes such as path, cycle, star, and wheel graphs). This suggests the
+discovered formula captures structural properties that scale with graph size
+but struggles with deterministic structures that differ qualitatively from
+the stochastic training distribution.
 
 \begin{figure}[t]
   \centering
@@ -119,7 +121,7 @@ differ qualitatively from the stochastic training distribution. (The special-top
   \caption{Out-of-distribution generalization across three graph categories.
     Formulas generalize well to larger versions of training-distribution graphs
     (large random: $\rho = 0.957$) but degrade on qualitatively different
-    topologies (special: $\rho = 0.500$).}
+    topologies (special: $\rho = 0.465$, $n=16$ graphs).}
   \label{fig:ood}
 \end{figure}
 

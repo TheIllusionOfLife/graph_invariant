@@ -673,7 +673,6 @@ def _evaluate_split(
     code: str,
     features_list: list[dict[str, Any]],
     y_true: list[float],
-    cfg: Phase1Config,
     evaluator: SandboxEvaluator,
     known_invariants: dict[str, list[float]] | None = None,
 ) -> dict[str, float | int | None]:
@@ -843,12 +842,10 @@ def _write_phase1_summary(
         include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
     )
     y_sanity = target_values(datasets_sanity, cfg.target_name)
-    val_metrics = _evaluate_split(best.code, features_val, y_true_val, cfg, evaluator, known_val)
-    test_metrics = _evaluate_split(
-        best.code, features_test, y_true_test, cfg, evaluator, known_test
-    )
-    train_metrics = _evaluate_split(best.code, features_train, y_true_train, cfg, evaluator)
-    sanity_metrics = _evaluate_split(best.code, features_sanity, y_sanity, cfg, evaluator)
+    val_metrics = _evaluate_split(best.code, features_val, y_true_val, evaluator, known_val)
+    test_metrics = _evaluate_split(best.code, features_test, y_true_test, evaluator, known_test)
+    train_metrics = _evaluate_split(best.code, features_train, y_true_train, evaluator)
+    sanity_metrics = _evaluate_split(best.code, features_sanity, y_sanity, evaluator)
 
     def _novelty_ci_for_split(
         split_features: list[dict[str, Any]],

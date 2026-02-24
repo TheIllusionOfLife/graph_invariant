@@ -365,7 +365,7 @@ def compute_dataset_features_and_invariants(
 
             algebraic = 0.0
             if n >= 2 and nx.is_connected(graph):
-                if n >= 10 and include_spectral_feature_pack:
+                if include_spectral_feature_pack:
                     algebraic = pack.get("laplacian_lambda2", 0.0)
                 else:
                     algebraic = _algebraic_connectivity_sparse(graph)

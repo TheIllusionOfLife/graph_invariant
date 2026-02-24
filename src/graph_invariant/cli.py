@@ -1090,16 +1090,12 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
         include_extended_invariants=True,
     )
-    if known_invariants_val is None:
-        raise RuntimeError("failed to compute validation invariants")
 
     features_test, known_invariants_test = compute_dataset_features_and_invariants(
         datasets.test,
         include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
         include_extended_invariants=True,
     )
-    if known_invariants_test is None:
-        raise RuntimeError("failed to compute test invariants")
 
     features_train, known_invariants_train = compute_dataset_features_and_invariants(
         datasets.train,

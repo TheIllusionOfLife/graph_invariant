@@ -1171,6 +1171,19 @@ def discover_experiments(artifacts_root: Path) -> dict[str, dict]:
                 key, value = loaded
                 experiments[key] = value
 
+    # Ablation seeds: artifacts_root/ablation_*/<seed>/
+    for ablation_root in sorted(root.glob("ablation_*")):
+        if not ablation_root.is_dir():
+            continue
+        for seed_dir in sorted(ablation_root.glob("seed_*")):
+            if not seed_dir.is_dir():
+                continue
+            rel_name = str(seed_dir.relative_to(root))
+            loaded = _load_experiment_entry(seed_dir, rel_name)
+            if loaded is not None:
+                key, value = loaded
+                experiments[key] = value
+
     return experiments
 
 

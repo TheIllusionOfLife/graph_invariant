@@ -27,7 +27,7 @@ suggesting that diversity pressure steered the search toward regions of formula
 space that greedy exploitation would have missed.
 
 \paragraph{Self-correction as exploration.}
-The LLM-driven self-correction loop recovers mathematical intuition from
+The LLM-driven self-correction (SC) loop recovers mathematical intuition from
 failed candidates. Rather than discarding a formula with a syntax error or
 forbidden pattern, the system presents the error context to the LLM, which
 often preserves the mathematical structure while fixing the implementation.
@@ -37,7 +37,12 @@ in algebraic connectivity, and 27 of 56 (48\%) in the upper-bound
 experiment. The most common repaired failure modes are sandbox violations
 (\texttt{import} statements, forbidden builtins) and novelty threshold
 violations, both of which the LLM can address without fundamentally
-restructuring the mathematical expression.
+restructuring the mathematical expression. A controlled ablation
+(Table~\ref{tab:sc_ablation}, Appendix) with 3 matched seeds confirms this
+quantitatively: SC raises mean validation $\rho$ by $+0.045$ (7.5$\times$
+the SC-on validation std) while reducing cross-seed standard deviation by
+3$\times$, indicating that the repair loop stabilises convergence without
+degrading held-out generalisation.
 
 \paragraph{One-day iteration tradeoff.}
 A fast-profile staged pilot (reduced generations/populations and faster local

@@ -121,7 +121,7 @@ the stochastic training distribution.
   \caption{Out-of-distribution generalization across three graph categories.
     Formulas generalize well to larger versions of training-distribution graphs
     (large random: $\rho = 0.957$) but degrade on qualitatively different
-    topologies (special: $\rho = 0.465$, $n=16$ graphs).}
+    topologies (special: $\rho = 0.465$, 16 graphs).}
   \label{fig:ood}
 \end{figure}
 
@@ -180,7 +180,10 @@ sandbox violations (\texttt{import} statements) and novelty threshold
 violations. Self-correction preserves the mathematical structure of the
 original formula while fixing implementation issues, effectively acting as a
 constrained search operator that retains mathematical intuition from failed
-candidates.
+candidates. A controlled 3-seed ablation (MAP-Elites ASPL) confirms that SC
+raises mean validation $\rho$ by $+0.045$ with cross-seed standard deviation
+reduced by $3{\times}$ relative to the no-SC baseline
+(Table~\ref{tab:sc_ablation} in Appendix).
 
 \subsection{Day-1 Staged Pilot (Fast Profile)}
 

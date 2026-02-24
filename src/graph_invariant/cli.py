@@ -1,6 +1,7 @@
 import argparse
 import json
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
@@ -734,14 +735,14 @@ def _run_one_generation(
         )
 
 
-def _evaluate_split(
+def _evaluate_generic(
     code: str,
     features_list: list[dict[str, Any]],
     y_true: list[float],
-    cfg: Phase1Config,
     evaluator: SandboxEvaluator,
-    known_invariants: dict[str, list[float]] | None = None,
-) -> dict[str, float | int | None]:
+    metric_callback: Callable[[list[int], list[float], list[float]], dict[str, Any]],
+    empty_result: dict[str, Any],
+) -> dict[str, Any]:
     y_pred_raw = evaluator.evaluate(code, features_list)
     valid_pairs = [
         (idx, yt, yp)
@@ -749,33 +750,54 @@ def _evaluate_split(
         if yp is not None
     ]
     if not valid_pairs:
+        return empty_result
+
+    valid_indices, y_true_valid, y_pred_valid = zip(*valid_pairs, strict=True)
+    return metric_callback(list(valid_indices), list(y_true_valid), list(y_pred_valid))
+
+
+def _evaluate_split(
+    code: str,
+    features_list: list[dict[str, Any]],
+    y_true: list[float],
+    evaluator: SandboxEvaluator,
+    known_invariants: dict[str, list[float]] | None = None,
+) -> dict[str, float | int | None]:
+    def _compute(
+        indices: list[int], y_t: list[float], y_p: list[float]
+    ) -> dict[str, float | int | None]:
+        metrics = compute_metrics(y_t, y_p)
+        novelty = None
+        if known_invariants is not None:
+            known_subset = {
+                name: [values[idx] for idx in indices] for name, values in known_invariants.items()
+            }
+            novelty = compute_novelty_bonus(y_p, known_subset)
+
         return {
+            "spearman": metrics.rho_spearman,
+            "pearson": metrics.r_pearson,
+            "rmse": metrics.rmse,
+            "mae": metrics.mae,
+            "valid_count": metrics.valid_count,
+            "novelty_bonus": novelty,
+        }
+
+    return _evaluate_generic(
+        code=code,
+        features_list=features_list,
+        y_true=y_true,
+        evaluator=evaluator,
+        metric_callback=_compute,
+        empty_result={
             "spearman": 0.0,
             "pearson": 0.0,
             "rmse": 0.0,
             "mae": 0.0,
             "valid_count": 0,
             "novelty_bonus": None,
-        }
-
-    valid_indices, y_true_valid, y_pred_valid = zip(*valid_pairs, strict=True)
-    metrics = compute_metrics(list(y_true_valid), list(y_pred_valid))
-    novelty = None
-    if known_invariants is not None:
-        known_subset = {
-            name: [values[idx] for idx in valid_indices]
-            for name, values in known_invariants.items()
-        }
-        novelty = compute_novelty_bonus(list(y_pred_valid), known_subset)
-
-    return {
-        "spearman": metrics.rho_spearman,
-        "pearson": metrics.r_pearson,
-        "rmse": metrics.rmse,
-        "mae": metrics.mae,
-        "valid_count": metrics.valid_count,
-        "novelty_bonus": novelty,
-    }
+        },
+    )
 
 
 def _evaluate_bound_split(
@@ -787,25 +809,31 @@ def _evaluate_bound_split(
     tolerance: float = 1e-9,
 ) -> dict[str, float | int]:
     """Evaluate a candidate against a data split in bounds mode."""
-    y_pred_raw = evaluator.evaluate(code, features_list)
-    valid_pairs = [(yt, yp) for yt, yp in zip(y_true, y_pred_raw, strict=True) if yp is not None]
-    if not valid_pairs:
+
+    def _compute(_indices: list[int], y_t: list[float], y_p: list[float]) -> dict[str, float | int]:
+        bm = compute_bound_metrics(y_t, y_p, mode=fitness_mode, tolerance=tolerance)
         return {
+            "bound_score": bm.bound_score,
+            "satisfaction_rate": bm.satisfaction_rate,
+            "mean_gap": bm.mean_gap,
+            "violation_count": bm.violation_count,
+            "valid_count": bm.valid_count,
+        }
+
+    return _evaluate_generic(
+        code=code,
+        features_list=features_list,
+        y_true=y_true,
+        evaluator=evaluator,
+        metric_callback=_compute,
+        empty_result={
             "bound_score": 0.0,
             "satisfaction_rate": 0.0,
             "mean_gap": 0.0,
             "violation_count": 0,
             "valid_count": 0,
-        }
-    y_t, y_p = zip(*valid_pairs, strict=True)
-    bm = compute_bound_metrics(list(y_t), list(y_p), mode=fitness_mode, tolerance=tolerance)
-    return {
-        "bound_score": bm.bound_score,
-        "satisfaction_rate": bm.satisfaction_rate,
-        "mean_gap": bm.mean_gap,
-        "violation_count": bm.violation_count,
-        "valid_count": bm.valid_count,
-    }
+        },
+    )
 
 
 def _dataset_fingerprint(
@@ -901,12 +929,10 @@ def _write_phase1_summary(
         include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
     )
     y_sanity = target_values(datasets_sanity, cfg.target_name)
-    val_metrics = _evaluate_split(best.code, features_val, y_true_val, cfg, evaluator, known_val)
-    test_metrics = _evaluate_split(
-        best.code, features_test, y_true_test, cfg, evaluator, known_test
-    )
-    train_metrics = _evaluate_split(best.code, features_train, y_true_train, cfg, evaluator)
-    sanity_metrics = _evaluate_split(best.code, features_sanity, y_sanity, cfg, evaluator)
+    val_metrics = _evaluate_split(best.code, features_val, y_true_val, evaluator, known_val)
+    test_metrics = _evaluate_split(best.code, features_test, y_true_test, evaluator, known_test)
+    train_metrics = _evaluate_split(best.code, features_train, y_true_train, evaluator)
+    sanity_metrics = _evaluate_split(best.code, features_sanity, y_sanity, evaluator)
 
     def _novelty_ci_for_split(
         split_features: list[dict[str, Any]],

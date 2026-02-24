@@ -24,11 +24,12 @@ from experiment_analysis import (  # noqa: E402
 
 
 def _load_json_safe(path: Path) -> dict:
-    """Load a JSON file, returning {} on missing or corrupt files."""
+    """Load a JSON file, returning {} on missing, corrupt, or non-dict files."""
     if not path.exists():
         return {}
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        result = json.loads(path.read_text(encoding="utf-8"))
+        return result if isinstance(result, dict) else {}
     except (json.JSONDecodeError, OSError):
         return {}
 
@@ -63,7 +64,9 @@ def load_event_log(experiment_dir: Path) -> list[dict]:
                 line = line.strip()
                 if line:
                     try:
-                        events.append(json.loads(line))
+                        event = json.loads(line)
+                        if isinstance(event, dict):
+                            events.append(event)
                     except json.JSONDecodeError:
                         continue
     except OSError:

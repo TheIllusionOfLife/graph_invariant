@@ -69,12 +69,13 @@ def test_report_includes_ood_validation(tmp_path):
     from graph_invariant.cli import write_report
 
     artifacts_dir = tmp_path / "artifacts"
-    artifacts_dir.mkdir()
+    ood_dir = artifacts_dir / "ood"
+    ood_dir.mkdir(parents=True)
     (artifacts_dir / "phase1_summary.json").write_text(
         json.dumps({"success": True, "best_candidate_id": "c1"}),
         encoding="utf-8",
     )
-    (artifacts_dir / "ood_validation.json").write_text(
+    (ood_dir / "ood_validation.json").write_text(
         json.dumps(
             {
                 "large_random": {"spearman": 0.85, "valid_count": 90, "total_count": 100},

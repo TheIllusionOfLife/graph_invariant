@@ -468,7 +468,8 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
         code = summary.get("best_candidate_code")
         if code:
             code = normalize_candidate_code_for_report(code)
-            lines.extend(["", "### Best Candidate Code", "", "```python", code, "```"])
+            fence = "~~~~" if "```" in code else "```"
+            lines.extend(["", "### Best Candidate Code", "", f"{fence}python", code, fence])
 
         lines.append("")
 

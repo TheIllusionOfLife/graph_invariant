@@ -50,7 +50,7 @@ def write_report(artifacts_dir: str | Path) -> Path:
         lines.append(f"- Successful repairs: {self_correction.get('successful_repairs', 0)}")
         lines.append(f"- Failed repairs: {self_correction.get('failed_repairs', 0)}")
 
-    ood_path = root / "ood_validation.json"
+    ood_path = root / "ood" / "ood_validation.json"
     ood = _load_json_or_default(ood_path)
     if ood:
         lines.extend(["", "## OOD Validation", ""])

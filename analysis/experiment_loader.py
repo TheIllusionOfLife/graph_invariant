@@ -20,8 +20,6 @@ from experiment_analysis import (  # noqa: E402
     extract_repair_breakdown,
 )
 
-from graph_invariant.stats_utils import mean_std_ci95, safe_float  # noqa: F401,E402
-
 # ── Data loading ─────────────────────────────────────────────────────
 
 

@@ -14,7 +14,7 @@ from graph_invariant.stats_utils import mean_std_ci95, safe_float
 # ── Helpers ──────────────────────────────────────────────────────────
 
 
-def _get_spearman(metrics: dict | None) -> float | None:
+def get_spearman(metrics: dict | None) -> float | None:
     """Safely extract spearman from a metrics dict."""
     if not isinstance(metrics, dict):
         return None
@@ -24,7 +24,7 @@ def _get_spearman(metrics: dict | None) -> float | None:
     return None
 
 
-def _ast_node_count(code: str | None) -> int | None:
+def ast_node_count(code: str | None) -> int | None:
     if not isinstance(code, str) or not code.strip():
         return None
     try:
@@ -64,7 +64,7 @@ def _clamp_ci95_to_metric_bounds(
     return stats
 
 
-def _normalize_candidate_code_for_report(code: str) -> str:
+def normalize_candidate_code_for_report(code: str) -> str:
     """Ensure emitted candidate snippets are self-contained for readers."""
     if "np." in code and not re.search(
         r"(^|\n)\s*(import\s+numpy\s+as\s+np|from\s+numpy\s+import\s+)", code
@@ -292,8 +292,8 @@ def build_comparison_table(experiments: dict[str, dict]) -> list[dict[str, Any]]
             "fitness_mode": summary.get("fitness_mode", "unknown"),
             "success": summary.get("success", False),
             "final_generation": summary.get("final_generation"),
-            "val_spearman": _get_spearman(summary.get("val_metrics")),
-            "test_spearman": _get_spearman(summary.get("test_metrics")),
+            "val_spearman": get_spearman(summary.get("val_metrics")),
+            "test_spearman": get_spearman(summary.get("test_metrics")),
             "stop_reason": summary.get("stop_reason"),
         }
 
@@ -317,16 +317,16 @@ def build_comparison_table(experiments: dict[str, dict]) -> list[dict[str, Any]]
         if isinstance(stat, dict):
             for bl_name, bl_data in stat.items():
                 if isinstance(bl_data, dict):
-                    row[f"bl_{bl_name}_val_spearman"] = _get_spearman(bl_data.get("val_metrics"))
+                    row[f"bl_{bl_name}_val_spearman"] = get_spearman(bl_data.get("val_metrics"))
 
         pysr_bl = baselines.get("pysr_baseline", {})
         if isinstance(pysr_bl, dict) and pysr_bl.get("status") == "ok":
-            row["bl_pysr_val_spearman"] = _get_spearman(pysr_bl.get("val_metrics"))
+            row["bl_pysr_val_spearman"] = get_spearman(pysr_bl.get("val_metrics"))
 
         for category in ("large_random", "extreme_params", "special_topology"):
             cat_data = ood.get(category, {})
             if isinstance(cat_data, dict):
-                row[f"ood_{category}_spearman"] = _get_spearman(cat_data)
+                row[f"ood_{category}_spearman"] = get_spearman(cat_data)
 
         sc = summary.get("self_correction_stats", {})
         if isinstance(sc, dict):
@@ -375,13 +375,13 @@ def build_seed_aggregates(experiments: dict[str, dict]) -> dict[str, dict[str, A
         successes = 0
         for _, data in entries:
             summary = data.get("summary", {})
-            val_s = _get_spearman(summary.get("val_metrics"))
-            test_s = _get_spearman(summary.get("test_metrics"))
+            val_s = get_spearman(summary.get("val_metrics"))
+            test_s = get_spearman(summary.get("test_metrics"))
             if val_s is not None:
                 val_scores.append(val_s)
             if test_s is not None:
                 test_scores.append(test_s)
-            code_nodes = _ast_node_count(summary.get("best_candidate_code"))
+            code_nodes = ast_node_count(summary.get("best_candidate_code"))
             if code_nodes is not None:
                 complexity.append(float(code_nodes))
             if bool(summary.get("success", False)):

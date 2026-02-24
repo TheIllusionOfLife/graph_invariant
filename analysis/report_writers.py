@@ -13,16 +13,15 @@ _analysis_dir = Path(__file__).resolve().parent
 if str(_analysis_dir) not in sys.path:
     sys.path.insert(0, str(_analysis_dir))
 
-from experiment_analysis import (  # noqa: E402
-    _ast_node_count,
-    _get_spearman,
-    _normalize_candidate_code_for_report,
+from experiment_analysis import (  # noqa: E402,I001
+    ast_node_count,
     build_appendix_payload,
     build_comparison_table,
     build_seed_aggregates,
+    get_spearman,
+    normalize_candidate_code_for_report,
 )
-
-from graph_invariant.stats_utils import mean_std_ci95, safe_float  # noqa: F401,E402
+from graph_invariant.stats_utils import safe_float  # noqa: E402
 
 # ── LaTeX helpers ─────────────────────────────────────────────────────
 
@@ -395,14 +394,14 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
         lines.append(f"- Stop reason: {summary.get('stop_reason', 'N/A')}")
         lines.append(f"- Final generation: {summary.get('final_generation', 'N/A')}")
 
-        val_s = _get_spearman(summary.get("val_metrics"))
-        test_s = _get_spearman(summary.get("test_metrics"))
+        val_s = get_spearman(summary.get("val_metrics"))
+        test_s = get_spearman(summary.get("test_metrics"))
         if val_s is not None:
             lines.append(f"- Validation Spearman: {val_s:.4f}")
         if test_s is not None:
             lines.append(f"- Test Spearman: {test_s:.4f}")
 
-        code_nodes = _ast_node_count(summary.get("best_candidate_code"))
+        code_nodes = ast_node_count(summary.get("best_candidate_code"))
         if code_nodes is not None:
             lines.append(f"- Best formula AST nodes: {code_nodes}")
 
@@ -442,16 +441,16 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
             lines.extend(["", "### Baselines", ""])
             for bl_name, bl_data in stat.items():
                 if isinstance(bl_data, dict):
-                    bl_val = _get_spearman(bl_data.get("val_metrics"))
-                    bl_test = _get_spearman(bl_data.get("test_metrics"))
+                    bl_val = get_spearman(bl_data.get("val_metrics"))
+                    bl_test = get_spearman(bl_data.get("test_metrics"))
                     val_str = f"{bl_val:.4f}" if bl_val is not None else "N/A"
                     test_str = f"{bl_test:.4f}" if bl_test is not None else "N/A"
                     lines.append(f"- {bl_name}: val={val_str}, test={test_str}")
 
         pysr_bl = baselines.get("pysr_baseline", {})
         if isinstance(pysr_bl, dict) and pysr_bl.get("status") == "ok":
-            pysr_val = _get_spearman(pysr_bl.get("val_metrics"))
-            pysr_test = _get_spearman(pysr_bl.get("test_metrics"))
+            pysr_val = get_spearman(pysr_bl.get("val_metrics"))
+            pysr_test = get_spearman(pysr_bl.get("test_metrics"))
             val_str = f"{pysr_val:.4f}" if pysr_val is not None else "N/A"
             test_str = f"{pysr_test:.4f}" if pysr_test is not None else "N/A"
             lines.append(f"- PySR: val={val_str}, test={test_str}")
@@ -460,7 +459,7 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
             lines.extend(["", "### OOD Generalization", ""])
             for category, cat_data in ood.items():
                 if isinstance(cat_data, dict):
-                    ood_s = _get_spearman(cat_data)
+                    ood_s = get_spearman(cat_data)
                     ood_str = f"{ood_s:.4f}" if ood_s is not None else "N/A"
                     valid = cat_data.get("valid_count", "?")
                     total = cat_data.get("total_count", "?")
@@ -468,7 +467,7 @@ def write_analysis_report(experiments: dict[str, dict], output_path: Path) -> No
 
         code = summary.get("best_candidate_code")
         if code:
-            code = _normalize_candidate_code_for_report(code)
+            code = normalize_candidate_code_for_report(code)
             lines.extend(["", "### Best Candidate Code", "", "```python", code, "```"])
 
         lines.append("")
@@ -489,8 +488,8 @@ def write_figure_data_json(
         entry: dict[str, Any] = {
             "fitness_mode": summary.get("fitness_mode"),
             "success": summary.get("success"),
-            "val_spearman": _get_spearman(summary.get("val_metrics")),
-            "test_spearman": _get_spearman(summary.get("test_metrics")),
+            "val_spearman": get_spearman(summary.get("val_metrics")),
+            "test_spearman": get_spearman(summary.get("test_metrics")),
             "convergence": data.get("convergence", {}),
             "baselines": data.get("baselines", {}),
             "ood": data.get("ood", {}),

@@ -654,16 +654,16 @@ def test_write_appendix_tables_tex_wraps_seed_notes_with_line_breaks(tmp_path, a
     assert "\\\\ " in content
 
 
-def test_normalize_candidate_code_for_report_handles_numpy_import_variants(analyze_module):
+def testnormalize_candidate_code_for_report_handles_numpy_import_variants(analyze_module):
     code_with_alias = "import numpy as np\n\ndef f(G, feats):\n    return np.sqrt(1.0)"
-    assert analyze_module._normalize_candidate_code_for_report(code_with_alias) == code_with_alias
+    assert analyze_module.normalize_candidate_code_for_report(code_with_alias) == code_with_alias
 
     code_with_from_import = "from numpy import sqrt\n\ndef f(G, feats):\n    return np.sqrt(1.0)"
     assert (
-        analyze_module._normalize_candidate_code_for_report(code_with_from_import)
+        analyze_module.normalize_candidate_code_for_report(code_with_from_import)
         == code_with_from_import
     )
 
     missing_import = "def f(G, feats):\n    return np.sqrt(1.0)"
-    normalized = analyze_module._normalize_candidate_code_for_report(missing_import)
+    normalized = analyze_module.normalize_candidate_code_for_report(missing_import)
     assert normalized.startswith("import numpy as np")

@@ -2,8 +2,6 @@ import argparse
 import json
 from pathlib import Path
 
-from .phase1_loop import run_phase1
-
 
 def write_report(artifacts_dir: str | Path) -> Path:
     def _load_json_or_default(path: Path) -> dict:
@@ -135,6 +133,7 @@ def main() -> int:
 
     if args.command == "phase1":
         from .config import Phase1Config
+        from .phase1_loop import run_phase1
 
         cfg = Phase1Config.from_json(args.config) if args.config else Phase1Config()
         return run_phase1(cfg, resume=args.resume)

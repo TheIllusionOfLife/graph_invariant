@@ -84,7 +84,7 @@
 
 ## Configs Directory
 
-```
+```text
 configs/
   quick/
     phase1_experiment.json          # standard Phase 1 experiment (quick)
@@ -109,7 +109,7 @@ configs/
 
 ## Test Structure
 
-```
+```text
 tests/
   test_cli.py                   # main() arg-parsing and benchmark dispatch (~24 LOC)
   test_candidate_pipeline.py    # unit tests for candidate_pipeline functions

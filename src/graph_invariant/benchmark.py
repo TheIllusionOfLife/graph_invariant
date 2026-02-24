@@ -5,9 +5,9 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .cli import run_phase1
 from .config import Phase1Config
 from .logging_io import write_json
+from .phase1_loop import run_phase1
 
 
 def _load_json_or_default(path: Path) -> dict:

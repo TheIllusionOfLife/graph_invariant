@@ -65,7 +65,7 @@ def test_main_report_command_tolerates_malformed_json(monkeypatch, tmp_path):
     assert "Phase 1 Report" in report
 
 
-def test_report_includes_ood_validation(monkeypatch, tmp_path):
+def test_report_includes_ood_validation(tmp_path):
     from graph_invariant.cli import write_report
 
     artifacts_dir = tmp_path / "artifacts"
@@ -91,7 +91,7 @@ def test_report_includes_ood_validation(monkeypatch, tmp_path):
     assert "spearman=0.8500" in report
 
 
-def test_report_includes_map_elites_coverage(monkeypatch, tmp_path):
+def test_report_includes_map_elites_coverage(tmp_path):
     from graph_invariant.cli import write_report
 
     artifacts_dir = tmp_path / "artifacts"

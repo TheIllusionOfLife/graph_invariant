@@ -125,17 +125,10 @@ def run_phase1(cfg: Phase1Config, resume: str | None = None) -> int:
         experiment_id = resume_experiment_id
     elif cfg.experiment_id:
         experiment_id = _validate_experiment_id(cfg.experiment_id)
-        state = CheckpointState(
-            experiment_id=experiment_id,
-            generation=0,
-            islands={i: [] for i in range(len(cfg.island_temperatures))},
-            rng_seed=cfg.seed,
-            rng_state=None,
-            best_val_score=0.0,
-            no_improve_count=0,
-        )
     else:
         experiment_id = _new_experiment_id()
+
+    if not resume:
         state = CheckpointState(
             experiment_id=experiment_id,
             generation=0,

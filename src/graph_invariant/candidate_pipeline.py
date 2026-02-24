@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import re
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -191,9 +192,7 @@ def _validate_experiment_id(value: str) -> str:
     return value
 
 
-def _checkpoint_dir_for_experiment(artifacts_dir: Any, experiment_id: str) -> Any:
-    from pathlib import Path
-
+def _checkpoint_dir_for_experiment(artifacts_dir: str | Path, experiment_id: str) -> Path:
     safe_experiment_id = _validate_experiment_id(experiment_id)
     root = Path(artifacts_dir) / "checkpoints"
     checkpoint_dir = root / safe_experiment_id
@@ -276,7 +275,7 @@ def _run_one_generation(
     y_true_val: list[float],
     known_invariants_val: dict[str, list[float]],
     rng: np.random.Generator,
-    log_path: Any,
+    log_path: str | Path,
     self_correction_stats: dict[str, Any],
     primary_archive: MapElitesArchive | None = None,
     topology_archive: MapElitesArchive | None = None,
@@ -401,7 +400,7 @@ def _run_one_generation(
                 code, llm_response = _generate_candidate(
                     cfg=cfg,
                     prompt=current_prompt,
-                    temperature=cfg.island_temperatures[island_id],
+                    temperature=cfg.island_temperatures[island_id % len(cfg.island_temperatures)],
                 )
                 train_details = evaluator.evaluate_detailed(code, features_train)
                 y_pred_train_raw = [payload.get("value") for payload in train_details]

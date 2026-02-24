@@ -17,7 +17,7 @@ if str(_analysis_dir) not in sys.path:
     sys.path.insert(0, str(_analysis_dir))
 
 from experiment_analysis import *  # noqa: F401,F403,E402,I001
-from experiment_analysis import _normalize_candidate_code_for_report  # noqa: F401,E402
+from experiment_analysis import normalize_candidate_code_for_report  # noqa: F401,E402
 from experiment_analysis import build_comparison_table  # noqa: E402
 from experiment_loader import *  # noqa: F401,F403,E402,I001
 from experiment_loader import discover_experiments, discover_matrix_summaries  # noqa: E402

@@ -19,9 +19,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from graph_invariant.cli import run_phase1
 from graph_invariant.config import Phase1Config
 from graph_invariant.logging_io import write_json
+from graph_invariant.phase1_loop import run_phase1
 from graph_invariant.stats_utils import mean_std_ci95, safe_float
 
 

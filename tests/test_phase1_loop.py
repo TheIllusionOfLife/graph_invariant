@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from graph_invariant.cli import run_phase1
 from graph_invariant.config import Phase1Config
 from graph_invariant.data import DatasetBundle
+from graph_invariant.phase1_loop import run_phase1
 from graph_invariant.types import EvaluationResult
 
 
@@ -553,7 +553,9 @@ def test_run_phase1_with_zero_generations_does_not_initialize_sandbox_pool(monke
     )
     monkeypatch.setattr(
         "graph_invariant.sandbox.mp.get_context",
-        lambda: (_ for _ in ()).throw(AssertionError("Pool should not initialize")),
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("Pool should not initialize")
+        ),  # noqa: E501
     )
 
     assert run_phase1(cfg) == 0

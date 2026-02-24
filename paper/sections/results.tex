@@ -23,9 +23,9 @@ inequalities on the evaluated graph distributions.
     Experiment & Mode & Gens & Val $\rho$ & Test $\rho$ & Success \\
     \midrule
     MAP-Elites ASPL     & correlation  & 30 & 0.935 & 0.947 & \checkmark \\
-    Algebraic conn.     & correlation  & 20 & 0.765 & 0.778 & --- \\
+    Algebraic conn.     & correlation  & 20 & 0.764 & 0.778 & --- \\
     Upper bound ASPL    & upper\_bound & 20 & \multicolumn{2}{c}{BS=0.514, SR=87\%} & --- \\
-    Benchmark (mean$\pm$std) & correlation & 20 & 0.927$\pm$0.011 & 0.921$\pm$0.027 & 5/5 \\
+    Benchmark (mean$\pm$std) & correlation & 20 & 0.927$\pm$0.012 & 0.921$\pm$0.030 & 5/5 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -69,7 +69,7 @@ in generations 0--1, where most candidates are rejected by the novelty gate
 or sandbox. Acceptance rates increase from 5\% in generation~0 to over 74\%
 by generation~4 in the MAP-Elites ASPL experiment, as the LLM learns the
 sandbox constraints through the self-correction feedback loop. The MAP-Elites
-ASPL experiment converges from a composite fitness score of 0.426 to 0.553
+ASPL experiment converges from a composite fitness score of 0.426 to 0.552
 over 30 generations (note: these are weighted scores from Eq.~\ref{eq:score},
 not raw Spearman $\rho$; the final validation $\rho = 0.935$ appears in
 Table~\ref{tab:main_results}). The upper-bound experiment shows the steepest
@@ -129,8 +129,8 @@ the stochastic training distribution.
 
 Figure~\ref{fig:benchmark} shows the distribution of validation and test
 Spearman correlations across 5 seeds. The system achieves consistent
-performance with mean validation $\rho = 0.927 \pm 0.011$ and mean test
-$\rho = 0.921 \pm 0.027$. The low standard deviation indicates that the
+performance with mean validation $\rho = 0.927 \pm 0.012$ and mean test
+$\rho = 0.921 \pm 0.030$. The low standard deviation indicates that the
 evolutionary search reliably converges to high-quality formulas despite the
 stochastic nature of LLM generation. All five seeds meet the success threshold (test $\rho$ range: 0.873--0.953).
 
@@ -138,7 +138,7 @@ stochastic nature of LLM generation. All five seeds meet the success threshold (
   \centering
   \includegraphics[width=0.5\textwidth]{figures/benchmark_boxplot.pdf}
   \caption{Distribution of Spearman $\rho$ across 5 benchmark seeds.
-    Validation: $0.927 \pm 0.011$; Test: $0.921 \pm 0.027$. All five seeds meet the $\rho \geq 0.85$ threshold. The tight
+    Validation: $0.927 \pm 0.012$; Test: $0.921 \pm 0.030$. All five seeds meet the $\rho \geq 0.85$ threshold. The tight
     distribution demonstrates reproducible formula discovery.}
   \label{fig:benchmark}
 \end{figure}

@@ -10,6 +10,7 @@ from .evaluation import (
     dataset_fingerprint,
     evaluate_bound_split,
     evaluate_split,
+    evaluate_split_with_predictions,
 )
 from .known_invariants import compute_known_invariant_values
 from .logging_io import write_json
@@ -57,28 +58,24 @@ def _baseline_health(
 
 
 def _novelty_ci_for_split(
-    code: str,
-    split_features: list[dict[str, Any]],
+    valid_indices: list[int],
+    y_pred_valid: list[float],
     known_values: dict[str, list[float]],
     seed_offset: int,
     cfg: Phase1Config,
-    evaluator: SandboxEvaluator,
 ) -> dict[str, object]:
-    y_pred_raw = evaluator.evaluate(code, split_features)
-    valid_pairs = [(idx, yp) for idx, yp in enumerate(y_pred_raw) if yp is not None]
-    if not valid_pairs:
+    if not valid_indices:
         return {
             "max_ci_upper_abs_rho": 0.0,
             "novelty_passed": False,
             "threshold": cfg.novelty_threshold,
             "per_invariant": {},
         }
-    valid_indices, y_pred_valid = zip(*valid_pairs, strict=True)
     known_subset = {
         name: [values[idx] for idx in valid_indices] for name, values in known_values.items()
     }
     return compute_novelty_ci(
-        candidate_values=list(y_pred_valid),
+        candidate_values=y_pred_valid,
         known_invariants=known_subset,
         n_bootstrap=cfg.novelty_bootstrap_samples,
         seed=cfg.seed + seed_offset,
@@ -126,14 +123,18 @@ def write_phase1_summary(
         include_spectral_feature_pack=cfg.enable_spectral_feature_pack,
     )
     y_sanity = target_values(datasets_sanity, cfg.target_name)
-    val_metrics = evaluate_split(best.code, features_val, y_true_val, cfg, evaluator, known_val)
-    test_metrics = evaluate_split(best.code, features_test, y_true_test, cfg, evaluator, known_test)
+    val_metrics, val_valid_indices, val_pred_valid = evaluate_split_with_predictions(
+        best.code, features_val, y_true_val, cfg, evaluator, known_val
+    )
+    test_metrics, test_valid_indices, test_pred_valid = evaluate_split_with_predictions(
+        best.code, features_test, y_true_test, cfg, evaluator, known_test
+    )
     train_metrics = evaluate_split(best.code, features_train, y_true_train, cfg, evaluator)
     sanity_metrics = evaluate_split(best.code, features_sanity, y_sanity, cfg, evaluator)
 
     novelty_ci = {
-        "validation": _novelty_ci_for_split(best.code, features_val, known_val, 17, cfg, evaluator),
-        "test": _novelty_ci_for_split(best.code, features_test, known_test, 29, cfg, evaluator),
+        "validation": _novelty_ci_for_split(val_valid_indices, val_pred_valid, known_val, 17, cfg),
+        "test": _novelty_ci_for_split(test_valid_indices, test_pred_valid, known_test, 29, cfg),
     }
 
     is_bounds = cfg.fitness_mode in ("upper_bound", "lower_bound")

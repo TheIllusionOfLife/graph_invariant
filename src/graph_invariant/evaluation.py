@@ -32,6 +32,25 @@ def evaluate_split(
     evaluator: SandboxEvaluator,
     known_invariants: dict[str, list[float]] | None = None,
 ) -> dict[str, float | int | None]:
+    metrics, _, _ = evaluate_split_with_predictions(
+        code=code,
+        features_list=features_list,
+        y_true=y_true,
+        cfg=cfg,
+        evaluator=evaluator,
+        known_invariants=known_invariants,
+    )
+    return metrics
+
+
+def evaluate_split_with_predictions(
+    code: str,
+    features_list: list[dict[str, Any]],
+    y_true: list[float],
+    cfg: Phase1Config,
+    evaluator: SandboxEvaluator,
+    known_invariants: dict[str, list[float]] | None = None,
+) -> tuple[dict[str, float | int | None], list[int], list[float]]:
     y_pred_raw = evaluator.evaluate(code, features_list)
     valid_pairs = [
         (idx, yt, yp)
@@ -39,14 +58,18 @@ def evaluate_split(
         if yp is not None
     ]
     if not valid_pairs:
-        return {
-            "spearman": 0.0,
-            "pearson": 0.0,
-            "rmse": 0.0,
-            "mae": 0.0,
-            "valid_count": 0,
-            "novelty_bonus": None,
-        }
+        return (
+            {
+                "spearman": 0.0,
+                "pearson": 0.0,
+                "rmse": 0.0,
+                "mae": 0.0,
+                "valid_count": 0,
+                "novelty_bonus": None,
+            },
+            [],
+            [],
+        )
 
     valid_indices, y_true_valid, y_pred_valid = zip(*valid_pairs, strict=True)
     metrics = compute_metrics(list(y_true_valid), list(y_pred_valid))
@@ -58,14 +81,18 @@ def evaluate_split(
         }
         novelty = compute_novelty_bonus(list(y_pred_valid), known_subset)
 
-    return {
-        "spearman": metrics.rho_spearman,
-        "pearson": metrics.r_pearson,
-        "rmse": metrics.rmse,
-        "mae": metrics.mae,
-        "valid_count": metrics.valid_count,
-        "novelty_bonus": novelty,
-    }
+    return (
+        {
+            "spearman": metrics.rho_spearman,
+            "pearson": metrics.r_pearson,
+            "rmse": metrics.rmse,
+            "mae": metrics.mae,
+            "valid_count": metrics.valid_count,
+            "novelty_bonus": novelty,
+        },
+        list(valid_indices),
+        list(y_pred_valid),
+    )
 
 
 def evaluate_bound_split(

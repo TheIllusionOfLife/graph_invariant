@@ -7,7 +7,7 @@ import pytest
 from graph_invariant.cli import run_phase1
 from graph_invariant.config import Phase1Config
 from graph_invariant.data import DatasetBundle
-from graph_invariant.types import CheckpointState, EvaluationResult
+from graph_invariant.types import EvaluationResult
 
 
 def _patch_sandbox_evaluator(monkeypatch, evaluate_fn):  # noqa: ANN001
@@ -105,7 +105,9 @@ def test_run_phase1_uses_configured_score_weights(monkeypatch, tmp_path):
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", fake_total)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.7)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.7
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
     assert captured == {"alpha": 0.9, "beta": 0.05, "gamma": 0.05}
@@ -172,8 +174,12 @@ def test_run_phase1_rotates_generation_checkpoints(monkeypatch, tmp_path):
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
 
@@ -220,8 +226,12 @@ def test_run_phase1_resume_continues_from_saved_generation(monkeypatch, tmp_path
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
     ckpt_root = Path(cfg.artifacts_dir) / "checkpoints"
@@ -303,8 +313,12 @@ def test_run_phase1_writes_final_summary_with_test_metrics(monkeypatch, tmp_path
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
 
@@ -409,7 +423,9 @@ def test_run_phase1_self_correction_repairs_failed_candidate_once(monkeypatch, t
         "graph_invariant.phase1_loop.list_available_models",
         lambda *_args, **_kwargs: ["gpt-oss:20b"],
     )
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.generate_candidate_code", _fake_generate)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.generate_candidate_code", _fake_generate
+    )  # noqa: E501
     _patch_sandbox_evaluator(monkeypatch, _fake_eval)
 
     def fake_metrics(*_args, **_kwargs):
@@ -417,8 +433,12 @@ def test_run_phase1_self_correction_repairs_failed_candidate_once(monkeypatch, t
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
     assert calls["count"] == 5
@@ -500,8 +520,12 @@ def test_run_phase1_success_threshold_is_configurable(monkeypatch, tmp_path):
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
@@ -638,8 +662,12 @@ def test_run_phase1_summary_enforces_pysr_parity(monkeypatch, tmp_path):
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4
+    )  # noqa: E501
     monkeypatch.setattr(
         "graph_invariant.phase1_loop.run_pysr_baseline",
         lambda **_kwargs: {
@@ -696,8 +724,12 @@ def test_run_phase1_pysr_parity_allows_small_epsilon_gap(monkeypatch, tmp_path):
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4
+    )  # noqa: E501
     monkeypatch.setattr(
         "graph_invariant.phase1_loop.run_pysr_baseline",
         lambda **_kwargs: {
@@ -751,8 +783,12 @@ def test_run_phase1_requires_healthy_baselines_when_configured(monkeypatch, tmp_
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4
+    )  # noqa: E501
     monkeypatch.setattr(
         "graph_invariant.phase1_loop.run_pysr_baseline",
         lambda **_kwargs: {"status": "error", "reason": "boom"},
@@ -810,8 +846,12 @@ def test_run_phase1_accepts_single_healthy_baseline_when_required(monkeypatch, t
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4
+    )  # noqa: E501
     monkeypatch.setattr(
         "graph_invariant.phase1_loop.run_pysr_baseline",
         lambda **_kwargs: {"status": "error", "reason": "boom"},
@@ -871,9 +911,13 @@ def test_generation_rejects_candidate_below_novelty_gate(monkeypatch, tmp_path):
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
     # Return very low novelty — below the 0.15 gate
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.08)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.08
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
@@ -928,9 +972,13 @@ def test_novelty_gate_rejection_triggers_self_correction(monkeypatch, tmp_path):
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
     # Novelty below threshold → should trigger repair attempt
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.08)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.08
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
     # 4 islands × 1 candidate × 2 attempts (original + repair) = 8 generate calls.
@@ -976,9 +1024,13 @@ def test_generation_accepts_candidate_above_novelty_gate(monkeypatch, tmp_path):
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
     # Return novelty above the 0.15 gate
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
@@ -1023,9 +1075,13 @@ def test_novelty_gate_disabled_when_zero(monkeypatch, tmp_path):
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
     # Very low novelty, but gate is disabled (threshold=0.0)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.01)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.01
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
@@ -1128,7 +1184,9 @@ def test_run_phase1_bounds_mode_uses_bound_score(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [float(i + 100) for i in range(len(graphs))],
     )
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
@@ -1172,7 +1230,9 @@ def test_run_phase1_bounds_mode_summary_schema(monkeypatch, tmp_path):
         monkeypatch,
         lambda _code, graphs, **_kw: [0.1 for _ in range(len(graphs))],
     )
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
     summary = json.loads((Path(cfg.artifacts_dir) / "phase1_summary.json").read_text("utf-8"))
@@ -1226,8 +1286,12 @@ def test_run_phase1_persists_prompt_and_response_when_enabled(monkeypatch, tmp_p
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.4
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
     events_path = Path(cfg.artifacts_dir) / "logs" / "events.jsonl"
@@ -1280,8 +1344,12 @@ def test_run_phase1_with_map_elites_populates_archive(monkeypatch, tmp_path):
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
 
@@ -1335,8 +1403,12 @@ def test_run_phase1_without_map_elites_omits_archive(monkeypatch, tmp_path):
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
 
@@ -1388,8 +1460,12 @@ def test_run_phase1_map_elites_checkpoint_roundtrip(monkeypatch, tmp_path):
 
     monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_metrics", fake_metrics)
     monkeypatch.setattr("graph_invariant.evaluation.compute_metrics", fake_metrics)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8)
-    monkeypatch.setattr("graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5)
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_total_score", lambda *_args, **_kwargs: 0.8
+    )  # noqa: E501
+    monkeypatch.setattr(
+        "graph_invariant.candidate_pipeline.compute_novelty_bonus", lambda *_args, **_kwargs: 0.5
+    )  # noqa: E501
 
     assert run_phase1(cfg) == 0
 

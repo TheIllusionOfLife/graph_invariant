@@ -90,15 +90,15 @@ Run the full experiment suite (MAP-Elites, algebraic connectivity, upper bound, 
 
 ```bash
 # Quick profile (default):
-bash run_all_experiments.sh
+bash scripts/run_all_experiments.sh
 
 # Full profile:
-PROFILE=full bash run_all_experiments.sh
+PROFILE=full bash scripts/run_all_experiments.sh
 
 # To override model or generation count, edit the relevant config file under configs/.
 ```
 
-Pre-built configs are available under `configs/`.
+Pre-built configs are available under `configs/quick/`, `configs/full/`, and `configs/ablation/`.
 
 Run the NeurIPS multi-seed evidence matrix:
 
@@ -132,7 +132,9 @@ For a full-profile matrix (longer runtime, broader evidence), use the
 
 ## Architecture Snapshot
 
-- `src/graph_invariant/cli.py`: orchestration and CLI entry points.
+- `src/graph_invariant/cli.py`: thin CLI entry point (`main()` + `write_report()`); subcommands: `phase1`, `report`, `benchmark`, `ood-validate`.
+- `src/graph_invariant/phase1_loop.py`: `run_phase1()` orchestration — outer loop, checkpointing, baselines, summaries.
+- `src/graph_invariant/candidate_pipeline.py`: per-generation candidate generation, validation, scoring, repair, and MAP-Elites insertion.
 - `src/graph_invariant/config.py`: validated runtime config dataclass (`Phase1Config`).
 - `src/graph_invariant/data.py`: graph generation and dataset splitting.
 - `src/graph_invariant/sandbox.py`: static checks + constrained execution pool.
@@ -143,7 +145,7 @@ For a full-profile matrix (longer runtime, broader evidence), use the
 - `src/graph_invariant/benchmark.py`: deterministic multi-seed benchmark runner.
 - `src/graph_invariant/baselines/`: statistical and PySR baselines.
 - `src/graph_invariant/baselines/features.py`: baseline feature extraction (excludes target to prevent leakage).
-- `configs/`: pre-built experiment configurations (quick and full profiles).
+- `configs/`: pre-built experiment configurations under `quick/`, `full/`, and `ablation/` subdirectories.
 
 Key runtime toggles now include:
 - `enable_spectral_feature_pack`: enable extended Laplacian-derived features/invariants.

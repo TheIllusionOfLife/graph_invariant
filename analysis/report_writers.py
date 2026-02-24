@@ -3,22 +3,19 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 from typing import Any
 
-from graph_invariant.stats_utils import mean_std_ci95, safe_float  # noqa: F401
-
 from experiment_analysis import (
-    _get_spearman,
     _ast_node_count,
+    _get_spearman,
     _normalize_candidate_code_for_report,
-    _status_code,
+    build_appendix_payload,
     build_comparison_table,
     build_seed_aggregates,
-    build_appendix_payload,
 )
 
+from graph_invariant.stats_utils import mean_std_ci95, safe_float  # noqa: F401
 
 # ── LaTeX helpers ─────────────────────────────────────────────────────
 

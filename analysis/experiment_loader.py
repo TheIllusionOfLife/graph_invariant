@@ -6,8 +6,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-from graph_invariant.stats_utils import mean_std_ci95, safe_float  # noqa: F401
-
 from experiment_analysis import (
     extract_acceptance_funnel,
     extract_bounds_diagnostics,
@@ -15,6 +13,7 @@ from experiment_analysis import (
     extract_repair_breakdown,
 )
 
+from graph_invariant.stats_utils import mean_std_ci95, safe_float  # noqa: F401
 
 # ── Data loading ─────────────────────────────────────────────────────
 

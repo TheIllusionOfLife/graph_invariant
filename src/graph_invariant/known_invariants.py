@@ -283,5 +283,3 @@ def compute_known_invariant_values(
             out["laplacian_energy_ratio"].append(pack["laplacian_energy_ratio"])
 
     return out
-
-

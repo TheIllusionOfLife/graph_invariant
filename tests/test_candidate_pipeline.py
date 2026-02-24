@@ -1,7 +1,5 @@
 """Tests for candidate_pipeline module: prompt building, repair, and error helpers."""
 
-import pytest
-
 from graph_invariant.candidate_pipeline import (
     _candidate_prompt,
     _record_recent_failure,

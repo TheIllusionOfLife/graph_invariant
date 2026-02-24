@@ -20,10 +20,10 @@ Repository-specific instructions for coding agents and contributors.
 - Generate report: `uv run python -m graph_invariant.cli report --artifacts <artifacts_dir>`
 - Run benchmark: `uv run python -m graph_invariant.cli benchmark --config <config.json>`
 - Run OOD validation: `uv run python -m graph_invariant.cli ood-validate --summary <summary.json> --output <output_dir>`
-- Run full experiment suite: `bash run_all_experiments.sh`
-  - Quick profile (default): `bash run_all_experiments.sh`
-  - Full profile: `PROFILE=full bash run_all_experiments.sh`
-  - Override model: `MODEL=gemma3:4b bash run_all_experiments.sh`
+- Run full experiment suite: `bash scripts/run_all_experiments.sh`
+  - Quick profile (default): `bash scripts/run_all_experiments.sh`
+  - Full profile: `PROFILE=full bash scripts/run_all_experiments.sh`
+  - Override model: `MODEL=gemma3:4b bash scripts/run_all_experiments.sh`
 - Compile paper: `cd paper && tectonic -r 2 main.tex`
 - Run analysis pipeline:
   - `uv run python analysis/analyze_experiments.py --artifacts-root artifacts/ --output analysis/results/`
@@ -37,8 +37,10 @@ Repository-specific instructions for coding agents and contributors.
   - `snake_case` for variables/functions
   - `PascalCase` for classes
 - Keep high cohesion:
-  - orchestration in `cli.py`
-  - generation in `data.py`
+  - CLI wiring (thin) in `cli.py`
+  - outer loop orchestration in `phase1_loop.py`
+  - per-generation candidate logic in `candidate_pipeline.py`
+  - graph generation in `data.py`
   - evaluation sandbox in `sandbox.py`
   - metrics/scoring in `scoring.py`
   - target value computation in `targets.py`
@@ -60,7 +62,7 @@ Repository-specific instructions for coding agents and contributors.
 - For stochastic or numeric behavior:
   - use deterministic seeds
   - use tolerance-based assertions
-- For CLI behavior, prefer tests in `tests/test_cli.py` rather than ad-hoc shell-only checks.
+- For CLI behavior, prefer tests in `tests/test_cli.py` (arg parsing), `tests/test_phase1_loop.py` (run_phase1 integration), or `tests/test_candidate_pipeline.py` (inner-loop logic) rather than ad-hoc shell-only checks.
 
 ## Branching, Commits, and PR Etiquette
 

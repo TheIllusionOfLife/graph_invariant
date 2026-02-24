@@ -11,7 +11,6 @@ from typing import Any
 
 from graph_invariant.stats_utils import mean_std_ci95, safe_float
 
-
 # ── Helpers ──────────────────────────────────────────────────────────
 
 

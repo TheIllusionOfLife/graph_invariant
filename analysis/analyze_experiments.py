@@ -16,20 +16,12 @@ _analysis_dir = Path(__file__).resolve().parent
 if str(_analysis_dir) not in sys.path:
     sys.path.insert(0, str(_analysis_dir))
 
-from experiment_analysis import *  # noqa: F401,F403,E402
-from experiment_loader import *  # noqa: F401,F403,E402
-from report_writers import *  # noqa: F401,F403,E402
-
-from experiment_analysis import (  # noqa: E402
-    _normalize_candidate_code_for_report,
-    build_comparison_table,
-    build_seed_aggregates,
-    extract_acceptance_funnel,
-    extract_bounds_diagnostics,
-    extract_convergence_data,
-    extract_repair_breakdown,
-)
+from experiment_analysis import *  # noqa: F401,F403,E402,I001
+from experiment_analysis import _normalize_candidate_code_for_report  # noqa: F401,E402
+from experiment_analysis import build_comparison_table  # noqa: E402
+from experiment_loader import *  # noqa: F401,F403,E402,I001
 from experiment_loader import discover_experiments, discover_matrix_summaries  # noqa: E402
+from report_writers import *  # noqa: F401,F403,E402,I001
 from report_writers import (  # noqa: E402
     write_analysis_report,
     write_appendix_tables_tex,

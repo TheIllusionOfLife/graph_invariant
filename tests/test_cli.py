@@ -1,7 +1,5 @@
 import json
 
-import pytest
-
 from graph_invariant import cli
 
 

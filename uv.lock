@@ -265,11 +265,15 @@ source = { editable = "." }
 dependencies = [
     { name = "networkx" },
     { name = "numpy" },
-    { name = "pysr" },
     { name = "requests" },
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "sympy" },
+]
+
+[package.optional-dependencies]
+pysr = [
+    { name = "pysr" },
 ]
 
 [package.dev-dependencies]
@@ -284,12 +288,13 @@ dev = [
 requires-dist = [
     { name = "networkx", specifier = ">=3.4" },
     { name = "numpy", specifier = ">=2.2" },
-    { name = "pysr", specifier = ">=1.0" },
+    { name = "pysr", marker = "extra == 'pysr'", specifier = ">=1.0" },
     { name = "requests", specifier = ">=2.32" },
     { name = "scikit-learn", specifier = ">=1.5" },
     { name = "scipy", specifier = ">=1.15" },
     { name = "sympy", specifier = ">=1.13" },
 ]
+provides-extras = ["pysr"]
 
 [package.metadata.requires-dev]
 dev = [

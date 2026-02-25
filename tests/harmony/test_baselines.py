@@ -55,22 +55,24 @@ def _make_sufficient_kg(n_entities: int = 20, n_edges: int = 30) -> KnowledgeGra
     return kg
 
 
-def _make_single_type_kg() -> KnowledgeGraph:
-    """KG with a single edge type — frequency baseline should perfectly rank true target.
+def _make_popular_target_kg() -> KnowledgeGraph:
+    """KG where many different sources all point to the same popular target (e0).
 
-    All edges are (e0 → eX, DEPENDS_ON).  The only observed (source_type, edge_type)
-    pattern always leads to target entities e1..eN, so frequency counts are non-zero
-    and the predictor is a better-than-random ranker.
+    Structure: 21 entities — e0 (type="hub", popular target) + e1..e20 (type="source").
+    Each source connects to e0 via DEPENDS_ON.  When any source→e0 edge is masked,
+    all other source→e0 training edges still contribute high frequency for e0.
+
+    With mask_ratio=0.2: ~4 edges masked, ~16 in training.
+    Frequency count for e0 per (source_type="source", DEPENDS_ON) key = 16.
+    Frequency correctly ranks e0 first → near-perfect hit rate.
+    Random hit rate ≈ min(10, 20) / 21 ≈ 0.48 → frequency clearly wins.
     """
-    n = 20
-    kg = KnowledgeGraph(domain="single_type")
-    for i in range(n):
-        kg.add_entity(Entity(id=f"e{i}", entity_type="concept"))
-    # Use e0 as the only source to create a strong frequency signal
-    for i in range(1, n):
-        kg.add_edge(
-            TypedEdge(source="e0", target=f"e{i}", edge_type=EdgeType.DEPENDS_ON)
-        )
+    kg = KnowledgeGraph(domain="popular_target")
+    kg.add_entity(Entity(id="e0", entity_type="hub"))
+    for i in range(1, 21):
+        kg.add_entity(Entity(id=f"e{i}", entity_type="source"))
+    for i in range(1, 21):
+        kg.add_edge(TypedEdge(source=f"e{i}", target="e0", edge_type=EdgeType.DEPENDS_ON))
     return kg
 
 
@@ -144,19 +146,17 @@ def test_frequency_is_deterministic() -> None:
     assert baseline_frequency(kg, seed=7) == baseline_frequency(kg, seed=7)
 
 
-def test_frequency_higher_than_random_on_single_type_kg() -> None:
-    """Frequency is a better-than-random predictor on a single-type KG.
+def test_frequency_higher_than_random_on_popular_target_kg() -> None:
+    """Frequency is a better-than-random predictor when a target has strong frequency signal.
 
-    With a single (source_type, edge_type) pair and all edges pointing from one
-    source node, frequency counts are concentrated — it should rank higher than
-    a purely random baseline on average.
+    With 20 different sources all pointing to e0, training edges keep high frequency
+    for e0 even after masking. Frequency correctly ranks e0 first; random cannot.
     """
     from harmony.metric.baselines import baseline_frequency, baseline_random
 
-    kg = _make_single_type_kg()
+    kg = _make_popular_target_kg()
     freq = baseline_frequency(kg, seed=42)
     rand = baseline_random(kg, seed=42)
-    # Frequency exploits structure; should be >= random (or we need a larger n)
     assert freq >= rand, f"Expected freq ({freq:.3f}) >= random ({rand:.3f})"
 
 

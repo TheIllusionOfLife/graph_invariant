@@ -11,8 +11,6 @@ from __future__ import annotations
 
 from dataclasses import fields
 
-import pytest
-
 from harmony.proposals.types import Proposal, ProposalType, ValidationResult
 
 

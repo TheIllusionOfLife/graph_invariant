@@ -15,7 +15,7 @@ from harmony.types import EdgeType, Entity, KnowledgeGraph, TypedEdge
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(slots=True)
 class ProposalResult:
     """Outcome of running a single proposal through the pipeline."""
 
@@ -25,7 +25,7 @@ class ProposalResult:
     inserted_to_archive: bool
 
 
-@dataclass
+@dataclass(slots=True)
 class PipelineResult:
     """Aggregate result of running a batch of proposals."""
 
@@ -89,7 +89,6 @@ def run_pipeline(
     """
     if not proposals:
         logger.info("Pipeline valid_rate=0.000 (0/0)")
-        print("Pipeline valid_rate=0.000 (0/0)")
         empty_archive = HarmonyMapElites(num_bins=archive_bins)
         return PipelineResult(results=[], valid_rate=0.0, archive=empty_archive)
 
@@ -116,9 +115,10 @@ def run_pipeline(
         valid_count += 1
         try:
             kg_after = _apply_mutation(kg, proposal)
-            gain = harmony_score(kg_after, seed=seed) - h_before
-        except Exception:
-            gain = 0.0
+            gain: float | None = harmony_score(kg_after, seed=seed) - h_before
+        except Exception as e:
+            logger.warning("Error processing valid proposal %s: %s", proposal.id, e)
+            gain = None
 
         results.append(
             ProposalResult(
@@ -131,7 +131,6 @@ def run_pipeline(
 
     valid_rate = valid_count / len(proposals)
     logger.info("Pipeline valid_rate=%.3f (%d/%d)", valid_rate, valid_count, len(proposals))
-    print(f"Pipeline valid_rate={valid_rate:.3f} ({valid_count}/{len(proposals)})")
 
     # Second pass: normalize gains and insert into archive
     gains = [r.harmony_gain for r in results if r.harmony_gain is not None]

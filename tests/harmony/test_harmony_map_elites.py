@@ -125,7 +125,8 @@ class TestSampleDiverse:
     def test_sample_all_when_count_exceeds_occupied(self):
         archive = HarmonyMapElites(num_bins=5)
         for i in range(2):
-            try_insert(archive, _make_proposal(f"p{i}"), fitness_signal=0.5, descriptor=(i * 0.5, i * 0.5))
+            desc = (i * 0.5, i * 0.5)
+            try_insert(archive, _make_proposal(f"p{i}"), fitness_signal=0.5, descriptor=desc)
         rng = np.random.default_rng(42)
         samples = sample_diverse_exemplars(archive, rng, count=10)
         assert len(samples) == 2
@@ -175,7 +176,7 @@ class TestSerializeDeserialize:
             proposal_type=ProposalType.ADD_EDGE,
             claim="Eigenvectors depend on the determinant in a fundamental way.",
             justification="This follows from the characteristic polynomial definition.",
-            falsification_condition="If a matrix has zero determinant but non-trivial eigenvectors.",
+            falsification_condition="If a matrix has zero determinant but non-trivial eigenvectors.",  # noqa: E501
             kg_domain="linear_algebra",
             source_entity="eigenvector",
             target_entity="determinant",

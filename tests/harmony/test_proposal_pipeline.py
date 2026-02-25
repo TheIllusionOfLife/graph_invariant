@@ -124,6 +124,58 @@ class TestDeterminism:
         assert r1.valid_rate == r2.valid_rate
 
 
+class TestMutationPaths:
+    """Coverage for ADD_EDGE, REMOVE_EDGE, REMOVE_ENTITY mutation branches."""
+
+    def test_add_edge_produces_numeric_gain(self, kg):
+        # "rank" and "field" both exist; GENERALIZES not yet between them
+        p = Proposal(
+            id="add-edge",
+            proposal_type=ProposalType.ADD_EDGE,
+            claim="Rank generalizes over the underlying field structure in linear algebra.",
+            justification="The rank concept depends on the scalar field for its definition.",
+            falsification_condition="If rank can be defined without reference to the field.",
+            kg_domain="linear_algebra",
+            source_entity="rank",
+            target_entity="field",
+            edge_type="GENERALIZES",
+        )
+        result = run_pipeline(kg, [p], seed=42)
+        assert result.results[0].harmony_gain is not None
+        assert isinstance(result.results[0].harmony_gain, float)
+
+    def test_remove_edge_produces_numeric_gain(self, kg):
+        # First edge in the KG: vector_space → field (DEPENDS_ON)
+        p = Proposal(
+            id="remove-edge",
+            proposal_type=ProposalType.REMOVE_EDGE,
+            claim="The DEPENDS_ON edge from vector_space to field is redundant here.",
+            justification="Other edges already capture the field dependency transitively.",
+            falsification_condition="If removing it breaks any structural property of the KG.",
+            kg_domain="linear_algebra",
+            source_entity="vector_space",
+            target_entity="field",
+            edge_type="DEPENDS_ON",
+        )
+        result = run_pipeline(kg, [p], seed=42)
+        assert result.results[0].harmony_gain is not None
+        assert isinstance(result.results[0].harmony_gain, float)
+
+    def test_remove_entity_produces_numeric_gain(self, kg):
+        p = Proposal(
+            id="remove-entity",
+            proposal_type=ProposalType.REMOVE_ENTITY,
+            claim="The quotient_space entity is redundant in this minimal KG formulation.",
+            justification="It duplicates concepts already encoded by direct_sum relationships.",
+            falsification_condition="If downstream theorems explicitly reference quotient_space.",
+            kg_domain="linear_algebra",
+            entity_id="quotient_space",
+        )
+        result = run_pipeline(kg, [p], seed=42)
+        assert result.results[0].harmony_gain is not None
+        assert isinstance(result.results[0].harmony_gain, float)
+
+
 class TestArchive:
     def test_archive_populated_by_valid_proposals(self, kg):
         proposals = [_make_valid_add_entity_proposal(f"p{i}") for i in range(3)]

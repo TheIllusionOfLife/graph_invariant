@@ -49,8 +49,8 @@ def validate(proposal: Proposal) -> ValidationResult:
         if not proposal.entity_id:
             violations.append("'entity_id' is required for REMOVE_ENTITY")
 
-    # Rule 3: edge_type must be a known EdgeType name when present
-    if proposal.edge_type is not None and proposal.edge_type not in _VALID_EDGE_TYPE_NAMES:
+    # Rule 3: edge_type must be a known EdgeType name when actually supplied (non-empty)
+    if proposal.edge_type and proposal.edge_type not in _VALID_EDGE_TYPE_NAMES:
         violations.append(
             f"'edge_type' must be one of {sorted(_VALID_EDGE_TYPE_NAMES)}, "
             f"got '{proposal.edge_type}'"

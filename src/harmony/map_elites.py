@@ -135,7 +135,7 @@ def deserialize_archive(data: dict[str, Any]) -> HarmonyMapElites:
                 proposal=proposal,
                 fitness_signal=float(cell_data["fitness_signal"]),
             )
-        except (ValueError, KeyError, TypeError):
-            logger.warning("Skipping malformed archive cell: %s", key)
+        except (ValueError, KeyError, TypeError) as e:
+            logger.warning("Skipping malformed archive cell: %s, error: %s", key, e)
             continue
     return HarmonyMapElites(num_bins=num_bins, archive_id=archive_id, cells=cells)

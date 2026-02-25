@@ -14,7 +14,7 @@ class ProposalType(Enum):
     REMOVE_ENTITY = "remove_entity"
 
 
-@dataclass
+@dataclass(slots=True)
 class Proposal:
     """A structured KG mutation paired with its theoretical justification."""
 
@@ -66,7 +66,7 @@ class Proposal:
         )
 
 
-@dataclass
+@dataclass(slots=True)
 class ValidationResult:
     """Outcome of schema validation for a Proposal."""
 

@@ -10,8 +10,6 @@ TDD: these tests are written BEFORE implementation. They verify:
 
 from __future__ import annotations
 
-import pytest
-
 from harmony.proposals.types import Proposal, ProposalType
 from harmony.proposals.validator import validate
 
@@ -126,7 +124,9 @@ class TestAddEdgeTypeSpecific:
             proposal_type=ProposalType.REMOVE_EDGE,
             claim="Eigenvectors depend on the determinant in a fundamental way.",
             justification="This follows from the characteristic polynomial definition.",
-            falsification_condition="If a matrix has zero determinant but non-trivial eigenvectors.",
+            falsification_condition=(
+                "If a matrix has zero determinant but non-trivial eigenvectors."
+            ),
             kg_domain="linear_algebra",
             source_entity="eigenvector",
             target_entity="determinant",

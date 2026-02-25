@@ -49,6 +49,8 @@ def _split_edges(
     train = [e for i, e in enumerate(edges) if i not in mask_idx]
     test = [e for i, e in enumerate(edges) if i in mask_idx]
     return train, test
+
+
 _ET_TO_IDX: dict[EdgeType, int] = {et: i for i, et in enumerate(_ALL_EDGE_TYPES)}
 
 

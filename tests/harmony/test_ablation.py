@@ -43,9 +43,7 @@ def _make_contradicts_kg() -> KnowledgeGraph:
     for i in range(12):
         kg.add_entity(Entity(id=f"e{i}", entity_type="concept"))
     for i in range(0, 10, 2):
-        kg.add_edge(
-            TypedEdge(source=f"e{i}", target=f"e{i + 1}", edge_type=EdgeType.CONTRADICTS)
-        )
+        kg.add_edge(TypedEdge(source=f"e{i}", target=f"e{i + 1}", edge_type=EdgeType.CONTRADICTS))
     # Add a few non-contradicting edges to keep the KG diverse
     kg.add_edge(TypedEdge(source="e0", target="e2", edge_type=EdgeType.DEPENDS_ON))
     kg.add_edge(TypedEdge(source="e2", target="e4", edge_type=EdgeType.DERIVES))

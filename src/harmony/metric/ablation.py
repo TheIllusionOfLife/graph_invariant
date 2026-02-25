@@ -49,6 +49,9 @@ def _bootstrap_scores(
     """Return n_bootstrap harmony scores from resampled KGs."""
     edges = kg.edges
     n_edges = len(edges)
+    if n_edges == 0:
+        return [0.0] * n_bootstrap
+
     rng = np.random.default_rng(seed)
     scores: list[float] = []
 
@@ -87,7 +90,8 @@ def run_ablation(
     rebuild a KG from resampled edges, score each bootstrap sample.
     Repeat n_bootstrap times per variant.
 
-    Returns rows sorted by mean score descending (full first).
+    Returns rows in a fixed order: "full" first, then the 4 leave-one-out variants
+    in the order w/o_comp, w/o_coh, w/o_sym, w/o_gen.
 
     Parameters
     ----------
@@ -100,6 +104,9 @@ def run_ablation(
     alpha, beta, gamma, delta:
         Weights for the full metric (compressibility, coherence, symmetry, generativity).
     """
+    if n_bootstrap <= 0:
+        raise ValueError(f"n_bootstrap must be > 0, got {n_bootstrap}")
+
     variants: list[tuple[str, float, float, float, float]] = [
         ("full", alpha, beta, gamma, delta),
         ("w/o_comp", 0.0, beta, gamma, delta),

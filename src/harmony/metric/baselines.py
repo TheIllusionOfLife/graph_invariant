@@ -14,30 +14,11 @@ train/evaluate meaningfully (same threshold as generativity: _MIN_TRAIN_EDGES).
 from __future__ import annotations
 
 from collections import Counter
-from typing import TYPE_CHECKING
 
 import numpy as np
 
-from harmony.metric.generativity import _MIN_TRAIN_EDGES
-from harmony.types import EdgeType, KnowledgeGraph, TypedEdge
-
-if TYPE_CHECKING:
-    pass
-
-
-def _split_edges(
-    edges: list[TypedEdge],
-    mask_ratio: float,
-    seed: int,
-) -> tuple[list[TypedEdge], list[TypedEdge]]:
-    """Return (train_edges, test_edges) using the same protocol as generativity."""
-    n_mask = max(1, int(len(edges) * mask_ratio))
-    rng = np.random.default_rng(seed)
-    perm = rng.permutation(len(edges))
-    mask_idx: set[int] = set(int(i) for i in perm[:n_mask])
-    train = [e for i, e in enumerate(edges) if i not in mask_idx]
-    test = [e for i, e in enumerate(edges) if i in mask_idx]
-    return train, test
+from harmony.metric.generativity import _MIN_TRAIN_EDGES, _split_edges
+from harmony.types import EdgeType, KnowledgeGraph
 
 
 def baseline_random(
@@ -58,12 +39,8 @@ def baseline_random(
         return 0.0
 
     edges = kg.edges
-    n_train = len(edges) - max(1, int(len(edges) * mask_ratio))
-    if n_train < _MIN_TRAIN_EDGES:
-        return 0.0
-
-    _, test_edges = _split_edges(edges, mask_ratio, seed)
-    if not test_edges:
+    train_edges, test_edges = _split_edges(edges, mask_ratio, seed)
+    if len(train_edges) < _MIN_TRAIN_EDGES or not test_edges:
         return 0.0
 
     entity_ids = list(kg.entities.keys())
@@ -107,12 +84,8 @@ def baseline_frequency(
         return 0.0
 
     edges = kg.edges
-    n_train = len(edges) - max(1, int(len(edges) * mask_ratio))
-    if n_train < _MIN_TRAIN_EDGES:
-        return 0.0
-
     train_edges, test_edges = _split_edges(edges, mask_ratio, seed)
-    if not test_edges:
+    if len(train_edges) < _MIN_TRAIN_EDGES or not test_edges:
         return 0.0
 
     entity_ids = list(kg.entities.keys())

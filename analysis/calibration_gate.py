@@ -32,7 +32,6 @@ from harmony.metric.harmony import harmony_score
 from harmony.types import KnowledgeGraph
 
 # ── Configuration ──────────────────────────────────────────────────────
-DOMAINS: dict[str, KnowledgeGraph] = {}
 N_BOOTSTRAP = 200
 SEED = 42
 IMPROVEMENT_THRESHOLD = 0.10  # 10% improvement required
@@ -47,7 +46,15 @@ OUTPUT_MD = Path(__file__).parent / "calibration_gate.md"
 
 
 def _improvement(harmony_mean: float, freq_mean: float) -> float:
-    return (harmony_mean - freq_mean) / max(freq_mean, 1e-9)
+    """Relative improvement of harmony over frequency baseline.
+
+    Returns float("inf") when freq_mean <= 0 and harmony_mean > 0 (any positive
+    score is an infinite improvement over a zero baseline), 0.0 when both are
+    zero or negative, rather than silently inflating via a near-zero clamp.
+    """
+    if freq_mean <= 0.0:
+        return float("inf") if harmony_mean > 0.0 else 0.0
+    return (harmony_mean - freq_mean) / freq_mean
 
 
 def _gate_passes_domain(

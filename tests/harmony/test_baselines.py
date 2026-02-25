@@ -10,8 +10,6 @@ Verifies:
 
 from __future__ import annotations
 
-import pytest
-
 from harmony.metric.generativity import _MIN_TRAIN_EDGES, generativity
 from harmony.types import EdgeType, Entity, KnowledgeGraph, TypedEdge
 

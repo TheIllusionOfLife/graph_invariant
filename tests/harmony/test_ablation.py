@@ -11,8 +11,6 @@ Verifies:
 
 from __future__ import annotations
 
-import pytest
-
 from harmony.types import EdgeType, Entity, KnowledgeGraph, TypedEdge
 
 # ── Factories ─────────────────────────────────────────────────────────
@@ -101,7 +99,7 @@ def test_ablation_deterministic() -> None:
     kg = _make_sufficient_kg()
     rows_a = run_ablation(kg, n_bootstrap=10, seed=7)
     rows_b = run_ablation(kg, n_bootstrap=10, seed=7)
-    for a, b in zip(rows_a, rows_b):
+    for a, b in zip(rows_a, rows_b, strict=True):
         assert a.component == b.component
         assert a.mean == b.mean
         assert a.std == b.std
@@ -145,7 +143,9 @@ def test_removing_comp_changes_score() -> None:
     full_mean = rows[0].mean
     # At least one leave-one-out variant should differ from the full metric
     diffs = [abs(r.mean - full_mean) for r in rows[1:]]
-    assert any(d > 0.0 for d in diffs), "All leave-one-out means equal full — no component contributes"
+    assert any(d > 0.0 for d in diffs), (
+        "All leave-one-out means equal full — no component contributes"
+    )
 
 
 def test_ablation_row_is_dataclass() -> None:

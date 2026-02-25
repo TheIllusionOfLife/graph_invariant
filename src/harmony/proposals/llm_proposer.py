@@ -1,0 +1,243 @@
+"""LLM-based proposal generator for Harmony island search.
+
+Provides:
+  - ProposalStrategy enum and island_strategy() cycle
+  - build_proposal_prompt() — strategy-aware KG-grounded prompt
+  - _extract_proposal_dict() — JSON parser robust to LLM formatting quirks
+  - generate_proposal_payload() — Ollama HTTP call with retry (mirrors llm_ollama.py)
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import time
+from enum import StrEnum
+from typing import Any
+
+import requests
+
+from graph_invariant.llm_ollama import validate_ollama_url
+from harmony.types import EdgeType, KnowledgeGraph
+
+_STRATEGY_CYCLE = None  # lazily populated after class definition
+
+
+class ProposalStrategy(StrEnum):
+    REFINEMENT = "refinement"
+    COMBINATION = "combination"
+    NOVEL = "novel"
+
+
+_STRATEGY_CYCLE_LIST: list[ProposalStrategy] = [
+    ProposalStrategy.REFINEMENT,
+    ProposalStrategy.COMBINATION,
+    ProposalStrategy.REFINEMENT,
+    ProposalStrategy.NOVEL,
+]
+
+
+def island_strategy(island_id: int) -> ProposalStrategy:
+    """Return the ProposalStrategy assigned to *island_id* (wraps every 4)."""
+    return _STRATEGY_CYCLE_LIST[island_id % len(_STRATEGY_CYCLE_LIST)]
+
+
+_STRATEGY_PREAMBLE: dict[ProposalStrategy, str] = {
+    ProposalStrategy.REFINEMENT: (
+        "Strategy: REFINEMENT — improve the best existing proposal. "
+        "Make targeted changes to refine the claim and strengthen the justification."
+    ),
+    ProposalStrategy.COMBINATION: (
+        "Strategy: COMBINATION — merge the top-2 proposals into a single stronger one. "
+        "Combine their strengths, eliminate redundancies."
+    ),
+    ProposalStrategy.NOVEL: (
+        "Strategy: NOVEL — invent a completely new theoretical proposal. "
+        "Do not copy existing proposals; explore unexplored relationships."
+    ),
+}
+
+_PROPOSAL_SCHEMA_HINT = """
+Return ONLY a JSON object (no extra text) with these fields:
+{
+  "id": "<unique string>",
+  "proposal_type": "<add_edge|remove_edge|add_entity|remove_entity>",
+  "claim": "<1-sentence theoretical claim, ≥10 chars>",
+  "justification": "<reasoning, ≥10 chars>",
+  "falsification_condition": "<what would disprove it, ≥10 chars>",
+  "kg_domain": "<domain name, ≥10 chars>",
+  "source_entity": "<entity id or null>",
+  "target_entity": "<entity id or null>",
+  "edge_type": "<EdgeType name or null>",
+  "entity_id": "<entity id or null>",
+  "entity_type": "<entity type string or null>"
+}
+"""
+
+
+def build_proposal_prompt(
+    kg: KnowledgeGraph,
+    strategy: ProposalStrategy,
+    top_proposals: list[str],
+    recent_failures: list[str],
+    constrained: bool = False,
+) -> str:
+    """Build an LLM prompt for structured KG-mutation proposal generation.
+
+    Parameters
+    ----------
+    kg:
+        The knowledge graph being explored.
+    strategy:
+        Island strategy (refinement / combination / novel).
+    top_proposals:
+        JSON strings of the current best proposals (shown for context).
+    recent_failures:
+        Violation messages from recently rejected proposals.
+    constrained:
+        When True, enumerate all valid entity IDs and EdgeType names explicitly
+        to guide a stagnated island back to producing valid proposals.
+    """
+    # KG stats block
+    stats_block = (
+        f"Knowledge Graph: domain='{kg.domain}', entities={kg.num_entities}, edges={kg.num_edges}"
+    )
+
+    # Strategy preamble
+    strategy_block = _STRATEGY_PREAMBLE[strategy]
+
+    # Top proposals block
+    if top_proposals:
+        top_block = "Top proposals so far:\n" + "\n---\n".join(top_proposals[:3])
+    else:
+        top_block = "Top proposals so far: None yet."
+
+    # Recent failures block
+    if recent_failures:
+        fail_block = "Recent validation failures (avoid these):\n" + "\n".join(recent_failures[:5])
+    else:
+        fail_block = "Recent validation failures: None."
+
+    # Constrained enumeration block
+    constrained_block = ""
+    if constrained:
+        entity_list = ", ".join(sorted(kg.entities.keys()))
+        edge_type_list = ", ".join(et.name for et in EdgeType)
+        constrained_block = (
+            f"\nVALID ENTITY IDs (use exactly as written): {entity_list}"
+            f"\nVALID EDGE TYPES (use exactly as written): {edge_type_list}\n"
+        )
+
+    return (
+        f"You are a theory-discovery agent for knowledge graph research.\n"
+        f"{stats_block}\n\n"
+        f"{strategy_block}\n\n"
+        f"{top_block}\n\n"
+        f"{fail_block}\n"
+        f"{constrained_block}"
+        f"{_PROPOSAL_SCHEMA_HINT}"
+    )
+
+
+def _extract_proposal_dict(text: str) -> dict[str, Any] | None:
+    """Extract the first JSON object from LLM output text.
+
+    Handles:
+    - Fenced ` ```json ... ``` ` blocks
+    - Raw JSON embedded in prose
+    Returns None if no valid JSON object can be found.
+    """
+    if not text:
+        return None
+
+    # 1. Try fenced block: ```json ... ```
+    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if fenced:
+        candidate = fenced.group(1)
+        try:
+            obj = json.loads(candidate)
+            if isinstance(obj, dict):
+                return obj
+        except json.JSONDecodeError:
+            pass
+
+    # 2. Try to find first balanced { ... } in the full text
+    start = text.find("{")
+    if start == -1:
+        return None
+
+    depth = 0
+    for i, ch in enumerate(text[start:], start=start):
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                candidate = text[start : i + 1]
+                try:
+                    obj = json.loads(candidate)
+                    if isinstance(obj, dict):
+                        return obj
+                except json.JSONDecodeError:
+                    return None
+
+    return None
+
+
+def generate_proposal_payload(
+    prompt: str,
+    model: str,
+    temperature: float,
+    url: str,
+    allow_remote: bool = False,
+    timeout_sec: float = 30.0,
+    max_retries: int = 3,
+) -> dict[str, Any]:
+    """Call Ollama and return raw response text + parsed proposal dict.
+
+    Returns
+    -------
+    dict with keys:
+      - "response": raw text from LLM
+      - "proposal_dict": parsed dict | None (None when JSON extraction failed)
+
+    Mirrors ``generate_candidate_payload()`` from ``llm_ollama.py``:
+    retries on transient errors, raises on 4xx (except 429).
+    """
+    safe_url, headers = validate_ollama_url(url, allow_remote=allow_remote)
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "stream": False,
+        "options": {"temperature": temperature},
+    }
+    last_exc: requests.exceptions.RequestException | None = None
+    attempts = max(1, max_retries)
+
+    for attempt in range(attempts):
+        try:
+            response = requests.post(
+                safe_url,
+                json=payload,
+                headers=headers,
+                timeout=timeout_sec,
+                allow_redirects=False,
+            )
+            response.raise_for_status()
+            body = response.json()
+            text = str(body.get("response", "")).strip()
+            proposal_dict = _extract_proposal_dict(text)
+            return {"response": text, "proposal_dict": proposal_dict}
+        except requests.exceptions.RequestException as exc:
+            last_exc = exc
+            if isinstance(exc, requests.exceptions.HTTPError):
+                status_code = exc.response.status_code if exc.response is not None else 0
+                if 400 <= status_code < 500 and status_code != 429:
+                    raise exc
+            if attempt < attempts - 1:
+                time.sleep(1.0)
+                continue
+
+    if last_exc:
+        raise last_exc
+    raise RuntimeError("Max retries exceeded with no exception captured")

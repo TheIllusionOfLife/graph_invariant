@@ -169,6 +169,30 @@ class TestSerializeDeserialize:
         assert archive.num_bins == 4
         assert len(archive.cells) == 0
 
+    def test_deserialize_out_of_bounds_cell_is_skipped(self):
+        """Cells whose row/col exceed num_bins must be silently skipped."""
+        archive = HarmonyMapElites(num_bins=3)
+        p = _make_proposal("p1")
+        try_insert(archive, p, fitness_signal=0.5, descriptor=(0.5, 0.5))
+        data = serialize_archive(archive)
+        # Inject a cell at (9,9) which is out of range for num_bins=3
+        data["cells"]["9,9"] = data["cells"][list(data["cells"].keys())[0]]
+        restored = deserialize_archive(data)
+        # The injected out-of-bounds cell should be dropped
+        for row, col in restored.cells:
+            assert 0 <= row < restored.num_bins
+            assert 0 <= col < restored.num_bins
+
+
+class TestNumBinsValidation:
+    def test_zero_num_bins_raises(self):
+        with pytest.raises(ValueError, match="num_bins"):
+            HarmonyMapElites(num_bins=0)
+
+    def test_negative_num_bins_raises(self):
+        with pytest.raises(ValueError, match="num_bins"):
+            HarmonyMapElites(num_bins=-1)
+
     def test_round_trip_preserves_all_proposal_fields(self):
         archive = HarmonyMapElites(num_bins=5)
         p = Proposal(

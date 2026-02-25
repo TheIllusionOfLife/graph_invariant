@@ -35,6 +35,10 @@ class HarmonyMapElites:
     archive_id: str = "primary"
     cells: dict[tuple[int, int], ArchiveCell] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        if self.num_bins <= 0:
+            raise ValueError(f"num_bins must be > 0, got {self.num_bins}")
+
 
 def _bin_index(value: float, num_bins: int) -> int:
     """Map a [0,1] value to a bin index in [0, num_bins-1]."""
@@ -130,6 +134,8 @@ def deserialize_archive(data: dict[str, Any]) -> HarmonyMapElites:
         try:
             row_str, col_str = key.split(",")
             row, col = int(row_str), int(col_str)
+            if not (0 <= row < num_bins and 0 <= col < num_bins):
+                raise ValueError(f"Cell ({row}, {col}) out of bounds for num_bins={num_bins}")
             proposal = Proposal.from_dict(cell_data["proposal"])
             cells[(row, col)] = ArchiveCell(
                 proposal=proposal,

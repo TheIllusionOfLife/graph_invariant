@@ -182,10 +182,10 @@ def test_kg_dataset_is_deterministic(small_kg):
 def test_kg_dataset_different_seeds_give_different_splits(small_kg):
     d1 = KGDataset.from_kg(small_kg, seed=1)
     d2 = KGDataset.from_kg(small_kg, seed=2)
-    sources_1 = [e.source for e in d1.hidden_edges]
-    sources_2 = [e.source for e in d2.hidden_edges]
+    keys_1 = [(e.source, e.target, e.edge_type) for e in d1.hidden_edges]
+    keys_2 = [(e.source, e.target, e.edge_type) for e in d2.hidden_edges]
     # Different seeds should produce different hidden sets (very likely with > 5 edges)
-    assert sources_1 != sources_2
+    assert keys_1 != keys_2
 
 
 def test_kg_dataset_hidden_edges_are_valid_kg_edges(small_kg):

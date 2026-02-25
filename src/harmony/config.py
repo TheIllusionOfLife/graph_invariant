@@ -11,6 +11,13 @@ from typing import Any
 
 @dataclass(slots=True)
 class HarmonyConfig:
+    """Configuration for Harmony framework experiments.
+
+    Intentionally standalone from ``Phase1Config``: the two configs serve
+    different subsystems (KG theory discovery vs graph-formula discovery) and
+    share only a small set of LLM/infra defaults by convention, not inheritance.
+    """
+
     seed: int = 42
     domain: str = "linear_algebra"
     max_generations: int = 20

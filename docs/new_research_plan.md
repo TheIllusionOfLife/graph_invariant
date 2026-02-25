@@ -49,7 +49,7 @@ We start with a small set of edge types that are widely applicable:
 4. **maps_to** (f: A → B)
 5. **explains** (A explains phenomenon P)
 6. **contradicts** (A conflicts with B)
-7. **generalizes / specializes**
+7. **generalizes** (inverse direction encodes specialization)
 
 > **Design principle**: Prefer *morphism-first* edges (maps_to, derives) over static “is-a” taxonomies.
 

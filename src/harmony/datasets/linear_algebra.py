@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from ..types import EdgeType, Entity, KnowledgeGraph, TypedEdge
 
-_CONCEPTS = [
+_CONCEPTS: list[tuple[str, str, dict]] = [
     # Core algebraic structures
     ("vector_space", "concept", {"description": "Set with vector addition and scalar mult."}),
     ("field", "concept", {"description": "Algebraic structure with + and × operations"}),
@@ -55,7 +55,7 @@ _CONCEPTS = [
     ("quotient_space", "concept", {"description": "V modulo a subspace W"}),
 ]
 
-_THEOREMS = [
+_THEOREMS: list[tuple[str, str, dict]] = [
     ("rank_nullity_theorem", "theorem", {"statement": "dim(nullspace) + dim(image) = dim(domain)"}),
     ("spectral_theorem", "theorem", {"statement": "Symmetric matrix is orthogonally diag."}),
     ("cayley_hamilton_theorem", "theorem", {"statement": "Matrix satisfies its char. polynomial"}),
@@ -124,14 +124,14 @@ _EDGES: list[tuple[str, str, EdgeType]] = [
     ("norm", "inner_product", EdgeType.DERIVES),
     ("orthogonality", "inner_product", EdgeType.DEPENDS_ON),
     ("orthonormal_basis", "orthogonality", EdgeType.DEPENDS_ON),
-    ("orthonormal_basis", "basis", EdgeType.GENERALIZES),
+    ("basis", "orthonormal_basis", EdgeType.GENERALIZES),
     ("projection", "orthonormal_basis", EdgeType.DEPENDS_ON),
     ("cauchy_schwarz_inequality", "inner_product", EdgeType.DEPENDS_ON),
     ("cauchy_schwarz_inequality", "norm", EdgeType.DERIVES),
     # --- Dual space ---
     ("dual_space", "vector_space", EdgeType.DEPENDS_ON),
     ("linear_functional", "dual_space", EdgeType.DEPENDS_ON),
-    ("linear_functional", "linear_map", EdgeType.GENERALIZES),
+    ("linear_map", "linear_functional", EdgeType.GENERALIZES),
     # --- Structural ---
     ("direct_sum", "vector_space", EdgeType.DEPENDS_ON),
     ("isomorphism", "linear_map", EdgeType.DEPENDS_ON),

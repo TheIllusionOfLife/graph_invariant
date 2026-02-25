@@ -71,7 +71,7 @@ _EDGES: list[tuple[str, str, EdgeType]] = [
     ("disk_migration", "hot_jupiter", EdgeType.EXPLAINS),
     ("photoevaporation", "radius_gap", EdgeType.EXPLAINS),
     ("giant_impacts", "earth_analog", EdgeType.EXPLAINS),
-    # pebble_accretion generalises core_accretion (it's a faster variant of the same paradigm)
+    # core_accretion generalizes pebble_accretion (pebble accretion is a faster specialized variant)
     ("core_accretion", "pebble_accretion", EdgeType.GENERALIZES),
     # Stellar evolution
     ("subgiant", "giant_star", EdgeType.DERIVES),

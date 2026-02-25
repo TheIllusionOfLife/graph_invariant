@@ -120,7 +120,7 @@ _EDGES: list[tuple[str, str, EdgeType]] = [
     ("silicon", "band_gap", EdgeType.DEPENDS_ON),
     ("germanium", "band_gap", EdgeType.DEPENDS_ON),
     ("gallium_arsenide", "band_gap", EdgeType.DEPENDS_ON),
-    ("iron", "curie_temperature", EdgeType.MAPS_TO),
+    ("iron", "curie_temperature", EdgeType.DEPENDS_ON),
     # Applications
     ("transformer_core", "ferromagnetic_phase", EdgeType.DEPENDS_ON),
     ("structural_component", "yield_strength", EdgeType.DEPENDS_ON),
@@ -128,8 +128,6 @@ _EDGES: list[tuple[str, str, EdgeType]] = [
     ("semiconductor_device", "semiconducting_phase", EdgeType.DEPENDS_ON),
     ("capacitor_device", "ferroelectric_phase", EdgeType.DEPENDS_ON),
     ("superconducting_magnet", "superconducting_phase", EdgeType.DEPENDS_ON),
-    # Generalisation
-    ("ferromagnetic_phase", "antiferromagnetic_phase", EdgeType.GENERALIZES),
 ]
 
 

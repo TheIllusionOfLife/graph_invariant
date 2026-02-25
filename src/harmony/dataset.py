@@ -51,7 +51,7 @@ class KGDataset:
         # Of remaining edges: 80% train, 10% val, 10% test
         n_val = max(0, round(n_remaining * 0.1))
         n_test = max(0, round(n_remaining * 0.1))
-        n_train = n_remaining - n_val - n_test
+        n_train = max(0, n_remaining - n_val - n_test)
 
         hidden = edges[:n_hidden]
         remaining = edges[n_hidden:]
@@ -69,29 +69,29 @@ class KGDataset:
         )
 
     def train_kg(self) -> KnowledgeGraph:
-        """Return a KG containing all entities but only train edges (no hidden/val/test)."""
+        """Return a KG containing all entities but only train edges (no hidden/val/test).
+
+        Iterates self.train_edges directly to avoid mis-excluding parallel edges that
+        share the same (source, target, edge_type) triple but differ in properties.
+        """
         masked = KnowledgeGraph(domain=self.kg.domain)
         for entity in self.kg.entities.values():
-            masked.entities[entity.id] = Entity(
-                id=entity.id,
-                entity_type=entity.entity_type,
-                properties=dict(entity.properties),
-            )
-        hidden_set = {(e.source, e.target, e.edge_type) for e in self.hidden_edges}
-        val_set = {(e.source, e.target, e.edge_type) for e in self.val_edges}
-        test_set = {(e.source, e.target, e.edge_type) for e in self.test_edges}
-        excluded = hidden_set | val_set | test_set
-        for edge in self.kg.edges:
-            key = (edge.source, edge.target, edge.edge_type)
-            if key not in excluded:
-                masked.edges.append(
-                    TypedEdge(
-                        source=edge.source,
-                        target=edge.target,
-                        edge_type=edge.edge_type,
-                        properties=dict(edge.properties),
-                    )
+            masked.add_entity(
+                Entity(
+                    id=entity.id,
+                    entity_type=entity.entity_type,
+                    properties=dict(entity.properties),
                 )
+            )
+        for edge in self.train_edges:
+            masked.add_edge(
+                TypedEdge(
+                    source=edge.source,
+                    target=edge.target,
+                    edge_type=edge.edge_type,
+                    properties=dict(edge.properties),
+                )
+            )
         return masked
 
     def to_dict(self) -> dict[str, Any]:
@@ -108,13 +108,12 @@ class KGDataset:
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> KGDataset:
-        from .types import TypedEdge as _TE
-
+        """Deserialise from a dict produced by ``to_dict``."""
         kg = KnowledgeGraph.from_dict(d["kg"])
         return cls(
             kg=kg,
-            train_edges=[_TE.from_dict(e) for e in d["train_edges"]],
-            val_edges=[_TE.from_dict(e) for e in d["val_edges"]],
-            test_edges=[_TE.from_dict(e) for e in d["test_edges"]],
-            hidden_edges=[_TE.from_dict(e) for e in d["hidden_edges"]],
+            train_edges=[TypedEdge.from_dict(e) for e in d["train_edges"]],
+            val_edges=[TypedEdge.from_dict(e) for e in d["val_edges"]],
+            test_edges=[TypedEdge.from_dict(e) for e in d["test_edges"]],
+            hidden_edges=[TypedEdge.from_dict(e) for e in d["hidden_edges"]],
         )

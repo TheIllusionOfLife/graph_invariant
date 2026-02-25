@@ -42,6 +42,8 @@ def _entity_type_distributions(kg: KnowledgeGraph) -> dict[str, np.ndarray]:
     """
     counts: dict[str, Counter[EdgeType]] = defaultdict(Counter)
     for edge in kg.edges:
+        # kg.entities[edge.source] is guaranteed to exist: KnowledgeGraph.add_edge
+        # enforces referential integrity before appending to kg.edges.
         source_entity_type = kg.entities[edge.source].entity_type
         counts[source_entity_type][edge.edge_type] += 1
 

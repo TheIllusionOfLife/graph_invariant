@@ -236,7 +236,8 @@ def test_generativity_returns_float_in_unit_interval():
 
 def test_generativity_is_deterministic_with_same_seed():
     kg = build_linear_algebra_kg()
-    assert generativity(kg, seed=0) == generativity(kg, seed=0)
+    # pytest.approx used per project convention; identical RNG seed → identical floats
+    assert generativity(kg, seed=0) == pytest.approx(generativity(kg, seed=0))
 
 
 def test_generativity_all_seeds_produce_valid_scores():
@@ -278,7 +279,7 @@ def test_harmony_score_returns_float_in_unit_interval():
 
 def test_harmony_score_is_deterministic():
     kg = build_linear_algebra_kg()
-    assert harmony_score(kg, seed=7) == harmony_score(kg, seed=7)
+    assert harmony_score(kg, seed=7) == pytest.approx(harmony_score(kg, seed=7))
 
 
 def test_distortion_is_one_minus_harmony():
@@ -312,18 +313,20 @@ def test_harmony_delta_one_equals_generativity():
     assert h == pytest.approx(g)
 
 
-def test_value_of_positive_when_proposal_adds_coherent_edge():
-    """Adding a well-typed edge to a small KG should improve harmony (value_of > 0)."""
-    kg_before = _make_tiny_kg()  # a→b→c
-    # Build KG after adding A→C with DEPENDS_ON (closes the triangle coherently)
-    kg_after = KnowledgeGraph(domain="tiny")
-    for eid in ("a", "b", "c"):
-        kg_after.add_entity(Entity(id=eid, entity_type="concept"))
-    kg_after.add_edge(TypedEdge(source="a", target="b", edge_type=EdgeType.DEPENDS_ON))
-    kg_after.add_edge(TypedEdge(source="b", target="c", edge_type=EdgeType.DEPENDS_ON))
-    kg_after.add_edge(TypedEdge(source="a", target="c", edge_type=EdgeType.DEPENDS_ON))
+def test_value_of_positive_when_replacing_contradicts_with_harmonious():
+    """Replacing a contradicts-heavy KG with a coherent one yields value_of > 0.
 
-    # With no generativity (too few edges for DistMult), use alpha+beta+gamma only
+    kg_before: 4 CONTRADICTS edges → coherence ≈ 0.5
+    kg_after:  same size, all DEPENDS_ON edges → coherence = 1.0
+
+    With α=β=γ=1/3 and δ=0 (KGs too small for DistMult), the analytic gain is:
+      harmony_before ≈ (0.875 + 0.5 + 1.0) / 3 ≈ 0.792
+      harmony_after  ≈ (0.875 + 1.0 + 1.0) / 3 ≈ 0.958
+      value_of       ≈ +0.167 > 0
+    """
+    kg_before = _make_contradicts_kg()  # all CONTRADICTS edges → low coherence
+    kg_after = _make_single_edge_type_kg()  # all DEPENDS_ON + triangle → high coherence
+
     val = value_of(
         kg_before,
         kg_after,
@@ -335,8 +338,7 @@ def test_value_of_positive_when_proposal_adds_coherent_edge():
         cost=0.0,
         seed=42,
     )
-    # Adding a coherent edge should not decrease harmony
-    assert isinstance(val, float)
+    assert val > 0.0, f"Expected positive improvement, got {val}"
 
 
 def test_value_of_zero_cost_equals_distortion_reduction():
@@ -415,3 +417,70 @@ def test_generativity_k_1_stricter_than_k_10():
     hits1 = generativity(kg, seed=0, k=1)
     hits10 = generativity(kg, seed=0, k=10)
     assert hits1 <= hits10, f"Hits@1 ({hits1}) should be ≤ Hits@10 ({hits10})"
+
+
+# ── value_of input guards ─────────────────────────────────────────────
+
+
+def test_value_of_rejects_negative_lambda_cost():
+    kg = build_linear_algebra_kg()
+    with pytest.raises(ValueError, match="lambda_cost"):
+        value_of(kg, kg, lambda_cost=-0.1)
+
+
+def test_value_of_rejects_negative_cost():
+    kg = build_linear_algebra_kg()
+    with pytest.raises(ValueError, match="cost"):
+        value_of(kg, kg, cost=-1.0)
+
+
+# ── generativity input validation ────────────────────────────────────
+
+
+def test_generativity_rejects_invalid_mask_ratio():
+    kg = build_linear_algebra_kg()
+    with pytest.raises(ValueError, match="mask_ratio"):
+        generativity(kg, mask_ratio=0.0)
+    with pytest.raises(ValueError, match="mask_ratio"):
+        generativity(kg, mask_ratio=1.0)
+    with pytest.raises(ValueError, match="mask_ratio"):
+        generativity(kg, mask_ratio=-0.1)
+
+
+def test_generativity_rejects_invalid_k():
+    kg = build_linear_algebra_kg()
+    with pytest.raises(ValueError, match="k must"):
+        generativity(kg, k=0)
+
+
+def test_generativity_rejects_invalid_dim():
+    kg = build_linear_algebra_kg()
+    with pytest.raises(ValueError, match="dim must"):
+        generativity(kg, dim=0)
+
+
+def test_generativity_rejects_negative_n_epochs():
+    kg = build_linear_algebra_kg()
+    with pytest.raises(ValueError, match="n_epochs"):
+        generativity(kg, n_epochs=-1)
+
+
+# ── Coherence M2: lenient multi-edge triangle policy ──────────────────
+
+
+def test_coherence_lenient_triangle_with_parallel_edges():
+    """Triangle (a→b, b→c, a→c) with a closing edge type matching one hop is coherent.
+
+    a→b: DEPENDS_ON, b→c: DERIVES, a→c: DERIVES
+    t_ac=DERIVES ∈ {DEPENDS_ON, DERIVES} → coherent (lenient policy).
+    """
+    kg = KnowledgeGraph(domain="lenient_test")
+    for eid in ("a", "b", "c"):
+        kg.add_entity(Entity(id=eid, entity_type="concept"))
+    kg.add_edge(TypedEdge(source="a", target="b", edge_type=EdgeType.DEPENDS_ON))
+    kg.add_edge(TypedEdge(source="b", target="c", edge_type=EdgeType.DERIVES))
+    kg.add_edge(TypedEdge(source="a", target="c", edge_type=EdgeType.DERIVES))
+
+    score = coherence(kg)
+    # Triangle is coherent (closing type matches one hop) → coherence = 1.0
+    assert score == pytest.approx(1.0)

@@ -41,6 +41,14 @@ class _DistMult:
     """
 
     def __init__(self, entity_ids: list[str], dim: int = 50, seed: int = 42) -> None:
+        """Initialise embeddings with small Gaussian noise.
+
+        Parameters
+        ----------
+        entity_ids: ordered list of all entity IDs in the KG.
+        dim: embedding dimension.
+        seed: RNG seed for reproducibility.
+        """
         self.entity_to_idx: dict[str, int] = {eid: i for i, eid in enumerate(entity_ids)}
         self.n_entities = len(entity_ids)
         self.n_relations = len(EdgeType)
@@ -51,6 +59,7 @@ class _DistMult:
         self.R: np.ndarray = rng.normal(0.0, 0.1, (self.n_relations, dim))
 
     def _score(self, s: int, r: int, t: int) -> float:
+        """Element-wise product of head/relation then dot-product with tail."""
         return float(np.dot(self.E[s] * self.R[r], self.E[t]))
 
     def score_all_targets(self, s: int, r: int) -> np.ndarray:
@@ -82,7 +91,7 @@ class _DistMult:
         triples_arr = list(triples)
 
         for _ in range(n_epochs):
-            rng.shuffle(triples_arr)  # type: ignore[arg-type]
+            rng.shuffle(triples_arr)  # type: ignore[arg-type]  # numpy stubs require ndarray; list is valid at runtime
             for s, r, t in triples_arr:
                 pos_score = self._score(s, r, t)
                 h_sr = self.E[s] * self.R[r]  # head vector (pre-update snapshot)
@@ -145,7 +154,25 @@ def generativity(
 
     Returns 0.0 when the KG has too few edges to train meaningfully
     (< _MIN_TRAIN_EDGES training edges or < 1 masked edge).
+
+    Parameters
+    ----------
+    kg: knowledge graph to evaluate.
+    seed: RNG seed for edge masking and model initialisation.
+    mask_ratio: fraction of edges to mask for link prediction; must be in (0, 1).
+    k: Hits@K cutoff; clamped to min(k, n_entities − 1) to avoid trivial scores.
+    dim: DistMult embedding dimension; must be > 0.
+    n_epochs: training epochs; must be ≥ 0.
     """
+    if not (0.0 < mask_ratio < 1.0):
+        raise ValueError(f"mask_ratio must be in (0, 1), got {mask_ratio}")
+    if k <= 0:
+        raise ValueError(f"k must be > 0, got {k}")
+    if dim <= 0:
+        raise ValueError(f"dim must be > 0, got {dim}")
+    if n_epochs < 0:
+        raise ValueError(f"n_epochs must be >= 0, got {n_epochs}")
+
     if kg.num_edges == 0 or kg.num_entities == 0:
         return 0.0
 
@@ -198,7 +225,9 @@ def generativity(
             continue
         r = _ET_TO_IDX[test_edge.edge_type]
         scores = model.score_all_targets(s, r)
-        top_k_indices = np.argpartition(-scores, effective_k)[:effective_k]
+        # np.argsort is O(n log n) but correct for all array sizes;
+        # argpartition can yield wrong results when n_entities ≤ effective_k.
+        top_k_indices = np.argsort(-scores)[:effective_k]
         if t in top_k_indices:
             hits += 1
 

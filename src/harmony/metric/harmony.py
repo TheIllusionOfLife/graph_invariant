@@ -48,7 +48,9 @@ def harmony_score(
         The knowledge graph to score.
     alpha, beta, gamma, delta:
         Non-negative weights for compressibility, coherence, symmetry,
-        and generativity.  Normalised internally if they don't sum to 1.
+        and generativity.  Raw (unnormalized) values are accepted and
+        divided by their sum internally — callers do NOT need to pre-
+        normalise.  All weights must be >= 0 and at least one must be > 0.
     seed:
         Random seed forwarded to the generativity component.
     mask_ratio:
@@ -126,11 +128,16 @@ def value_of(
     kg_after:
         Knowledge graph after applying the proposal (D ⊕ Δ).
     lambda_cost:
-        Cost penalty weight.
+        Cost penalty weight; must be >= 0.  A negative value would turn
+        the penalty into a bonus, inverting the function's semantics.
     cost:
         Normalised complexity cost of the proposal (e.g. number of new
-        edges added, divided by |E|).
+        edges added, divided by |E|); must be >= 0.
     """
+    if lambda_cost < 0.0:
+        raise ValueError(f"lambda_cost must be >= 0.0, got {lambda_cost}")
+    if cost < 0.0:
+        raise ValueError(f"cost must be >= 0.0, got {cost}")
     h_after = harmony_score(
         kg_after,
         alpha=alpha,

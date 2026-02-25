@@ -56,7 +56,7 @@ def _triangle_coherence(kg: KnowledgeGraph) -> float:
                 # avoids penalising KGs that carry multiple edge-type
                 # interpretations between the same pair.
                 n_triangles += 1
-                if types_ac & (types_ab | types_bc):
+                if not types_ac.isdisjoint(types_ab | types_bc):
                     n_coherent += 1
 
     return n_coherent / n_triangles if n_triangles > 0 else 1.0

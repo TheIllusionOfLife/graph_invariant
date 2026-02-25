@@ -239,13 +239,12 @@ def test_generativity_is_deterministic_with_same_seed():
     assert generativity(kg, seed=0) == generativity(kg, seed=0)
 
 
-def test_generativity_different_seeds_may_differ():
-    """Different seeds produce potentially different masked edge sets."""
+def test_generativity_all_seeds_produce_valid_scores():
+    """Every seed must produce a score in [0, 1] — not just the default."""
     kg = build_linear_algebra_kg()
-    # Not guaranteed to differ, but on a real KG they usually do
-    scores = {generativity(kg, seed=s) for s in range(5)}
-    # Expect at least 2 distinct values across 5 seeds
-    assert len(scores) >= 1  # always passes — ensures no crash
+    for s in range(5):
+        score = generativity(kg, seed=s)
+        assert 0.0 <= score <= 1.0, f"seed={s} produced out-of-bounds score {score}"
 
 
 def test_generativity_insufficient_edges_returns_zero():
@@ -355,3 +354,64 @@ def test_harmony_periodic_table_in_bounds():
     kg = build_periodic_table_kg()
     score = harmony_score(kg)
     assert 0.0 <= score <= 1.0
+
+
+# ── L2: negative weight rejection ────────────────────────────────────
+
+
+def test_harmony_rejects_negative_weights():
+    """Negative weights can push the composite score outside [0,1] — must raise."""
+    kg = build_linear_algebra_kg()
+    with pytest.raises(ValueError, match=">="):
+        harmony_score(kg, alpha=-1.0, beta=2.0, gamma=0.0, delta=0.0)
+
+
+def test_distortion_rejects_negative_weights():
+    kg = build_linear_algebra_kg()
+    with pytest.raises(ValueError, match=">="):
+        distortion(kg, alpha=0.0, beta=-0.1, gamma=0.5, delta=0.6)
+
+
+# ── L3: compressibility order-invariance ─────────────────────────────
+
+
+def test_compressibility_order_invariant():
+    """Swapping entity insertion order must not change the compressibility score."""
+    # Build KG with forward-order insertion
+    kg_fwd = KnowledgeGraph(domain="order_test")
+    for eid in ("a", "b", "c", "d"):
+        kg_fwd.add_entity(Entity(id=eid, entity_type="concept"))
+    kg_fwd.add_edge(TypedEdge(source="a", target="b", edge_type=EdgeType.DEPENDS_ON))
+    kg_fwd.add_edge(TypedEdge(source="b", target="c", edge_type=EdgeType.DEPENDS_ON))
+    kg_fwd.add_edge(TypedEdge(source="c", target="d", edge_type=EdgeType.DEPENDS_ON))
+
+    # Build same KG with reversed entity insertion order
+    kg_rev = KnowledgeGraph(domain="order_test")
+    for eid in ("d", "c", "b", "a"):
+        kg_rev.add_entity(Entity(id=eid, entity_type="concept"))
+    kg_rev.add_edge(TypedEdge(source="a", target="b", edge_type=EdgeType.DEPENDS_ON))
+    kg_rev.add_edge(TypedEdge(source="b", target="c", edge_type=EdgeType.DEPENDS_ON))
+    kg_rev.add_edge(TypedEdge(source="c", target="d", edge_type=EdgeType.DEPENDS_ON))
+
+    assert compressibility(kg_fwd) == pytest.approx(compressibility(kg_rev)), (
+        "compressibility must be invariant to entity insertion order"
+    )
+
+
+# ── L4: generativity with k >= n_entities ────────────────────────────
+
+
+def test_generativity_k_larger_than_entities_stays_bounded():
+    """k=1000 on a small KG must not trivially return 1.0 (effective_k clamp)."""
+    kg = build_linear_algebra_kg()
+    score = generativity(kg, k=1000)
+    # Clamped to n_entities − 1, so score is a meaningful [0,1] value
+    assert 0.0 <= score <= 1.0
+
+
+def test_generativity_k_1_stricter_than_k_10():
+    """Hits@1 ≤ Hits@10 on the same KG and seed."""
+    kg = build_linear_algebra_kg()
+    hits1 = generativity(kg, seed=0, k=1)
+    hits10 = generativity(kg, seed=0, k=10)
+    assert hits1 <= hits10, f"Hits@1 ({hits1}) should be ≤ Hits@10 ({hits10})"

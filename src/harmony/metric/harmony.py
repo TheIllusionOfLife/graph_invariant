@@ -56,6 +56,8 @@ def harmony_score(
     k:
         Hits@K cutoff for the generativity component.
     """
+    if any(w < 0.0 for w in (alpha, beta, gamma, delta)):
+        raise ValueError("All weights must be >= 0.0")
     total_w = alpha + beta + gamma + delta
     if total_w <= 0.0:
         raise ValueError("At least one weight must be > 0")

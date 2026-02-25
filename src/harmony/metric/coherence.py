@@ -50,9 +50,12 @@ def _triangle_coherence(kg: KnowledgeGraph) -> float:
                 types_ac = adj[a].get(c)
                 if types_ac is None:
                     continue
-                # One triangle per (a, b, c) triple: use the dominant types
+                # One triangle counted per (a, b, c) triple.
+                # Lenient multi-edge policy: if *any* closing edge type
+                # matches either hop type, the triangle is coherent.  This
+                # avoids penalising KGs that carry multiple edge-type
+                # interpretations between the same pair.
                 n_triangles += 1
-                # Coherent if any closing type matches either hop type
                 if types_ac & (types_ab | types_bc):
                     n_coherent += 1
 

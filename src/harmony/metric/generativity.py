@@ -67,7 +67,14 @@ class _DistMult:
         n_neg: int = 5,
         seed: int = 42,
     ) -> None:
-        """Train with max-margin loss and random target corruption."""
+        """Train with max-margin loss and random target corruption.
+
+        Gradients for all parameters are accumulated using the *current*
+        (pre-update) embeddings, then applied together.  This avoids the
+        stale-gradient bug where updating E[neg_t] in-place before
+        computing ∂loss/∂E[s] causes the accumulator to use post-update
+        values.
+        """
         if not triples:
             return
 
@@ -78,34 +85,48 @@ class _DistMult:
             rng.shuffle(triples_arr)  # type: ignore[arg-type]
             for s, r, t in triples_arr:
                 pos_score = self._score(s, r, t)
-                h = self.E[s] * self.R[r]  # shared head vector
+                h_sr = self.E[s] * self.R[r]  # head vector (pre-update snapshot)
 
-                # Gradient accumulator for E[s] and R[r]
-                grad_s = np.zeros(self.dim)
-                grad_r = np.zeros(self.dim)
+                # --- Collect violating negatives using current embeddings ---
+                neg_candidates = [
+                    int(x) for x in rng.integers(0, self.n_entities, n_neg) if int(x) != t
+                ]
+                violating: list[int] = []
+                for neg_t in neg_candidates:
+                    neg_score = float(np.dot(h_sr, self.E[neg_t]))
+                    if margin - pos_score + neg_score > 0:
+                        violating.append(neg_t)
 
-                # Positive gradient
-                loss_pos_margin = 0.0
+                if not violating:
+                    continue
 
-                neg_targets = rng.integers(0, self.n_entities, n_neg)
-                for neg_t in neg_targets:
-                    if int(neg_t) == t:
-                        continue
-                    neg_score = self._score(s, r, int(neg_t))
-                    loss = margin - pos_score + neg_score
-                    if loss > 0:
-                        loss_pos_margin = 1.0  # flag: positive gradient needed
-                        # ∂loss/∂E[neg_t] = +h
-                        self.E[int(neg_t)] -= lr * h
-                        # ∂loss/∂E[s] accumulates: −E[t]⊙R[r] + E[neg_t]⊙R[r]
-                        grad_s += -self.E[t] * self.R[r] + self.E[int(neg_t)] * self.R[r]
-                        grad_r += -self.E[t] * self.E[s] + self.E[int(neg_t)] * self.E[s]
+                n_v = len(violating)
 
-                if loss_pos_margin > 0:
-                    # ∂loss/∂E[t] = −h (from positive pair)
-                    self.E[t] += lr * h
-                    self.E[s] -= lr * grad_s
-                    self.R[r] -= lr * grad_r
+                # --- Accumulate all gradients before touching any embedding ---
+                # ∂loss/∂E[t] = −n_v · h_sr  (push positive target up)
+                grad_Et = n_v * h_sr
+
+                # ∂loss/∂E[s] and ∂loss/∂R[r] from positive + each negative
+                grad_Es = np.zeros(self.dim)
+                grad_Er = np.zeros(self.dim)
+                # Accumulate per-negative gradients (keyed to avoid duplicate index)
+                grad_neg: dict[int, np.ndarray] = {}
+                for neg_t in violating:
+                    # ∂loss/∂E[neg_t] = +h_sr  (push negative target down)
+                    if neg_t not in grad_neg:
+                        grad_neg[neg_t] = np.zeros(self.dim)
+                    grad_neg[neg_t] += h_sr
+                    # ∂loss/∂E[s]: (E[neg_t] − E[t]) ⊙ R[r]
+                    grad_Es += (self.E[neg_t] - self.E[t]) * self.R[r]
+                    # ∂loss/∂R[r]: (E[neg_t] − E[t]) ⊙ E[s]
+                    grad_Er += (self.E[neg_t] - self.E[t]) * self.E[s]
+
+                # --- Apply all updates atomically ---
+                self.E[t] += lr * grad_Et
+                self.E[s] -= lr * grad_Es
+                self.R[r] -= lr * grad_Er
+                for neg_t, grad in grad_neg.items():
+                    self.E[neg_t] -= lr * grad
 
             # L2 normalise entity embeddings after each epoch to prevent collapse
             norms = np.linalg.norm(self.E, axis=1, keepdims=True)
@@ -162,6 +183,12 @@ def generativity(
 
     model.train(triples, n_epochs=n_epochs, seed=seed)
 
+    # Clamp k so that k < n_entities; otherwise every entity is in the top-k
+    # and the score is trivially 1.0 regardless of model quality.
+    effective_k = min(k, model.n_entities - 1)
+    if effective_k <= 0:
+        return 0.0
+
     # Evaluate Hits@K on masked edges
     hits = 0
     for test_edge in test_edges:
@@ -171,7 +198,7 @@ def generativity(
             continue
         r = _ET_TO_IDX[test_edge.edge_type]
         scores = model.score_all_targets(s, r)
-        top_k_indices = np.argpartition(-scores, min(k, len(scores) - 1))[:k]
+        top_k_indices = np.argpartition(-scores, effective_k)[:effective_k]
         if t in top_k_indices:
             hits += 1
 

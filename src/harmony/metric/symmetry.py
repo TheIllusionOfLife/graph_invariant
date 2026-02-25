@@ -8,12 +8,12 @@ Approach — Jensen-Shannon divergence on typed-neighbor distributions:
   based on outgoing edges from entities of that type.  Then compute the
   average pairwise JS divergence between entity-type distributions.
 
-  scipy.spatial.distance.jensenshannon(p, q, base=2) returns √(JS),
-  which lies in [0, 1] when the distributions are normalised.  A value of
-  0 means identical distributions (maximally symmetric); 1 means entirely
-  disjoint.
+  scipy.spatial.distance.jensenshannon(p, q, base=2) returns the JS
+  *distance* = √(JS divergence), which lies in [0, 1] for normalised
+  distributions with base=2.  A value of 0 means identical distributions
+  (maximally symmetric); 1 means entirely disjoint.
 
-  symmetry = 1 − mean_pairwise_jsd  ∈ [0,1]
+  symmetry = 1 − mean_pairwise_JS_distance  ∈ [0,1]
 
 Special cases:
   - Empty graph or no edges → 1.0  (vacuously symmetric)

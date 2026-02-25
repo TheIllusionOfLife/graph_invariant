@@ -38,14 +38,20 @@ def _bfs_spanning_fraction(kg: KnowledgeGraph) -> float:
     Runs BFS from each unvisited entity (handles disconnected graphs).
     Every edge that first discovers a new node is a spanning edge.
     For a tree this equals 1.0; adding cross-edges lowers it.
+
+    Uses an *undirected* adjacency view so that the score is invariant to
+    entity insertion order and edge direction.  A purely directed chain
+    a→b→c (where b is inserted first) would otherwise yield 0 spanning
+    edges from root b.
     """
     if kg.num_edges == 0 or kg.num_entities == 0:
         return 1.0
 
-    # Build directed adjacency list (ignoring edge type for BFS)
+    # Build undirected adjacency (both directions) to ensure order-invariance
     adj: dict[str, list[str]] = {eid: [] for eid in kg.entities}
     for e in kg.edges:
         adj[e.source].append(e.target)
+        adj[e.target].append(e.source)
 
     visited: set[str] = set()
     spanning_edges = 0

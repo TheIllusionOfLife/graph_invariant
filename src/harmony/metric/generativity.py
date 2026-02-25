@@ -30,6 +30,27 @@ if TYPE_CHECKING:
 
 _MIN_TRAIN_EDGES = 10
 _ALL_EDGE_TYPES: list[EdgeType] = list(EdgeType)
+
+
+def _split_edges(
+    edges: list[TypedEdge],
+    mask_ratio: float,
+    seed: int,
+) -> tuple[list[TypedEdge], list[TypedEdge]]:
+    """Return (train_edges, test_edges) by masking mask_ratio of edges at random.
+
+    Uses np.random.default_rng(seed).permutation for reproducibility.
+    Shared by generativity() and baselines to guarantee identical splits.
+    """
+    n_mask = max(1, int(len(edges) * mask_ratio))
+    rng = np.random.default_rng(seed)
+    perm = rng.permutation(len(edges))
+    mask_idx: set[int] = set(int(i) for i in perm[:n_mask])
+    train = [e for i, e in enumerate(edges) if i not in mask_idx]
+    test = [e for i, e in enumerate(edges) if i in mask_idx]
+    return train, test
+
+
 _ET_TO_IDX: dict[EdgeType, int] = {et: i for i, et in enumerate(_ALL_EDGE_TYPES)}
 
 
@@ -177,20 +198,9 @@ def generativity(
         return 0.0
 
     edges = kg.edges
-    n_mask = max(1, int(len(edges) * mask_ratio))
-    n_train = len(edges) - n_mask
+    train_edges, test_edges = _split_edges(edges, mask_ratio, seed)
 
-    if n_train < _MIN_TRAIN_EDGES:
-        return 0.0
-
-    # Split edges into train / test (masked)
-    rng = np.random.default_rng(seed)
-    perm = rng.permutation(len(edges))
-    mask_idx: set[int] = set(int(i) for i in perm[:n_mask])
-    train_edges: list[TypedEdge] = [e for i, e in enumerate(edges) if i not in mask_idx]
-    test_edges: list[TypedEdge] = [e for i, e in enumerate(edges) if i in mask_idx]
-
-    if not test_edges:
+    if len(train_edges) < _MIN_TRAIN_EDGES or not test_edges:
         return 0.0
 
     # Build model

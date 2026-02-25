@@ -1,4 +1,5 @@
 """Core typed knowledge graph types for the Harmony framework."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -76,13 +77,9 @@ class KnowledgeGraph:
 
     def add_edge(self, edge: TypedEdge) -> None:
         if edge.source not in self.entities:
-            raise ValueError(
-                f"source entity '{edge.source}' not found in KG '{self.domain}'"
-            )
+            raise ValueError(f"source entity '{edge.source}' not found in KG '{self.domain}'")
         if edge.target not in self.entities:
-            raise ValueError(
-                f"target entity '{edge.target}' not found in KG '{self.domain}'"
-            )
+            raise ValueError(f"target entity '{edge.target}' not found in KG '{self.domain}'")
         self.edges.append(edge)
 
     def to_dict(self) -> dict[str, Any]:

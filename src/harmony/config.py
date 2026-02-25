@@ -1,4 +1,5 @@
 """HarmonyConfig: validated dataclass configuration for Harmony experiments."""
+
 from __future__ import annotations
 
 import json
@@ -18,7 +19,7 @@ class HarmonyConfig:
     island_temperatures: tuple[float, ...] = (0.3, 0.3, 0.8, 1.2)
     # Harmony metric weights (must sum to 1.0)
     alpha: float = 0.25  # compressibility
-    beta: float = 0.25   # coherence
+    beta: float = 0.25  # coherence
     gamma: float = 0.25  # symmetry
     delta: float = 0.25  # generativity
     # Dataset split
@@ -65,8 +66,12 @@ class HarmonyConfig:
         self.beta_grid = tuple(float(x) for x in self.beta_grid)
 
     def _validate_weights(self) -> None:
-        for name, val in [("alpha", self.alpha), ("beta", self.beta),
-                          ("gamma", self.gamma), ("delta", self.delta)]:
+        for name, val in [
+            ("alpha", self.alpha),
+            ("beta", self.beta),
+            ("gamma", self.gamma),
+            ("delta", self.delta),
+        ]:
             if val < 0.0:
                 raise ValueError(f"{name} must be >= 0.0")
         total = self.alpha + self.beta + self.gamma + self.delta

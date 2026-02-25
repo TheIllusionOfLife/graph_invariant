@@ -1,4 +1,5 @@
 """KGDataset: edge splitting, masking, and hidden-edge backtesting scaffold."""
+
 from __future__ import annotations
 
 import random
@@ -76,9 +77,7 @@ class KGDataset:
                 entity_type=entity.entity_type,
                 properties=dict(entity.properties),
             )
-        hidden_set = {
-            (e.source, e.target, e.edge_type) for e in self.hidden_edges
-        }
+        hidden_set = {(e.source, e.target, e.edge_type) for e in self.hidden_edges}
         val_set = {(e.source, e.target, e.edge_type) for e in self.val_edges}
         test_set = {(e.source, e.target, e.edge_type) for e in self.test_edges}
         excluded = hidden_set | val_set | test_set

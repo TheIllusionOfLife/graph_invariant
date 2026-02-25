@@ -1,4 +1,5 @@
 """Tests for harmony.types — Entity, TypedEdge, KnowledgeGraph."""
+
 import json
 
 import pytest

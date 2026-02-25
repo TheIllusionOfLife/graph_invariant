@@ -5,6 +5,7 @@ dependency structure of a standard linear algebra course. Used to
 calibrate the Harmony metric because the "correct" KG structure is
 well-established and admits ground-truth masked-edge recovery.
 """
+
 from __future__ import annotations
 
 from ..types import EdgeType, Entity, KnowledgeGraph, TypedEdge
@@ -65,17 +66,19 @@ _THEOREMS = [
     ("cauchy_schwarz_inequality", "theorem", {"statement": "|⟨u,v⟩| ≤ ‖u‖‖v‖"}),
     ("qr_decomposition", "theorem", {"statement": "A = QR for orthogonal Q, upper-triangular R"}),
     ("lu_decomposition", "theorem", {"statement": "Invertible A = LU for triangular L, U"}),
-    ("fundamental_theorem_linear_maps", "theorem", {
-        "statement": "V/ker(T) is isomorphic to im(T); equivalent to rank-nullity"
-    }),
-    ("rouche_capelli_theorem", "theorem", {
-        "statement": "Ax=b consistent iff rank(A) = rank(A|b)"
-    }),
+    (
+        "fundamental_theorem_linear_maps",
+        "theorem",
+        {"statement": "V/ker(T) is isomorphic to im(T); equivalent to rank-nullity"},
+    ),
+    ("rouche_capelli_theorem", "theorem", {"statement": "Ax=b consistent iff rank(A) = rank(A|b)"}),
     ("spectral_decomposition", "theorem", {"statement": "Symmetric A = QΛQᵀ for orthogonal Q"}),
     ("orthogonal_decomposition", "theorem", {"statement": "V = W ⊕ W⊥ for any subspace W"}),
-    ("min_poly_divides_char_poly", "theorem", {
-        "statement": "The minimal polynomial divides the characteristic polynomial"
-    }),
+    (
+        "min_poly_divides_char_poly",
+        "theorem",
+        {"statement": "The minimal polynomial divides the characteristic polynomial"},
+    ),
 ]
 
 # (source_id, target_id, edge_type)
@@ -83,7 +86,7 @@ _EDGES: list[tuple[str, str, EdgeType]] = [
     # --- Core structure ---
     ("vector_space", "field", EdgeType.DEPENDS_ON),
     ("linear_map", "vector_space", EdgeType.DEPENDS_ON),
-    ("matrix", "linear_map", EdgeType.MAPS_TO),          # matrix represents a linear map in bases
+    ("matrix", "linear_map", EdgeType.MAPS_TO),  # matrix represents a linear map in bases
     ("basis", "vector_space", EdgeType.DEPENDS_ON),
     ("dimension", "basis", EdgeType.DEPENDS_ON),
     ("span", "vector_space", EdgeType.DEPENDS_ON),
@@ -103,7 +106,7 @@ _EDGES: list[tuple[str, str, EdgeType]] = [
     ("characteristic_polynomial", "matrix", EdgeType.DEPENDS_ON),
     ("eigenvalue", "characteristic_polynomial", EdgeType.DERIVES),
     ("diagonalizability", "eigenvalue", EdgeType.DEPENDS_ON),
-    ("trace", "eigenvalue", EdgeType.EQUIVALENT_TO),      # trace = sum of eigenvalues
+    ("trace", "eigenvalue", EdgeType.EQUIVALENT_TO),  # trace = sum of eigenvalues
     # --- Matrix scalars ---
     ("determinant", "matrix", EdgeType.DEPENDS_ON),
     ("invertible_matrix", "determinant", EdgeType.DEPENDS_ON),

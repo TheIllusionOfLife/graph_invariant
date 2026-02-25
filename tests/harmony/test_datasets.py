@@ -1,4 +1,5 @@
 """Tests for harmony.dataset (KGDataset splits/masking) and all 5 domain KGs."""
+
 import json
 
 import pytest

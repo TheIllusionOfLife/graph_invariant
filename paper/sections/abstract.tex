@@ -9,9 +9,9 @@ The \emph{Harmony score} combines four complementary signals: \textbf{compressib
 \textbf{symmetry} (entity-type behavioural uniformity via Jensen--Shannon divergence),
 and \textbf{generativity} (link-prediction learnability via DistMult).  An LLM
 proposer generates candidate theory-level propositions, which are validated,
-scored, and archived in a MAP-Elites quality-diversity grid.  Four islands with
-distinct strategies---refinement, combination, and novelty---explore the
-proposal space concurrently, with periodic migration.  Calibration experiments on
+scored, and archived in a MAP-Elites quality-diversity grid.  Four islands cycling through three
+strategies---refinement, combination, and novelty---explore the proposal space
+concurrently, with periodic migration.  Calibration experiments on
 linear algebra and periodic table KGs show Harmony scores 31--65\% above
 frequency baselines.  On three discovery domains (astronomy, physics, materials
 science), the system produces valid, diverse proposals that improve Hits@10 over

@@ -15,10 +15,10 @@ from typing import Any
 import numpy as np
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Fixtures — synthetic data matching real pipeline formats
 # ---------------------------------------------------------------------------
+
 
 def _make_events_jsonl(generations: int = 5) -> str:
     """Return JSONL string with generation_summary events."""
@@ -172,11 +172,23 @@ class TestParseConvergenceData:
 
         logs_dir = tmp_path / "logs"
         logs_dir.mkdir()
-        content = (
-            '{"event": "generation_summary", "generation": 1, "valid_rate": 0.5, "best_harmony_gain": 0.01}\n'
-            "not valid json\n"
-            '{"event": "generation_summary", "generation": 2, "valid_rate": 0.6, "best_harmony_gain": 0.02}\n'
+        ev1 = json.dumps(
+            {
+                "event": "generation_summary",
+                "generation": 1,
+                "valid_rate": 0.5,
+                "best_harmony_gain": 0.01,
+            }
         )
+        ev2 = json.dumps(
+            {
+                "event": "generation_summary",
+                "generation": 2,
+                "valid_rate": 0.6,
+                "best_harmony_gain": 0.02,
+            }
+        )
+        content = f"{ev1}\nnot valid json\n{ev2}\n"
         (logs_dir / "harmony_events.jsonl").write_text(content)
         data = parse_convergence_data(tmp_path)
         assert len(data["generation"]) == 2

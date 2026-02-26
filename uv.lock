@@ -279,6 +279,7 @@ pysr = [
 [package.dev-dependencies]
 dev = [
     { name = "matplotlib" },
+    { name = "pandas" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "seaborn" },
@@ -299,6 +300,7 @@ provides-extras = ["pysr"]
 [package.metadata.requires-dev]
 dev = [
     { name = "matplotlib", specifier = ">=3.9" },
+    { name = "pandas", specifier = ">=2.0" },
     { name = "pytest", specifier = ">=8.3" },
     { name = "ruff", specifier = ">=0.9" },
     { name = "seaborn", specifier = ">=0.13" },

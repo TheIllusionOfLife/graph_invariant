@@ -25,7 +25,6 @@ from harmony.proposals.llm_proposer import (
 )
 from harmony.types import EdgeType
 
-
 # ---------------------------------------------------------------------------
 # island_strategy
 # ---------------------------------------------------------------------------
@@ -99,23 +98,17 @@ class TestBuildProposalPrompt:
         assert "json" in prompt.lower() or "JSON" in prompt
 
     def test_constrained_lists_all_entity_ids(self, kg):
-        prompt = build_proposal_prompt(
-            kg, ProposalStrategy.REFINEMENT, [], [], constrained=True
-        )
+        prompt = build_proposal_prompt(kg, ProposalStrategy.REFINEMENT, [], [], constrained=True)
         for entity_id in kg.entities:
             assert entity_id in prompt
 
     def test_constrained_lists_all_edge_type_names(self, kg):
-        prompt = build_proposal_prompt(
-            kg, ProposalStrategy.REFINEMENT, [], [], constrained=True
-        )
+        prompt = build_proposal_prompt(kg, ProposalStrategy.REFINEMENT, [], [], constrained=True)
         for et in EdgeType:
             assert et.name in prompt
 
     def test_unconstrained_does_not_enumerate_entities(self, kg):
-        prompt = build_proposal_prompt(
-            kg, ProposalStrategy.REFINEMENT, [], [], constrained=False
-        )
+        prompt = build_proposal_prompt(kg, ProposalStrategy.REFINEMENT, [], [], constrained=False)
         # Spot check: most entity IDs should NOT appear in the free-form prompt
         entity_ids = list(kg.entities.keys())
         # At least half should be absent (free prompt is concise)

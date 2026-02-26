@@ -17,6 +17,9 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+import requests
+
 from harmony.config import HarmonyConfig
 from harmony.map_elites import deserialize_archive, sample_diverse_exemplars, serialize_archive
 from harmony.proposals.llm_proposer import (
@@ -115,7 +118,7 @@ def _run_island_generation(
                 allow_remote=cfg.allow_remote_ollama,
                 timeout_sec=cfg.llm_timeout_sec,
             )
-        except Exception as exc:
+        except requests.exceptions.RequestException as exc:
             logger.debug("Island %d LLM call failed: %s", island_id, exc)
             continue
 
@@ -141,6 +144,7 @@ def _run_island_generation(
             # Self-correction: retry with violations fed back into prompt
             if cfg.enable_self_correction:
                 for _ in range(cfg.self_correction_max_retries):
+                    attempts += 1
                     repair_prompt = build_proposal_prompt(
                         kg=kg,
                         strategy=strategy,
@@ -157,19 +161,21 @@ def _run_island_generation(
                             allow_remote=cfg.allow_remote_ollama,
                             timeout_sec=cfg.llm_timeout_sec,
                         )
-                    except Exception:
-                        break
+                    except requests.exceptions.RequestException as exc:
+                        logger.debug("Island %d repair LLM call failed: %s", island_id, exc)
+                        continue
                     rd = repair_payload.get("proposal_dict")
                     if rd is None:
-                        break
+                        continue
                     try:
                         repaired = Proposal.from_dict(rd)
                         rv = validate(repaired)
                         if rv.is_valid:
                             new_proposals.append(repaired)
                             break
-                    except (KeyError, ValueError, TypeError):
-                        break
+                    except (KeyError, ValueError, TypeError) as exc:
+                        logger.debug("Island %d repair deserialization failed: %s", island_id, exc)
+                        continue
 
     # Keep failure list bounded to avoid bloating prompts
     state.island_recent_failures[island_id] = failures[-10:]
@@ -245,8 +251,6 @@ def run_harmony_loop(
 
         archive_exemplars: list[Proposal] = []
         if archive is not None:
-            import numpy as np
-
             rng = np.random.default_rng(cfg.seed + state.generation)
             archive_exemplars = sample_diverse_exemplars(archive, rng, count=3)
 
@@ -256,7 +260,7 @@ def run_harmony_loop(
         total_attempts = 0
         total_valid = 0
 
-        for island_id in sorted(state.islands):
+        for island_id in range(n_islands):
             new_proposals, attempts = _run_island_generation(
                 cfg=cfg,
                 state=state,
@@ -294,7 +298,7 @@ def run_harmony_loop(
         state.archive = serialize_archive(pipeline_result.archive)
 
         # --- Stagnation / prompt-mode scheduler ---
-        for island_id in sorted(state.islands):
+        for island_id in range(n_islands):
             if per_island_any_valid.get(island_id, False):
                 state.island_stagnation[island_id] = 0
                 state.island_prompt_mode[island_id] = "free"
@@ -304,6 +308,19 @@ def run_harmony_loop(
                 if state.island_stagnation[island_id] >= cfg.stagnation_trigger_generations:
                     state.island_prompt_mode[island_id] = "constrained"
                     state.island_constrained_generations[island_id] += 1
+                    # Auto-recover after too many constrained generations (avoids permanent lock-in)
+                    if (
+                        state.island_constrained_generations[island_id]
+                        >= cfg.constrained_recovery_generations
+                    ):
+                        state.island_stagnation[island_id] = 0
+                        state.island_prompt_mode[island_id] = "free"
+                        state.island_constrained_generations[island_id] = 0
+                        state.island_recent_failures[island_id] = []
+                        logger.info(
+                            "Island %d: constrained recovery limit reached, resetting to free mode",
+                            island_id,
+                        )
 
         # --- Improvement tracking ---
         best_gain = max(

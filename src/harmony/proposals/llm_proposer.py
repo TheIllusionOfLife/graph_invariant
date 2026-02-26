@@ -20,8 +20,6 @@ import requests
 from graph_invariant.llm_ollama import validate_ollama_url
 from harmony.types import EdgeType, KnowledgeGraph
 
-_STRATEGY_CYCLE = None  # lazily populated after class definition
-
 
 class ProposalStrategy(StrEnum):
     REFINEMENT = "refinement"
@@ -75,6 +73,14 @@ Return ONLY a JSON object (no extra text) with these fields:
 """
 
 
+def _sanitize_for_prompt(text: str) -> str:
+    """Strip content that could hijack the system prompt (prompt injection defence)."""
+    # Remove code fences that could break prompt structure
+    sanitized = text.replace("```", "")
+    # Truncate to avoid context overflow from adversarial prior LLM output
+    return sanitized[:500]
+
+
 def build_proposal_prompt(
     kg: KnowledgeGraph,
     strategy: ProposalStrategy,
@@ -106,15 +112,17 @@ def build_proposal_prompt(
     # Strategy preamble
     strategy_block = _STRATEGY_PREAMBLE[strategy]
 
-    # Top proposals block
+    # Top proposals block — sanitized to prevent prompt injection from prior LLM output
     if top_proposals:
-        top_block = "Top proposals so far:\n" + "\n---\n".join(top_proposals[:3])
+        safe_top = [_sanitize_for_prompt(p) for p in top_proposals[:3]]
+        top_block = "Top proposals so far:\n" + "\n---\n".join(safe_top)
     else:
         top_block = "Top proposals so far: None yet."
 
-    # Recent failures block
+    # Recent failures block — sanitized
     if recent_failures:
-        fail_block = "Recent validation failures (avoid these):\n" + "\n".join(recent_failures[:5])
+        safe_failures = [_sanitize_for_prompt(f) for f in recent_failures[:5]]
+        fail_block = "Recent validation failures (avoid these):\n" + "\n".join(safe_failures)
     else:
         fail_block = "Recent validation failures: None."
 
@@ -144,7 +152,8 @@ def _extract_proposal_dict(text: str) -> dict[str, Any] | None:
 
     Handles:
     - Fenced ` ```json ... ``` ` blocks
-    - Raw JSON embedded in prose
+    - Raw JSON embedded in prose (scanned with json.JSONDecoder.raw_decode,
+      which is string-aware and correctly handles ``{`` / ``}`` inside values)
     Returns None if no valid JSON object can be found.
     """
     if not text:
@@ -153,33 +162,27 @@ def _extract_proposal_dict(text: str) -> dict[str, Any] | None:
     # 1. Try fenced block: ```json ... ```
     fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
     if fenced:
-        candidate = fenced.group(1)
         try:
-            obj = json.loads(candidate)
+            obj = json.loads(fenced.group(1))
             if isinstance(obj, dict):
                 return obj
         except json.JSONDecodeError:
             pass
 
-    # 2. Try to find first balanced { ... } in the full text
-    start = text.find("{")
-    if start == -1:
-        return None
-
-    depth = 0
-    for i, ch in enumerate(text[start:], start=start):
-        if ch == "{":
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0:
-                candidate = text[start : i + 1]
-                try:
-                    obj = json.loads(candidate)
-                    if isinstance(obj, dict):
-                        return obj
-                except json.JSONDecodeError:
-                    return None
+    # 2. Progressive scan using raw_decode — correctly handles braces inside string values
+    decoder = json.JSONDecoder()
+    pos = 0
+    while True:
+        start = text.find("{", pos)
+        if start == -1:
+            break
+        try:
+            obj, _ = decoder.raw_decode(text, start)
+            if isinstance(obj, dict):
+                return obj
+        except json.JSONDecodeError:
+            pass
+        pos = start + 1
 
     return None
 

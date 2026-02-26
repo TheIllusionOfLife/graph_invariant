@@ -71,6 +71,12 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Path to a checkpoint.json to resume a previous run.",
     )
     parser.add_argument(
+        "--allow-remote",
+        action="store_true",
+        default=False,
+        help="Allow Ollama on a remote host (default: localhost only).",
+    )
+    parser.add_argument(
         "--seed",
         type=int,
         default=42,
@@ -98,6 +104,7 @@ def main() -> None:
         max_generations=args.generations,
         model_name=args.model,
         ollama_url=args.ollama_url,
+        allow_remote_ollama=args.allow_remote,
         seed=args.seed,
         population_size=args.population_size,
     )

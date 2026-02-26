@@ -41,7 +41,11 @@ class HarmonySearchState:
 
 
 def save_state(state: HarmonySearchState, path: Path) -> None:
-    """Persist *state* as a JSON file at *path*."""
+    """Persist *state* as a JSON file at *path* using an atomic write.
+
+    Writes to a ``.tmp`` sibling first, then renames to *path* so that a
+    crash mid-write never leaves a truncated/corrupt checkpoint.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     data: dict[str, Any] = {
         "experiment_id": state.experiment_id,
@@ -60,8 +64,10 @@ def save_state(state: HarmonySearchState, path: Path) -> None:
         "best_harmony_gain": state.best_harmony_gain,
         "no_improve_count": state.no_improve_count,
     }
-    with path.open("w", encoding="utf-8") as f:
+    tmp_path = path.with_suffix(".tmp")
+    with tmp_path.open("w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+    tmp_path.replace(path)
 
 
 def load_state(path: Path) -> HarmonySearchState:

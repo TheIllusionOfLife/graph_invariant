@@ -10,18 +10,16 @@ TDD: written BEFORE implementation. Verifies:
 
 from __future__ import annotations
 
+import itertools
 import json
 import logging
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from harmony.config import HarmonyConfig
 from harmony.datasets.linear_algebra import build_linear_algebra_kg
 from harmony.harmony_loop import run_harmony_loop
 from harmony.state import HarmonySearchState
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -129,9 +127,7 @@ class TestStagnationTriggersConstrainedMode:
 
         # At least one island should have been switched to constrained
         constrained_islands = [
-            iid
-            for iid, mode in state.island_prompt_mode.items()
-            if mode == "constrained"
+            iid for iid, mode in state.island_prompt_mode.items() if mode == "constrained"
         ]
         assert len(constrained_islands) > 0
 
@@ -163,13 +159,12 @@ class TestValidRateLogging:
         cfg = _make_cfg(max_generations=1, population_size=2)
         kg = build_linear_algebra_kg()
 
-        proposals = [
-            _make_valid_proposal_dict(id="p1"),
-            _make_valid_proposal_dict(id="p2"),
-        ]
+        proposals_cycle = itertools.cycle(
+            [_make_valid_proposal_dict(id="p1"), _make_valid_proposal_dict(id="p2")]
+        )
 
         def side_effect(**kwargs):
-            return {"response": "{}", "proposal_dict": proposals.pop(0)}
+            return {"response": "{}", "proposal_dict": next(proposals_cycle)}
 
         with caplog.at_level(logging.INFO, logger="harmony.harmony_loop"):
             with patch("harmony.harmony_loop.generate_proposal_payload") as mock_gen:

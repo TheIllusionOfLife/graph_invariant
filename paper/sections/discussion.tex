@@ -1,0 +1,46 @@
+\section{Discussion}\label{sec:discussion}
+
+\paragraph{Compressibility--generativity tension.}
+Adding edges to a KG typically \emph{reduces} compressibility (the BFS spanning
+fraction drops as cross-edges are introduced) while potentially \emph{improving}
+generativity (more training signal for DistMult).  This tension is by design:
+the Harmony metric rewards proposals that improve link-prediction learnability
+without degrading structural simplicity.  The value function
+(Eq.~\ref{eq:value}) with $\lambda > 0$ further penalises large mutations,
+ensuring that only targeted, structurally justified proposals achieve high
+scores.
+
+\paragraph{Sparse KG challenges.}
+Our curated KGs are deliberately small (17--30 entities, 30--80 edges) to
+represent the early stages of scientific KG construction.  This sparsity limits
+the generativity component: DistMult requires $\geq 10$ training edges to
+produce meaningful predictions, and the 20\% masking protocol leaves few test
+edges for evaluation.  Scaling to larger scientific KGs (e.g.\ Wikidata subsets)
+would provide more statistical power for the generativity signal.
+
+\paragraph{Proposal quality vs.\ validity rate.}
+The stagnation recovery mechanism (constrained prompting after $S = 5$
+generations without valid proposals) effectively maintains a validity rate
+$\geq 0.50$ across domains.  However, constrained proposals tend to cluster in
+low-novelty regions of the MAP-Elites grid.  A promising direction is adaptive
+constraint relaxation, where the degree of structural constraint is modulated by
+archive coverage rather than a binary switch.
+
+\paragraph{LLM dependence.}
+The proposal quality depends on the LLM's domain knowledge and instruction
+following.  Our experiments use a single model; ensembling across model families
+could improve diversity and robustness.  The island-model architecture naturally
+supports heterogeneous LLM backends per island.
+
+\paragraph{Limitations.}
+(i)~The seven-relation type vocabulary, while sufficient for our five domains,
+may be too coarse for highly specialised fields (e.g.\ organic chemistry
+reaction types).
+(ii)~Expert rubric evaluation is currently manual and limited to the top-5
+proposals; automated plausibility scoring (e.g.\ via literature retrieval) would
+improve scalability.
+(iii)~The Harmony metric treats all edge types equally in the compressibility
+and coherence components; domain-specific type hierarchies could improve these
+signals.
+(iv)~Results depend on a single random seed for dataset splitting; multi-seed
+evaluation would strengthen statistical claims.

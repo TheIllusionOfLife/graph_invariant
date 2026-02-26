@@ -1,0 +1,56 @@
+\section{Introduction}\label{sec:intro}
+
+Knowledge graphs (KGs) organise scientific knowledge as typed, directed
+multigraphs: entities represent concepts (e.g.\ \emph{photon},
+\emph{eigenvalue}, \emph{graphene}) and edges encode semantic relations such as
+\texttt{derives}, \texttt{explains}, or \texttt{contradicts}
+\citep{ji2021kgsurvey}.  Despite decades of curation, scientific KGs remain
+structurally incomplete---missing edges that encode latent theoretical
+connections and missing entities that represent undiscovered concepts.
+
+Knowledge graph completion (KGC) methods---TransE \citep{bordes2013transe},
+DistMult \citep{yang2015distmult}, RotatE \citep{sun2019rotate}---learn
+low-dimensional embeddings and predict missing links.  However, they operate at
+the \emph{triple} level: each predicted link is an isolated statistical
+extrapolation without theoretical justification.  They do not produce
+\emph{theory-level propositions} that articulate \emph{why} a relation should
+hold, what it implies, or how it could be falsified.
+
+We address this gap with \textbf{Harmony}, a framework for automated theory
+discovery in scientific KGs.  The key idea is a composite quality metric---the
+\emph{Harmony score}---that captures four desiderata of a well-structured
+knowledge graph:
+\begin{enumerate}[nosep]
+  \item \textbf{Compressibility}: the KG's edge-type distribution and spanning
+    structure admit a short description (MDL proxy).
+  \item \textbf{Coherence}: closed paths exhibit consistent edge-type semantics
+    and contradictions are sparse.
+  \item \textbf{Symmetry}: entities of the same type use edge types in similar
+    proportions (low Jensen--Shannon divergence).
+  \item \textbf{Generativity}: a shallow DistMult model can recover masked edges,
+    indicating learnable relational patterns.
+\end{enumerate}
+
+A large language model (LLM) proposes candidate mutations---adding edges or
+entities---each accompanied by a natural-language claim, justification, and
+falsification condition.  Proposals are validated, scored by the Harmony gain
+they produce, and archived in a MAP-Elites \citep{mouret2015mapelites}
+quality-diversity grid.  An island-model \citep{whitley1997island} search with
+four islands, each assigned a distinct exploration strategy (refinement,
+combination, novelty), runs concurrently with periodic migration to balance
+exploitation and exploration.
+
+\paragraph{Contributions.}
+\begin{enumerate}[nosep]
+  \item A four-component \textbf{Harmony metric} for scoring KG quality that
+    is domain-agnostic, bounded in $[0,1]$, and decomposes into interpretable
+    sub-scores (Section~\ref{sec:metric}).
+  \item A \textbf{proposal schema} that elevates KG mutations from bare triples
+    to falsifiable theory-level claims (Section~\ref{sec:proposals}).
+  \item An \textbf{island-model LLM search loop} with MAP-Elites archiving and
+    stagnation-triggered constrained prompting (Section~\ref{sec:search}).
+  \item Empirical evaluation on \textbf{five KG domains}---linear algebra,
+    periodic table, astronomy, physics, and materials science---showing that
+    Harmony-guided proposals outperform frequency and random baselines on
+    Hits@10, with expert plausibility scores~$\geq 3.0$ (Section~\ref{sec:results}).
+\end{enumerate}

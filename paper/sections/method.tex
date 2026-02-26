@@ -1,0 +1,176 @@
+\section{Method}\label{sec:method}
+
+We present the Harmony framework in three parts: the typed KG schema and Harmony
+metric (Section~\ref{sec:metric}), the proposal schema and validation
+(Section~\ref{sec:proposals}), and the island-model search loop
+(Section~\ref{sec:search}).
+
+\subsection{Typed Knowledge Graph Schema}\label{sec:schema}
+
+A knowledge graph $G = (V, E)$ consists of entities $V$ and typed directed edges
+$E$.  Each entity $v \in V$ has an \texttt{entity\_type} label (e.g.\
+\emph{concept}, \emph{element}, \emph{celestial\_object}) and a property bag.
+Each edge $(u, v, r) \in E$ carries one of seven semantic relation types:
+\texttt{depends\_on}, \texttt{derives}, \texttt{equivalent\_to},
+\texttt{maps\_to}, \texttt{explains}, \texttt{contradicts}, and
+\texttt{generalizes}.  This fixed type vocabulary enables cross-domain
+comparisons while remaining expressive enough to capture the core semantic
+relations in scientific knowledge.
+
+\subsection{Harmony Metric}\label{sec:metric}
+
+The Harmony score combines four signals, each normalised to $[0,1]$:
+\begin{equation}\label{eq:harmony}
+  \mathcal{H}(G)
+  = \alpha \cdot \Compress(G)
+  + \beta  \cdot \Cohere(G)
+  + \gamma \cdot \Symm(G)
+  + \delta \cdot \Gener(G),
+\end{equation}
+where $\alpha, \beta, \gamma, \delta \geq 0$ are normalised internally so that
+$\alpha + \beta + \gamma + \delta = 1$.  Default weights are uniform
+($\alpha = \beta = \gamma = \delta = 0.25$).
+
+\paragraph{Compressibility.}
+An MDL proxy measuring how structured the edge-type distribution is:
+\begin{equation}\label{eq:compress}
+  \Compress(G) = \frac{1}{2}\!\left(
+    1 - \frac{H(\mathbf{p})}{\log_2 7}
+    + \frac{|\text{spanning edges}|}{|E|}
+  \right),
+\end{equation}
+where $H(\mathbf{p}) = -\sum_i p_i \log_2 p_i$ is the Shannon entropy of the
+edge-type frequency vector $\mathbf{p}$ (normalised by $\log_2 7$ for the seven
+relation types), and the spanning fraction counts BFS spanning-tree edges over
+an undirected view of $G$.  A tree-like KG with uniform edge types scores near
+1.0; a dense multigraph with maximal type entropy scores near~0.
+
+\paragraph{Coherence.}
+Path-semantic consistency measured via two signals:
+\begin{equation}\label{eq:cohere}
+  \Cohere(G) = \frac{1}{2}\!\left(
+    \frac{|\{(a,b,c) : r_{ac} \in \{r_{ab}, r_{bc}\}\}|}{|\text{triangles}|}
+    + 1 - \frac{|\{e : r_e = \texttt{contradicts}\}|}{|E|}
+  \right).
+\end{equation}
+The first term counts triangles $(a \to b, b \to c, a \to c)$ where the closing
+edge type $r_{ac}$ matches either hop type (lenient multi-edge policy).  The
+second term penalises \texttt{contradicts} edges, which signal structural noise
+when dense.
+
+\paragraph{Symmetry.}
+Entity-type behavioural uniformity via Jensen--Shannon (JS) divergence.  For
+each entity type $\tau$, define $\mathbf{q}_\tau \in \Delta^6$ as the
+probability distribution over the seven edge types based on outgoing edges from
+entities of type~$\tau$.  Then:
+\begin{equation}\label{eq:symm}
+  \Symm(G) = 1 - \frac{1}{\binom{T}{2}}
+    \sum_{i < j} \text{JS}(\mathbf{q}_{\tau_i}, \mathbf{q}_{\tau_j}),
+\end{equation}
+where $T$ is the number of distinct entity types and
+$\text{JS}(\cdot, \cdot) = \sqrt{\text{JSD}(\cdot \| \cdot)}$ is the
+Jensen--Shannon distance (base~2), bounded in $[0,1]$.
+
+\paragraph{Generativity.}
+Link-prediction learnability via a DistMult model \citep{yang2015distmult}:
+\begin{equation}\label{eq:gener}
+  \Gener(G) = \Hits@K\bigl(\text{DistMult}, G_{\text{mask}}\bigr),
+\end{equation}
+where $G_{\text{mask}}$ denotes the graph after uniformly masking 20\% of edges.
+The DistMult scoring function is $\text{score}(s, r, t) = (\mathbf{e}_s \odot
+\mathbf{r}) \cdot \mathbf{e}_t$, with entity embeddings
+$\mathbf{E} \in \mathbb{R}^{|V| \times 50}$ and relation embeddings
+$\mathbf{R} \in \mathbb{R}^{7 \times 50}$, trained for 100 epochs with
+max-margin loss (margin~=~1.0, 5~negative samples per triple, learning
+rate~0.01).  $\Hits@K$ is the fraction of masked edges whose true target appears
+in the top-$K$ predictions ($K = 10$ by default).
+
+\paragraph{Proposal value function.}
+Given a base graph $G$ and a proposed mutation $\Delta$ (new edges/entities),
+the value of $\Delta$ is:
+\begin{equation}\label{eq:value}
+  V(\Delta) = \mathcal{H}(G \oplus \Delta) - \mathcal{H}(G) - \lambda \cdot \Cost(\Delta),
+\end{equation}
+where $G \oplus \Delta$ denotes the graph after applying $\Delta$, and
+$\Cost(\Delta)$ is a normalised structural cost (e.g.\ number of added edges
+divided by $|E|$).  The penalty weight $\lambda = 0.1$ discourages trivially
+large proposals.
+
+\subsection{Proposal Schema and Validation}\label{sec:proposals}
+
+Each proposal is a structured record containing:
+\begin{itemize}[nosep]
+  \item \textbf{Mutation type}: \texttt{ADD\_EDGE}, \texttt{REMOVE\_EDGE},
+    \texttt{ADD\_ENTITY}, or \texttt{REMOVE\_ENTITY}.
+  \item \textbf{Claim}: a one-sentence theoretical statement (e.g.\
+    ``Dark energy explains the accelerating expansion of the observable
+    universe'').
+  \item \textbf{Justification}: reasoning supporting the claim.
+  \item \textbf{Falsification condition}: what evidence would disprove the claim.
+  \item \textbf{KG parameters}: source/target entities, edge type, or new entity
+    type, depending on the mutation type.
+\end{itemize}
+
+A deterministic validator enforces three rules: (i)~text fields must be
+$\geq 10$ characters, (ii)~type-specific parameters must be present (e.g.\
+\texttt{ADD\_EDGE} requires source, target, and edge type), and
+(iii)~\texttt{edge\_type} must be one of the seven valid relation names.
+Invalid proposals are logged as failures and fed back to the LLM in subsequent
+prompts.
+
+\subsection{Island-Model Search with MAP-Elites}\label{sec:search}
+
+\paragraph{Island topology.}
+Four islands run concurrently, each maintaining a population of $P = 5$
+candidates and assigned a fixed strategy from a cyclic schedule:
+\emph{refinement} (improve the best existing proposal), \emph{combination}
+(merge the top two proposals), \emph{refinement}, and \emph{novel} (invent from
+scratch).  Each island uses a distinct LLM temperature: $\{0.3, 0.3, 0.8,
+1.2\}$ to further diversify exploration.
+
+\paragraph{MAP-Elites archive.}
+A shared $5 \times 5$ MAP-Elites grid \citep{mouret2015mapelites} indexes
+proposals by two behavioural descriptors: \emph{simplicity} (inverse structural
+cost) and \emph{Harmony gain} ($\mathcal{H}(G \oplus \Delta) -
+\mathcal{H}(G)$).  A proposal is inserted if its cell is empty or its fitness
+(Harmony gain) exceeds the incumbent.
+
+\paragraph{Stagnation recovery.}
+If an island produces no valid proposals for $S = 5$ consecutive generations,
+it switches to \emph{constrained} prompting mode, which adds explicit
+structural constraints to the LLM prompt.  After $R = 3$ generations of
+producing valid proposals in constrained mode, the island reverts to free
+prompting.
+
+\paragraph{Migration.}
+Every $M = 10$ generations, the best proposal from each island migrates to the
+next island in a ring topology (island~$i \to$ island~$(i+1) \bmod 4$),
+replacing the worst candidate if the migrant has higher fitness.
+
+\paragraph{Generation loop.}
+Algorithm~\ref{alg:harmony} summarises a single generation.  The loop runs for
+$G_{\max} = 20$ generations per experiment, checkpointing state after each
+generation to enable resumption.
+
+\begin{algorithm}[t]
+\caption{Harmony search --- one generation}\label{alg:harmony}
+\begin{algorithmic}[1]
+\REQUIRE Base KG $G$, islands $\{I_1, \ldots, I_4\}$, archive $\mathcal{A}$
+\FOR{each island $I_k$}
+  \STATE $\sigma_k \gets$ \textsc{Strategy}$(k)$ \COMMENT{refinement / combination / novel}
+  \STATE $\text{prompt} \gets$ \textsc{BuildPrompt}$(G, \sigma_k, \text{top}(I_k), \text{failures}(I_k))$
+  \STATE $\hat{p} \gets$ \textsc{LLM}$(\text{prompt}, \text{temp}_k)$
+  \IF{\textsc{Validate}$(\hat{p})$}
+    \STATE $\Delta \gets$ apply $\hat{p}$ to $G$
+    \STATE $v \gets V(\Delta)$ \COMMENT{Eq.~\ref{eq:value}}
+    \STATE \textsc{TryInsert}$(\mathcal{A}, \hat{p}, v, \text{descriptor}(\hat{p}))$
+    \STATE Update $I_k$ population
+  \ELSE
+    \STATE Log failure; feed back to next prompt
+  \ENDIF
+\ENDFOR
+\IF{generation $\bmod\; M = 0$}
+  \STATE \textsc{Migrate}$(I_1, \ldots, I_4)$ \COMMENT{ring topology}
+\ENDIF
+\end{algorithmic}
+\end{algorithm}

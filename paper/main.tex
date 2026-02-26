@@ -1,0 +1,59 @@
+\documentclass{article}
+
+\PassOptionsToPackage{numbers}{natbib}
+% NeurIPS 2025 template guidance:
+% - submission (double-blind): default/main without preprint/final
+% - camera-ready: add [main, final]
+\usepackage{NeurIPS2025/neurips_2025}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{multirow}
+\hbadness=10000
+\vbadness=10000
+\setlength{\emergencystretch}{2em}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator{\Compress}{Compress}
+\DeclareMathOperator{\Cohere}{Cohere}
+\DeclareMathOperator{\Symm}{Symm}
+\DeclareMathOperator{\Gener}{Gener}
+\DeclareMathOperator{\Cost}{Cost}
+\DeclareMathOperator{\Hits}{Hits}
+
+\title{Harmony-Driven Theory Discovery in Knowledge Graphs\\via LLM-Guided Island Search}
+
+\author{
+  Anonymous Author(s)
+}
+
+\begin{document}
+
+\maketitle
+
+\input{sections/abstract}
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/method}
+\input{sections/experiments}
+\input{sections/results}
+\input{sections/discussion}
+\input{sections/conclusion}
+\appendix
+\input{sections/appendix}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

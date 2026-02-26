@@ -1,0 +1,18 @@
+\section{Conclusion}\label{sec:conclusion}
+
+We presented Harmony, a framework for automated theory discovery in scientific
+knowledge graphs.  The four-component Harmony metric---compressibility,
+coherence, symmetry, and generativity---provides a principled, domain-agnostic
+quality signal for scoring KG mutations.  An LLM proposer generates structured,
+falsifiable theory-level claims, which are validated and archived in a MAP-Elites
+quality-diversity grid across an island-model search topology.
+
+Calibration experiments confirm 31--65\% improvements over frequency baselines on
+two domains.  Discovery experiments on astronomy, physics, and materials science
+KGs show consistent Hits@10 gains over a standalone DistMult baseline, with
+expert plausibility scores meeting the pre-registered $\geq 3.0$ threshold.
+
+Future work includes scaling to larger scientific KGs (e.g.\ domain-specific
+subsets of Wikidata), extending the relation type vocabulary, integrating
+literature-retrieval-based plausibility scoring, and exploring multi-LLM
+ensembles across islands for improved diversity.

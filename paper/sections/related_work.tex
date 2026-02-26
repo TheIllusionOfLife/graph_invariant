@@ -1,0 +1,40 @@
+\section{Related Work}\label{sec:related}
+
+\paragraph{Knowledge graph completion.}
+Embedding-based methods project entities and relations into low-dimensional
+vector spaces.  TransE \citep{bordes2013transe} models relations as additive
+translations $\mathbf{h} + \mathbf{r} \approx \mathbf{t}$; DistMult
+\citep{yang2015distmult} uses bilinear scoring
+$\mathbf{e}_s \odot \mathbf{r} \cdot \mathbf{e}_t$; RotatE
+\citep{sun2019rotate} models relations as rotations in complex space.
+\citet{ji2021kgsurvey} survey these and other approaches.  All operate at the
+triple level and produce ranked link predictions without theoretical
+justification.  Our work uses DistMult as the generativity \emph{component}
+within a broader metric, and additionally generates natural-language
+propositions explaining each mutation.
+
+\paragraph{Automated scientific discovery.}
+FunSearch \citep{romeraparedes2024funsearch} uses LLMs to discover mathematical
+constructions by evolving Python programs.  PySR
+\citep{cranmer2023pysr} performs symbolic regression via genetic programming
+\citep{koza1992gp}, discovering closed-form expressions from numerical data.
+The survey by \citet{makke2024sr_survey} covers the broader symbolic regression
+landscape.  These systems discover \emph{formulas} over numerical features;
+Harmony discovers \emph{relational propositions} over typed knowledge graphs,
+a structurally different search space.
+
+\paragraph{Quality-diversity search.}
+MAP-Elites \citep{mouret2015mapelites} maintains a grid of solutions indexed by
+behavioural descriptors, maximising both quality and diversity.  Novelty search
+\citep{lehman2008novelty} rewards behavioural novelty over fitness.  We adopt
+MAP-Elites with a two-dimensional descriptor (simplicity, Harmony gain) and
+combine it with an island-model \citep{whitley1997island} topology where four
+islands maintain distinct LLM prompting strategies.
+
+\paragraph{LLM-guided reasoning over KGs.}
+Recent work explores LLMs as reasoners over structured knowledge
+\citep{ji2021kgsurvey}, using chain-of-thought prompting or retrieval-augmented
+generation.  Our approach differs: the LLM is a \emph{proposer} that generates
+structured mutations (new edges/entities) with accompanying justifications,
+rather than an end-to-end question-answering system.  Proposals are scored by a
+deterministic metric, not by LLM self-evaluation.

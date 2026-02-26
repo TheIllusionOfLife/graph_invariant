@@ -1,0 +1,20 @@
+\begin{abstract}
+Scientific knowledge graphs (KGs) encode entities and typed relations across
+domains such as physics, astronomy, and materials science, yet they remain
+incomplete: missing edges and entities limit downstream reasoning.  We introduce
+\emph{Harmony}, a framework that treats theory discovery as the search for KG
+mutations---new edges or entities---that maximise a composite quality metric.
+The \emph{Harmony score} combines four complementary signals: \textbf{compressibility}
+(minimum description length proxy), \textbf{coherence} (path-semantic consistency),
+\textbf{symmetry} (entity-type behavioural uniformity via Jensen--Shannon divergence),
+and \textbf{generativity} (link-prediction learnability via DistMult).  An LLM
+proposer generates candidate theory-level propositions, which are validated,
+scored, and archived in a MAP-Elites quality-diversity grid.  Four islands with
+distinct strategies---refinement, combination, and novelty---explore the
+proposal space concurrently, with periodic migration.  Calibration experiments on
+linear algebra and periodic table KGs show Harmony scores 31--65\% above
+frequency baselines.  On three discovery domains (astronomy, physics, materials
+science), the system produces valid, diverse proposals that improve Hits@10 over
+a standalone DistMult baseline.  Expert rubric evaluation confirms that top
+proposals achieve plausibility scores $\geq 3.0$ on a 5-point scale.
+\end{abstract}

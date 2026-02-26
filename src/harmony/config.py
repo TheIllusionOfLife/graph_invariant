@@ -34,6 +34,7 @@ class HarmonyConfig:
     # Proposal engine
     model_name: str = "gpt-oss:20b"
     ollama_url: str = "http://localhost:11434/api/generate"
+    allow_remote_ollama: bool = False
     llm_timeout_sec: float = 60.0
     enable_self_correction: bool = True
     self_correction_max_retries: int = 1

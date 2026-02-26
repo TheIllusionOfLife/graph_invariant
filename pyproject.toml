@@ -12,6 +12,9 @@ dependencies = [
   "scikit-learn>=1.5",
 ]
 
+[project.scripts]
+harmony = "harmony.cli:main"
+
 [project.optional-dependencies]
 pysr = ["pysr>=1.0"]
 

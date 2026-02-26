@@ -56,6 +56,9 @@ We report Hits@10, Hits@3, Hits@1, and Mean Reciprocal Rank (MRR):
 where $Q$ is the set of masked test edges and $\text{rank}_i$ is the rank of
 the true target entity among all candidates.  Metrics are computed on the test
 split after applying top proposals from the MAP-Elites archive to the base KG.
+All experiments use a single seed ($s = 42$) for dataset splitting, model
+initialisation, and edge masking; multi-seed evaluation is noted as a limitation
+in Section~\ref{sec:discussion}.
 
 \paragraph{Calibration gate.}
 Before running discovery experiments, we verify on the two calibration domains

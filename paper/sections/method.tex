@@ -126,7 +126,7 @@ prompts.
 Four islands run concurrently, each maintaining a population of $P = 5$
 candidates and assigned a fixed strategy from a cyclic schedule:
 \emph{refinement} (improve the best existing proposal), \emph{combination}
-(merge the top two proposals), \emph{refinement}, and \emph{novel} (invent from
+(merge the top two proposals), \emph{refinement}, and \emph{novelty} (invent from
 scratch).  Each island uses a distinct LLM temperature: $\{0.3, 0.3, 0.8,
 1.2\}$ to further diversify exploration.
 
@@ -159,7 +159,7 @@ generation to enable resumption.
 \begin{algorithmic}[1]
 \REQUIRE Base KG $G$, islands $\{I_1, \ldots, I_4\}$, archive $\mathcal{A}$
 \FOR{each island $I_k$}
-  \STATE $\sigma_k \gets$ \textsc{Strategy}$(k)$ \COMMENT{refinement / combination / novel}
+  \STATE $\sigma_k \gets$ \textsc{Strategy}$(k)$ \COMMENT{refinement / combination / novelty}
   \STATE $\text{prompt} \gets$ \textsc{BuildPrompt}$(G, \sigma_k, \text{top}(I_k), \text{failures}(I_k))$
   \STATE $\hat{p} \gets$ \textsc{LLM}$(\text{prompt}, \text{temp}_k)$
   \IF{\textsc{Validate}$(\hat{p})$}

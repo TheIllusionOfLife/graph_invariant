@@ -25,10 +25,11 @@ the framework's ability to generate novel, plausible proposals.
 
 \subsection{Dataset Splitting}
 
-For each KG, we apply an 80/10/10/10 split: 80\% of edges for training, 10\%
-each for validation, test, and a hidden backtesting set.  The hidden set is
-withheld from all metric computations and proposal generation, providing an
-unbiased evaluation of generativity on unseen edges.
+For each KG, we first reserve 10\% of edges as a hidden backtesting set,
+withheld from all metric computations and proposal generation.  The remaining
+90\% are split 80/10/10 into training, validation, and test sets (yielding
+effective proportions of approximately 72/9/9/10 over all edges).  This provides
+an unbiased evaluation of generativity on unseen edges.
 
 \subsection{Baselines}
 

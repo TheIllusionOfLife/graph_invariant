@@ -1,9 +1,9 @@
 \section{Method}\label{sec:method}
 
-We present the Harmony framework in three parts: the typed KG schema and Harmony
-metric (Section~\ref{sec:metric}), the proposal schema and validation
-(Section~\ref{sec:proposals}), and the island-model search loop
-(Section~\ref{sec:search}).
+We present the Harmony framework in three parts: the typed KG schema
+(Section~\ref{sec:schema}) and Harmony metric (Section~\ref{sec:metric}), the
+proposal schema and validation (Section~\ref{sec:proposals}), and the
+island-model search loop (Section~\ref{sec:search}).
 
 \subsection{Typed Knowledge Graph Schema}\label{sec:schema}
 
@@ -69,7 +69,9 @@ entities of type~$\tau$.  Then:
 \end{equation}
 where $T$ is the number of distinct entity types and
 $\text{JS}(\cdot, \cdot) = \sqrt{\text{JSD}(\cdot \| \cdot)}$ is the
-Jensen--Shannon distance (base~2), bounded in $[0,1]$.
+Jensen--Shannon distance (base~2), bounded in $[0,1]$.  When $T \leq 1$ (a
+single entity type or no entities), $\Symm(G) = 1$ by convention (vacuous
+symmetry).
 
 \paragraph{Generativity.}
 Link-prediction learnability via a DistMult model \citep{yang2015distmult}:

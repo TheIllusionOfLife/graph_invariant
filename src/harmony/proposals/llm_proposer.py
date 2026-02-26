@@ -55,6 +55,8 @@ _STRATEGY_PREAMBLE: dict[ProposalStrategy, str] = {
     ),
 }
 
+_MAX_FREE_ENTITY_SAMPLE = 20
+
 _PROPOSAL_SCHEMA_HINT = """
 Return ONLY a JSON object (no extra text) with these fields:
 {
@@ -126,14 +128,27 @@ def build_proposal_prompt(
     else:
         fail_block = "Recent validation failures: None."
 
-    # Constrained enumeration block
-    constrained_block = ""
+    # Entity + edge type enumeration block (always included for grounding)
+    edge_type_list = ", ".join(et.name for et in EdgeType)
+    sorted_entities = sorted(kg.entities.keys())
     if constrained:
-        entity_list = ", ".join(sorted(kg.entities.keys()))
-        edge_type_list = ", ".join(et.name for et in EdgeType)
+        entity_list = ", ".join(sorted_entities)
         constrained_block = (
-            f"\nVALID ENTITY IDs (use exactly as written): {entity_list}"
-            f"\nVALID EDGE TYPES (use exactly as written): {edge_type_list}\n"
+            f"\nVALID ENTITY IDs (use EXACTLY as written): {entity_list}"
+            f"\nVALID EDGE TYPES (use EXACTLY as written): {edge_type_list}\n"
+        )
+    else:
+        # Free mode: show a sample so the LLM knows the naming convention
+        sample = sorted_entities[:_MAX_FREE_ENTITY_SAMPLE]
+        if len(sorted_entities) > _MAX_FREE_ENTITY_SAMPLE:
+            suffix = f" (showing {len(sample)} of {len(sorted_entities)})"
+        else:
+            suffix = ""
+        entity_list = ", ".join(sample)
+        constrained_block = (
+            f"\nEXAMPLE ENTITY IDs from this KG{suffix}: {entity_list}"
+            f"\nVALID EDGE TYPES: {edge_type_list}"
+            f"\nIMPORTANT: source_entity and target_entity MUST be exact entity IDs from this KG.\n"
         )
 
     return (

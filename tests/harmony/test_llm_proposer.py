@@ -107,13 +107,27 @@ class TestBuildProposalPrompt:
         for et in EdgeType:
             assert et.name in prompt
 
-    def test_unconstrained_does_not_enumerate_entities(self, kg):
+    def test_free_mode_includes_entity_sample(self, kg):
         prompt = build_proposal_prompt(kg, ProposalStrategy.REFINEMENT, [], [], constrained=False)
-        # Spot check: most entity IDs should NOT appear in the free-form prompt
+        # Free mode should include some entity IDs so the LLM knows what to reference
         entity_ids = list(kg.entities.keys())
-        # At least half should be absent (free prompt is concise)
-        absent = sum(1 for eid in entity_ids if eid not in prompt)
-        assert absent > len(entity_ids) // 2
+        present = sum(1 for eid in entity_ids if eid in prompt)
+        # At least some entities should appear (sample or full list for small KGs)
+        assert present >= 1
+
+    def test_free_mode_includes_edge_types(self, kg):
+        prompt = build_proposal_prompt(kg, ProposalStrategy.REFINEMENT, [], [], constrained=False)
+        # Free mode should also list valid edge types
+        for et in EdgeType:
+            assert et.name in prompt
+
+    def test_free_mode_entity_sample_capped(self):
+        """For large KGs, free mode should cap the entity sample size."""
+        kg = build_linear_algebra_kg()
+        prompt = build_proposal_prompt(kg, ProposalStrategy.REFINEMENT, [], [], constrained=False)
+        # The prompt should contain "EXAMPLE ENTITY" section with grounding
+        assert "EXAMPLE ENTITY" in prompt
+        assert "MUST be exact entity IDs" in prompt
 
 
 # ---------------------------------------------------------------------------

@@ -117,6 +117,19 @@ class TestTextFieldValidation:
         result = validate(p)
         assert result.is_valid is True
 
+    def test_whitespace_only_kg_domain_fails(self):
+        """Whitespace-only strings should be rejected."""
+        p = _make_add_edge_proposal(kg_domain="   ")
+        result = validate(p)
+        assert result.is_valid is False
+        assert any("kg_domain" in v for v in result.violations)
+
+    def test_exact_boundary_3_char_domain_passes(self):
+        """Exact 3-char domain sits on the boundary and should pass."""
+        p = _make_add_edge_proposal(kg_domain="abc")
+        result = validate(p)
+        assert result.is_valid is True
+
 
 class TestAddEdgeTypeSpecific:
     def test_add_edge_missing_source_fails(self):

@@ -34,7 +34,7 @@ def validate(proposal: Proposal) -> ValidationResult:
             )
 
     # Rule 1b: kg_domain — controlled vocabulary, lower minimum
-    domain = proposal.kg_domain
+    domain = proposal.kg_domain.strip() if proposal.kg_domain else None
     if not domain or len(domain) < _MIN_DOMAIN_LEN:
         actual = len(domain) if domain else 0
         violations.append(

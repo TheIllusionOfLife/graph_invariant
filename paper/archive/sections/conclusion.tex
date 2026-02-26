@@ -1,0 +1,44 @@
+\section{Conclusion}
+
+We presented an open-source framework for discovering interpretable
+feature-composition formulas using LLM-driven evolutionary search. By combining island-model
+evolution with MAP-Elites quality-diversity archiving, composite scoring
+(accuracy + simplicity + novelty), and LLM-driven self-correction, our system
+discovers closed-form formulas that remain interpretable while being reasonably
+competitive with strong baselines on several settings. The bounds-mode
+capability enables empirical discovery of inequality candidates and motivates
+future formal verification work.
+
+Our systematic evaluation across four experiment configurations with
+out-of-distribution validation demonstrates that the approach generalizes
+across targets (ASPL, algebraic connectivity) and fitness modes (correlation,
+upper bound). The MAP-Elites ASPL experiment achieves test Spearman
+$\rho = 0.947$, below PySR ($\rho = 0.975$) and random forests
+($\rho = 0.951$) in this setting, while multi-seed benchmarks confirm reproducibility
+($\rho = 0.921 \pm 0.027$ across 5 seeds). Discovered formulas generalize
+well to larger graphs ($\rho = 0.957$) but degrade on qualitatively
+different topologies ($\rho = 0.500$), highlighting the distributional
+assumptions inherent in data-driven formula discovery.
+
+An anonymized code repository is provided in supplementary material with
+full experiment configurations, analysis scripts, and reproducibility
+artifacts; the raw experiment bundle is archived on Zenodo for independent
+verification~\cite{anonymous2026graphinvariant_dataset}.
+
+In a same-day staged pilot, we confirmed that fast-profile runs are valuable
+for rapid pruning and diagnostics but can produce unstable/weak performance.
+Therefore, we treat such runs as an evidence-filtering stage, not as final
+claim evidence.
+
+\paragraph{Future work.}
+Promising directions include: (i)~extending to multi-target discovery where a
+single formula predicts multiple invariants, (ii)~integrating formal
+verification to automatically prove discovered bounds, (iii)~scaling to larger
+LLMs with stronger mathematical reasoning, and (iv)~applying the framework
+to other domains (e.g., discovering physical laws from simulation data).
+
+\begin{ack}
+  Experiments were conducted using a locally hosted 20B-parameter language model
+  on consumer hardware. We thank the open-source communities behind NetworkX,
+  PySR, and Ollama for the infrastructure that made this work possible.
+\end{ack}

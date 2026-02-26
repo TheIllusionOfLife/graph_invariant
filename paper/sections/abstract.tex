@@ -1,28 +1,20 @@
 \begin{abstract}
-We introduce an open-source framework that uses large language models (LLMs) to
-discover closed-form, interpretable compositions of graph features/invariants through island-model
-evolutionary search. Discovering compact formulas that predict structural graph
-properties---such as average shortest-path length or algebraic
-connectivity---remains challenging because the space of symbolic expressions is
-vast and existing approaches sacrifice interpretability for accuracy. Our system
-addresses this by orchestrating four islands with distinct prompt strategies
-(refinement, combination, novelty) and temperature schedules, augmented with a
-MAP-Elites quality-diversity archive that maintains behaviorally diverse
-candidates along simplicity and novelty axes. Candidates are evaluated in a
-sandboxed execution environment with static analysis guards, scored by a
-composite objective combining Spearman correlation, formula simplicity, and
-novelty relative to known invariants, and subjected to an LLM-driven
-self-correction loop that repairs failing candidates. We evaluate on synthetic
-graph datasets spanning five generative families (Erd\H{o}s--R\'{e}nyi,
-Barab\'{a}si--Albert, Watts--Strogatz, random geometric, stochastic block
-model), with out-of-distribution validation on large-scale and extreme-topology
-graphs. Across four experiment configurations---correlation-mode ASPL with
-MAP-Elites, algebraic connectivity, upper-bound ASPL, and a multi-seed
-benchmark---our LLM-discovered formulas achieve strong validation Spearman correlations
-and remain interpretable while trailing the strongest PySR/linear baselines in the
-current ASPL setting
-(test Spearman $\rho = 0.947$ for MAP-Elites ASPL; $\rho = 0.921 \pm 0.027$
-across 5 benchmark seeds) while producing interpretable expressions amenable
-to mathematical analysis.
-An anonymized code repository is provided in the supplementary material.
+Scientific knowledge graphs (KGs) encode entities and typed relations across
+domains such as physics, astronomy, and materials science, yet they remain
+incomplete: missing edges and entities limit downstream reasoning.  We introduce
+\emph{Harmony}, a framework that treats theory discovery as the search for KG
+mutations---new edges or entities---that maximise a composite quality metric.
+The \emph{Harmony score} combines four complementary signals: \textbf{compressibility}
+(minimum description length proxy), \textbf{coherence} (path-semantic consistency),
+\textbf{symmetry} (entity-type behavioural uniformity via Jensen--Shannon divergence),
+and \textbf{generativity} (link-prediction learnability via DistMult).  An LLM
+proposer generates candidate theory-level propositions, which are validated,
+scored, and archived in a MAP-Elites quality-diversity grid.  Four islands cycling through three
+strategies---refinement, combination, and novelty---explore the proposal space
+concurrently, with periodic migration.  Calibration experiments on
+linear algebra and periodic table KGs show Harmony scores 31--65\% above
+frequency baselines.  On three discovery domains (astronomy, physics, materials
+science), the system produces valid, diverse proposals that improve Hits@10 over
+a standalone DistMult baseline.  Expert rubric evaluation confirms that top
+proposals achieve plausibility scores $\geq 3.0$ on a 5-point scale.
 \end{abstract}

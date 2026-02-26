@@ -1,71 +1,81 @@
-\section{Experiments}
+\section{Experiments}\label{sec:experiments}
 
-We evaluate our system across four experiment configurations designed to test
-different aspects of the discovery pipeline. All experiments use a local
-\texttt{gpt-oss:20b} model served via Ollama, ensuring reproducibility without
-API cost constraints.
+\subsection{Knowledge Graph Domains}
 
-\subsection{Experimental Setup}
+We evaluate on five curated KGs spanning scientific disciplines.  Each KG uses
+the shared seven-relation type vocabulary (Section~\ref{sec:schema}) and is
+constructed from established textbook knowledge:
 
-\paragraph{Graph datasets.}
-Training ($m = 50$ graphs) and validation/test ($m = 200$ graphs each) sets
-are sampled from five generative families---ER, BA, WS, RGG, SBM---with node
-counts $|V| \in [30, 100]$ and deterministic seeding (seed $= 42$ unless
-otherwise noted).
-
-\paragraph{Baselines.}
-We compare against three baselines:
-\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
-  \item \textbf{Linear regression}: Ordinary least squares on the graph feature
-    vector (12 features excluding the target to prevent leakage).
-  \item \textbf{Random forest}: 100 trees with default scikit-learn parameters
-    on the same feature vector.
-  \item \textbf{PySR}: Symbolic regression~\citep{cranmer2023pysr} with 30
-    iterations, 8 populations, and a 60-second timeout. PySR searches over
-    the same feature set with standard unary/binary operators.
+\begin{itemize}[nosep]
+  \item \textbf{Linear algebra}: 17 entities (matrix, vector, eigenvalue,
+    determinant, rank, etc.) with algebraic dependency and derivation edges.
+  \item \textbf{Periodic table}: 20+ chemical elements and properties with
+    trends, groups, and reactivity relations.
+  \item \textbf{Astronomy}: celestial objects (star, planet, black hole, nebula)
+    and astrophysical processes.
+  \item \textbf{Physics}: fundamental concepts (force, energy, momentum,
+    gravity) and their theoretical inter-relations.
+  \item \textbf{Materials science}: material properties, compounds, and
+    structure--property relationships.
 \end{itemize}
 
-\paragraph{Out-of-distribution (OOD) validation.}
-Discovered formulas are evaluated on three OOD graph categories:
-\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
-  \item \textbf{Large random} ($m = 100$ graphs): Same five families but with
-    $|V| \in [200, 500]$.
-  \item \textbf{Extreme parameters} ($m = 50$ graphs): Extreme densities and
-    degree distributions with $|V| \in [50, 200]$.
-  \item \textbf{Special topology}: Deterministic structures---barbell, grid,
-    ladder, circulant, Petersen graph---plus NetworkX built-in graphs (Karate
-    club, Les Mis\'{e}rables, Florentine families).
-\end{itemize}
+The first two domains serve as \emph{calibration} targets (known structure for
+gate validation); the latter three are \emph{discovery} targets where we assess
+the framework's ability to generate novel, plausible proposals.
 
-\subsection{Experiment Configurations}
+\subsection{Dataset Splitting}
 
-\paragraph{Experiment 1: MAP-Elites ASPL.}
-Target: \texttt{average\_shortest\_path\_length}. 30 generations with
-MAP-Elites enabled ($5 \times 5$ archive). Tests whether quality-diversity
-search improves formula diversity and final quality compared to island-model
-evolution alone.
+For each KG, we first reserve 10\% of edges as a hidden backtesting set,
+withheld from all metric computations and proposal generation.  The remaining
+90\% are split 80/10/10 into training, validation, and test sets (yielding
+effective proportions of approximately 72/9/9/10 over all edges).  This provides
+an unbiased evaluation of generativity on unseen edges.
 
-\paragraph{Experiment 2: Algebraic connectivity.}
-Target: \texttt{algebraic\_connectivity} (Fiedler value, the second-smallest
-Laplacian eigenvalue). 20 generations. Tests generalization to a spectrally
-defined target that requires different mathematical intuition.
+\subsection{Baselines}
 
-\paragraph{Experiment 3: Upper bound ASPL.}
-Target: \texttt{average\_shortest\_path\_length} in upper-bound mode. 20
-generations. Tests the system's ability to discover valid mathematical
-inequalities $f(G) \geq \text{ASPL}(G)$ rather than correlations.
+We compare Harmony-guided proposals against three baselines that use the same
+DistMult link-prediction protocol (identical edge splits, model architecture,
+and training):
 
-\paragraph{Experiment 4: Multi-seed benchmark.}
-Target: \texttt{average\_shortest\_path\_length}. 5 seeds $\times$ 20
-generations with baselines enabled. Tests consistency across random
-initializations and provides confidence intervals for reported metrics.
+\begin{enumerate}[nosep]
+  \item \textbf{Random}: propose edges between random entity pairs with random
+    relation types.
+  \item \textbf{Frequency}: propose the most frequent relation type between the
+    most-connected entity pairs.
+  \item \textbf{DistMult-alone}: use DistMult's own top-ranked predictions
+    without Harmony scoring or LLM involvement.
+\end{enumerate}
 
-\subsection{Evaluation Metrics}
+\subsection{Evaluation Protocol}
 
-We report Spearman rank correlation ($\rho$) on validation and test sets as
-the primary metric for correlation-mode experiments. For bounds-mode
-experiments, we report bound score (combining satisfaction rate and tightness)
-and satisfaction rate (fraction of graphs where the bound holds). For OOD
-evaluation, we report Spearman $\rho$ per OOD category with valid prediction
-counts. For the multi-seed benchmark, we report mean $\pm$ standard deviation
-across seeds.
+\paragraph{Quantitative metrics.}
+We report Hits@10, Hits@3, Hits@1, and Mean Reciprocal Rank (MRR):
+\begin{equation}\label{eq:mrr}
+  \text{MRR} = \frac{1}{|Q|} \sum_{i=1}^{|Q|} \frac{1}{\text{rank}_i},
+\end{equation}
+where $Q$ is the set of masked test edges and $\text{rank}_i$ is the rank of
+the true target entity among all candidates.  Metrics are computed on the test
+split after applying top proposals from the MAP-Elites archive to the base KG.
+All experiments use a single seed ($s = 42$) for dataset splitting, model
+initialisation, and edge masking; multi-seed evaluation is noted as a limitation
+in Section~\ref{sec:discussion}.
+
+\paragraph{Calibration gate.}
+Before running discovery experiments, we verify on the two calibration domains
+(linear algebra, periodic table) that: (i)~Harmony mean $\geq 10\%$ above the
+frequency baseline, and (ii)~the bootstrap 95\% CI lower bound exceeds the
+frequency mean, across six pre-registered weight configurations ($\alpha \in
+\{0.3, 0.5, 0.7\}$, $\beta \in \{0.1, 0.3\}$, $\gamma = \delta = 0.25$; each
+vector is renormalised to sum to~1 before scoring).
+
+\paragraph{Expert rubric.}
+For the best-performing discovery domain, we apply a five-criterion rubric
+scoring each of the top-5 proposals on a 1--5 scale: \emph{plausibility},
+\emph{novelty}, \emph{falsifiability}, \emph{specificity}, and
+\emph{coherence with existing knowledge}.  The gate requires mean plausibility
+$\geq 3.0$.
+
+\paragraph{Archive diversity.}
+We report MAP-Elites coverage (fraction of occupied cells in the $5 \times 5$
+grid), best and mean fitness, and qualitative inspection of proposals across
+behavioural descriptor bins.

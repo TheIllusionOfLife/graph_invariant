@@ -4,7 +4,8 @@
 % NeurIPS 2025 template guidance:
 % - submission (double-blind): default/main without preprint/final
 % - camera-ready: add [main, final]
-\usepackage{NeurIPS2025/neurips_2025}
+% NOTE: Archived paper — compile from paper/archive/ with adjusted paths.
+\usepackage{../NeurIPS2025/neurips_2025}
 \usepackage[T1]{fontenc}
 \usepackage{hyperref}
 \usepackage{url}
@@ -17,22 +18,24 @@
 \usepackage{graphicx}
 \usepackage{subcaption}
 \usepackage{enumitem}
-\usepackage{algorithm}
-\usepackage{algorithmic}
-\usepackage{multirow}
+\usepackage{listings}
 \hbadness=10000
 \vbadness=10000
 \setlength{\emergencystretch}{2em}
 
-\DeclareMathOperator*{\argmax}{arg\,max}
-\DeclareMathOperator{\Compress}{Compress}
-\DeclareMathOperator{\Cohere}{Cohere}
-\DeclareMathOperator{\Symm}{Symm}
-\DeclareMathOperator{\Gener}{Gener}
-\DeclareMathOperator{\Cost}{Cost}
-\DeclareMathOperator{\Hits}{Hits}
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{red},
+  breaklines=true,
+  columns=fullflexible,
+  frame=none,
+  showstringspaces=false,
+}
 
-\title{Harmony-Driven Theory Discovery in Knowledge Graphs\\via LLM-Guided Island Search}
+\title{LLM-Driven Discovery of Interpretable Graph Invariants\\via Island-Model Evolution}
 
 \author{
   Anonymous Author(s)
@@ -54,6 +57,6 @@
 \input{sections/appendix}
 
 \bibliographystyle{plainnat}
-\bibliography{references}
+\bibliography{../references}
 
 \end{document}

@@ -1,0 +1,52 @@
+\section{Introduction}
+
+Graph invariants---functions that assign a numerical value to a graph
+independent of vertex labeling---are fundamental objects in network science,
+combinatorics, and theoretical computer science. Classical invariants such as
+the chromatic number, diameter, and algebraic connectivity encode structural
+information used in fields ranging from chemistry (molecular descriptors) to
+social network analysis. However, discovering compact and interpretable
+\emph{compositions} of known invariants/features (functions that are themselves invariant to vertex relabeling) that capture structural
+relationships remains a largely manual, expert-driven process.
+
+Recent work has demonstrated that large language models (LLMs) can generate
+executable mathematical programs when guided by evolutionary search.
+FunSearch~\citep{romeraparedes2024funsearch} showed that LLM-generated programs
+can match or exceed human-designed solutions for combinatorial problems,
+operating in a generate-evaluate loop rather than treating the LLM as an
+oracle. Independently, symbolic regression methods like
+PySR~\citep{cranmer2023pysr} have proven effective at discovering compact
+formulas from data, but produce expressions optimized purely for predictive
+accuracy without leveraging the mathematical reasoning capabilities of LLMs.
+
+We present a system that combines LLM-driven code generation with island-model
+evolution~\citep{whitley1997island} and MAP-Elites quality-diversity
+search~\citep{mouret2015mapelites} to discover interpretable formula
+compositions over graph invariants/features.
+Our approach occupies a unique position: unlike neural approaches that learn
+latent graph representations~\citep{kipf2017gcn, xu2019gin}, our system
+produces closed-form formulas that can be inspected, verified, and used in
+mathematical proofs. Unlike pure symbolic regression, our system leverages the
+LLM's prior knowledge of mathematics to navigate the search space more
+effectively.
+
+Specifically, LLMs act as a structured mathematical prior: they compose known constructs (harmonic means, Moore bounds, min-of-bounds) rather than performing blind operator search, enabling candidates that are plausible starting points for proof.
+
+\paragraph{Contributions.}
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item An open-source framework for LLM-driven graph feature-composition discovery with
+    island-model evolution, MAP-Elites diversity archive, and an LLM-driven
+    self-correction loop. The system supports correlation and bounds
+    (upper/lower) fitness modes.
+  \item A composite scoring objective balancing predictive accuracy (Spearman
+    $\rho$), formula simplicity (AST node count), and novelty relative to known
+    graph invariants (bootstrap confidence interval test).
+  \item Systematic evaluation on ASPL as a benchmark target, demonstrating
+    strong (though not best-in-class) correlation with statistical and symbolic
+    regression baselines across five random seeds with out-of-distribution
+    validation.
+  \item A \emph{bounds mode} for empirical conjecture generation: the system
+    discovers candidate mathematical inequalities (e.g., compositions of
+    path-graph and Moore bounds for ASPL) that are plausible starting points for
+    formal proof.
+\end{itemize}

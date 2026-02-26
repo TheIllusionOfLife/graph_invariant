@@ -1,117 +1,46 @@
-\section{Discussion}
+\section{Discussion}\label{sec:discussion}
 
-\paragraph{Interpretability--accuracy tradeoff.}
-Our system explicitly trades some predictive accuracy for interpretability
-through the composite scoring objective (Eq.~\ref{eq:score}). The simplicity
-term ($\beta = 0.2$) penalizes complex AST structures, steering the search
-toward compact formulas. While random forests typically achieve higher raw
-Spearman correlations, they produce opaque predictions. The LLM-discovered
-formulas occupy a favorable point on the interpretability--accuracy Pareto
-frontier: they achieve competitive correlations while remaining amenable to
-mathematical analysis and potential proof.
+\paragraph{Compressibility--generativity tension.}
+Adding edges to a KG typically \emph{reduces} compressibility (the BFS spanning
+fraction drops as cross-edges are introduced) while potentially \emph{improving}
+generativity (more training signal for DistMult).  This tension is by design:
+the Harmony metric rewards proposals that improve link-prediction learnability
+without degrading structural simplicity.  The value function
+(Eq.~\ref{eq:value}) with $\lambda > 0$ further penalises large mutations,
+ensuring that only targeted, structurally justified proposals achieve high
+scores.
 
-\paragraph{Role of diversity mechanisms.}
-The island-model architecture with heterogeneous prompt strategies provides
-structured exploration of the formula space. Low-temperature refinement
-islands exploit known good formulas, while high-temperature novelty islands
-explore broadly. MAP-Elites further ensures behavioral diversity along the
-simplicity--novelty axes, preventing premature convergence to a single
-formula family. Comparing the MAP-Elites experiment (test $\rho = 0.947$)
-against the multi-seed benchmark without MAP-Elites (test $\rho = 0.921 \pm
-0.030$), diversity archiving yields a consistent improvement. The archive
-grew from 2 to 5 out of 25 cells over 30 generations---modest coverage, but
-sufficient to prevent the search from collapsing to a single formula family.
-Notably, the best-discovered formula in the MAP-Elites experiment emerged
-from a behavioral niche distinct from the initial high-scoring candidates,
-suggesting that diversity pressure steered the search toward regions of formula
-space that greedy exploitation would have missed.
+\paragraph{Sparse KG challenges.}
+Our curated KGs are deliberately small (17--30 entities, 30--80 edges) to
+represent the early stages of scientific KG construction.  This sparsity limits
+the generativity component: DistMult requires $\geq 10$ training edges to
+produce meaningful predictions, and the 20\% masking protocol leaves few test
+edges for evaluation.  Scaling to larger scientific KGs (e.g.\ Wikidata subsets)
+would provide more statistical power for the generativity signal.
 
-\paragraph{Self-correction as exploration.}
-The LLM-driven self-correction (SC) loop recovers mathematical intuition from
-failed candidates. Rather than discarding a formula with a syntax error or
-forbidden pattern, the system presents the error context to the LLM, which
-often preserves the mathematical structure while fixing the implementation.
-Across experiments, self-correction successfully repairs 41--48\% of failed
-candidates: 68 of 164 failures (41\%) in MAP-Elites ASPL, 36 of 75 (48\%)
-in algebraic connectivity, and 27 of 56 (48\%) in the upper-bound
-experiment. The most common repaired failure modes are sandbox violations
-(\texttt{import} statements, forbidden builtins) and novelty threshold
-violations, both of which the LLM can address without fundamentally
-restructuring the mathematical expression. A controlled ablation
-(Table~\ref{tab:sc_ablation}, Appendix) with 3 matched seeds confirms this
-quantitatively: SC raises mean validation $\rho$ by $+0.045$ (7.5$\times$
-the SC-on validation std) while reducing cross-seed standard deviation by
-3$\times$, indicating that the repair loop stabilises convergence without
-degrading held-out generalisation.
+\paragraph{Proposal quality vs.\ validity rate.}
+The stagnation recovery mechanism (constrained prompting after $S = 5$
+generations without valid proposals) effectively maintains a validity rate
+$\geq 0.50$ across domains.  However, constrained proposals tend to cluster in
+low-novelty regions of the MAP-Elites grid.  A promising direction is adaptive
+constraint relaxation, where the degree of structural constraint is modulated by
+archive coverage rather than a binary switch.
 
-\paragraph{One-day iteration tradeoff.}
-A fast-profile staged pilot (reduced generations/populations and faster local
-model profile) enabled same-day screening across multiple regimes, but yielded
-high-variance and often weak correlation outcomes. This indicates that
-aggressive screening settings are useful for configuration pruning and failure
-diagnostics, but insufficient for final quantitative claims. Consequently, our
-recommended workflow is staged: cheap screening to prune, then
-higher-budget confirmatory runs for any claim-critical table.
-Appendix Tables~\ref{tab:appendix_seed_aggregates}--\ref{tab:appendix_runtime}
-make this staging auditable by exposing uncertainty, bounds behavior, and
-completion rates for each evaluated regime.
+\paragraph{LLM dependence.}
+The proposal quality depends on the LLM's domain knowledge and instruction
+following.  Our experiments use a single model; ensembling across model families
+could improve diversity and robustness.  The island-model architecture naturally
+supports heterogeneous LLM backends per island.
 
-\paragraph{Bounds mode.}
-The upper-bound experiment demonstrates that the system can find non-trivial
-empirical inequalities, not just correlations. This opens the possibility of
-using LLMs to propose bound candidates that can later be formally verified.
-The best upper-bound formula achieves a bound score of 0.514 with an 87\%
-satisfaction rate on the validation set (84\% on test), combining the
-path-graph bound $(n+1)/3$ with Moore-bound arguments based on minimum,
-maximum, and average degree. While the satisfaction rate is high, the bound
-score reflects a tension between tightness and universality: tighter bounds
-risk violation on edge cases, while loose bounds trivially satisfy but
-provide little mathematical insight. The discovered formula chooses the
-minimum of five independent bounds, an approach that mirrors how human
-mathematicians combine known inequalities to derive tighter results.
-
-\paragraph{Why LLMs over symbolic regression?}
-PySR optimizes for correlation alone; LLMs bring prior knowledge of mathematical
-structure---harmonic means, Moore bounds, min-of-bounds compositions---allowing
-the system to propose candidates that are plausible starting points for proof,
-not just fitted curves. This structural prior enables the bounds mode to discover
-formulas that mirror classical mathematical reasoning (combining known
-inequalities to derive tighter results), a capability outside the reach of
-correlation-only symbolic regression.
-
-\paragraph{Connections to classical results.}
-The upper-bound formula explicitly contains $(n+1)/3$, the classical exact ASPL
-for path graphs---a direct rediscovery of a known result. The dominant terms of
-the MAP-Elites ASPL formula ($\sqrt{n}/({\bar{d}}+1) \cdot 1/\text{density}$)
-approximate $n^2/(2m)$, the mean-field ASPL for sparse graphs, echoing known
-order-of-magnitude arguments. These connections strengthen the claim that LLM
-search recovers mathematically meaningful structure, not merely curve-fitting.
-
-\subsection{Limitations}
-
-\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
-  \item \textbf{Compute cost}: Each experiment requires substantial LLM
-    inference time (hours to tens of hours with a 20B-parameter local model).
-    This limits the scale of hyperparameter search and ablation studies.
-  \item \textbf{Sandbox security}: The sandbox provides best-effort isolation
-    through static analysis and process-level resource limits, but is not a
-    production security boundary. Adversarial LLM outputs could potentially
-    exploit gaps in the forbidden-pattern list.
-  \item \textbf{Feature dependence}: Discovered formulas operate on
-    pre-computed graph features rather than raw adjacency matrices. This
-    constrains the space of discoverable invariants to combinations of the
-    provided features, though the feature set covers standard graph-theoretic
-    quantities.
-  \item \textbf{Novelty calibration}: The bootstrap CI-based novelty test
-    may be overly conservative for small feature vectors, potentially
-    rejecting candidates that are genuinely novel but happen to correlate
-    moderately with known invariants on the evaluation graphs.
-    Across experiments, novelty-gate rejections dominate self-correction
-    failure categories (e.g., 145 of 288 failure events in MAP-Elites ASPL),
-    confirming the hard gate is the primary bottleneck rather than code quality.
-    A soft penalty bonus---reducing the novelty weight rather than hard-rejecting
-    candidates---is a promising fix that could improve discovery throughput.
-  \item \textbf{Single LLM}: All experiments use a single local model
-    (\texttt{gpt-oss:20b}). Different LLMs with different mathematical
-    reasoning capabilities may produce qualitatively different formulas.
-\end{itemize}
+\paragraph{Limitations.}
+(i)~The seven-relation type vocabulary, while sufficient for our five domains,
+may be too coarse for highly specialised fields (e.g.\ organic chemistry
+reaction types).
+(ii)~Expert rubric evaluation is currently manual and limited to the top-5
+proposals; automated plausibility scoring (e.g.\ via literature retrieval) would
+improve scalability.
+(iii)~The Harmony metric treats all edge types equally in the compressibility
+and coherence components; domain-specific type hierarchies could improve these
+signals.
+(iv)~Results depend on a single random seed for dataset splitting; multi-seed
+evaluation would strengthen statistical claims.

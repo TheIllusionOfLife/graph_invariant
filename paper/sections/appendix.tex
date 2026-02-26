@@ -1,151 +1,150 @@
-\section*{Full Formula Listings}
+\section{Dataset Statistics}\label{app:datasets}
 
-The following Python functions are the best-discovered formulas from each
-experiment, reproduced verbatim from \texttt{phase1\_summary.json} artifacts.
-All functions take a pre-computed feature dictionary \texttt{s} and return a
-\texttt{float}.
-
-\subsection*{MAP-Elites ASPL Formula (val $\rho = 0.935$)}
-
-\begin{lstlisting}[language=Python, basicstyle=\small\ttfamily, breaklines=true]
-def new_invariant(s):
-    eps = 1e-12
-    n          = s['n']
-    m          = s['m']
-    density    = s['density']
-    avg_deg    = s['avg_degree']
-    max_deg    = s['max_degree']
-    min_deg    = s['min_degree']
-    std_deg    = s['std_degree']
-    avg_clust  = s['avg_clustering']
-    trans      = s['transitivity']
-    assort     = s['degree_assortativity']
-    num_tri    = s['num_triangles']
-    degrees    = s['degrees']
-    base = pow(n, 0.5) / (avg_deg + 1)                    # size vs average degree
-    dens_factor = 1 / (density + eps)                    # sparsity
-    clu_factor  = pow(1 + avg_clust, 0.6)                # clustering
-    trans_factor = pow(1 + trans, 0.5)                   # transitivity
-    assort_factor = 1 + abs(assort)                      # assortativity
-    tri_factor = 1 + num_tri / (m + 1)                   # triangles
-    std_factor = 1 + std_deg / (avg_deg + eps)           # degree spread
-    size_edge_factor = pow(n / (m + 1), 0.5)             # size-edge interaction
-    nonzero = [d for d in degrees if d > 0]
-    if nonzero:
-        harmonic = len(nonzero) / sum(1.0 / d for d in nonzero)
-    else:
-        harmonic = 1.0
-    deg_shape_factor = harmonic / (avg_deg + eps)        # harmonic mean of degrees
-    rel_avg_max = 1 + avg_deg / (max_deg + 1)            # relative avg to max degree
-    estimate = (base * dens_factor * clu_factor * trans_factor *
-                assort_factor * tri_factor * std_factor *
-                size_edge_factor * deg_shape_factor * rel_avg_max)
-    estimate = max(1.0, min(estimate, float(n)))
-    return estimate
-\end{lstlisting}
-
-The dominant factors $\sqrt{n}/({\bar{d}}+1) \cdot 1/\text{density}$ approximate
-the mean-field ASPL $n^2/(2m)$ for sparse graphs, while the harmonic mean of the
-degree sequence corrects for degree heterogeneity.
-
-\subsection*{Algebraic Connectivity Formula (val $\rho = 0.764$)}
-
-\begin{lstlisting}[language=Python, basicstyle=\small\ttfamily, breaklines=true]
-def new_invariant(s):
-    eps = 1e-12
-    n          = float(s['n'])
-    avg_deg    = float(s['avg_degree'])
-    std_deg    = float(s['std_degree'])
-    density    = float(s['density'])
-    num_tri    = float(s['num_triangles'])
-    avg_clust  = float(s['avg_clustering'])
-    trans      = float(s['transitivity'])
-    assort     = float(s['degree_assortativity'])
-    size_term = n ** 0.5                                 # sqrt(n)
-    degree_term = (avg_deg + 1.0) / (std_deg + 1.0 + eps)  # degree regularity
-    max_tri_possible = n * (n - 1.0) * (n - 2.0) / 6.0
-    tri_frac = num_tri / (max_tri_possible + eps)
-    triangle_term = 1.0 + tri_frac ** 0.25
-    density_term = density ** 0.5                        # sqrt(density)
-    clustering_pen = 1.0 / (1.0 + avg_clust ** 1.5)    # penalty for clustering
-    trans_pen = 1.0 / (1.0 + trans ** 1.2)              # penalty for transitivity
-    assort_pen = 1.0 / (1.0 + abs(assort) ** 0.9)      # penalty for assortativity
-    score = (size_term * degree_term * triangle_term *
-             density_term * clustering_pen * trans_pen * assort_pen)
-    return score
-\end{lstlisting}
-
-\subsection*{Upper-Bound ASPL Formula (BS = 0.514, SR = 87\%)}
-
-\begin{lstlisting}[language=Python, basicstyle=\small\ttfamily, breaklines=true]
-def new_invariant(s):
-    n = s.get('n', 0)
-    if n <= 1:
-        return 0.0
-    path_bound = (n + 1) / 3.0                          # exact ASPL for path graph
-    density = s.get('density', 0.0)
-    density_bound = 2.0 if density > 0.5 else n - 1
-    # Moore bound using max/min/average degree
-    def moore_radius(deg, n):
-        if deg <= 1: return n - 1
-        nodes, power, radius = 1, 1, 0
-        while nodes < n:
-            nodes += deg * power
-            power *= (deg - 1)
-            radius += 1
-        return radius + 1
-    moore_max = moore_radius(int(s.get('max_degree', 1)), n)
-    moore_min = moore_radius(int(s.get('min_degree', 1)), n)
-    moore_avg = moore_radius(int(s.get('avg_degree', 1)), n)
-    final = min(path_bound, density_bound, moore_max, moore_min, moore_avg, n - 1)
-    return float(final)
-\end{lstlisting}
-
-The formula takes the minimum of six independent upper bounds. The path-graph
-bound $(n+1)/3$ is a direct rediscovery of the classical exact result; the
-Moore-bound terms mirror how human mathematicians combine degree-based
-inequalities.
-
-\section*{Self-Correction Ablation}
-
-Table~\ref{tab:sc_ablation} compares the system with and without the
-self-correction loop across three matched seeds (seeds 11, 22, 33) on the
-ASPL benchmark.  SC-off runs used identical configs except
-\texttt{enable\_self\_correction: false}.
+Table~\ref{tab:datasets} summarises the five knowledge graph domains.
 
 \begin{table}[h]
-  \centering
-  \small
-  \caption{SC ablation: self-correction enabled vs.\ disabled across 3 matched
-    seeds on the ASPL benchmark (seeds 11, 22, 33).  Val~$\rho$ is the
-    composite-fitness-optimised validation metric; Test~$\rho$ measures
-    held-out generalization.  $\Delta$ = SC\,on $-$ SC\,off.  $n{=}3$ seeds;
-    differences should be interpreted cautiously.}
-  \label{tab:sc_ablation}
-  \begin{tabular}{lccc}
-    \toprule
-    Condition & Seeds & Val $\rho$ & Test $\rho$ \\
-    \midrule
-    SC enabled  & 3 & $0.928 \pm 0.006$ & $0.926 \pm 0.012$ \\
-    SC disabled & 3 & $0.883 \pm 0.018$ & $0.943 \pm 0.004$ \\
-    $\Delta$ (on $-$ off) & & $+0.045$ & $-0.018$ \\
-    \bottomrule
-  \end{tabular}
+\centering
+\caption{Knowledge graph domain statistics.  All KGs use the shared
+seven-relation type vocabulary.}\label{tab:datasets}
+\begin{tabular}{lcccl}
+\toprule
+Domain & Entities & Edges & Entity types & Primary relations \\
+\midrule
+Linear algebra   & 17  & 45  & 5 & \texttt{derives}, \texttt{depends\_on} \\
+Periodic table   & 22  & 58  & 4 & \texttt{maps\_to}, \texttt{generalizes} \\
+Astronomy        & 20  & 52  & 6 & \texttt{explains}, \texttt{derives} \\
+Physics          & 18  & 48  & 5 & \texttt{derives}, \texttt{explains} \\
+Materials science & 19 & 50  & 5 & \texttt{maps\_to}, \texttt{depends\_on} \\
+\bottomrule
+\end{tabular}
 \end{table}
 
-SC improves validation correlation by $+0.045$ (7.5$\times$ the SC-on
-validation std), confirming the repair loop advances search progress against
-the composite fitness objective.  The test gap ($-0.018$, SC-off marginally
-higher) is within $1.5\times$ the SC-on test standard deviation and is not
-statistically conclusive at $n{=}3$ seeds.  The 3$\times$ reduction in
-validation standard deviation (0.006 vs.\ 0.018) indicates that SC stabilises
-convergence across seeds rather than merely overfitting to the validation set.
+\section{Ablation Details}\label{app:ablation}
 
-\section{Rebuttal-Oriented Supplementary Tables}
+The ablation study (Table~\ref{tab:ablation}) uses the linear algebra KG with
+$n_{\text{bootstrap}} = 200$ samples.  For each ablation variant, one weight is
+set to zero and the remaining three are renormalised to sum to 1.  Bootstrap 95\%
+confidence intervals are computed via the percentile method on the mean Harmony
+score.
 
-This appendix provides compact evidence tables intended to answer common
-review questions about stability, uncertainty, and runtime behavior. All
-tables are generated directly from analysis artifacts to avoid manual
-transcription errors.
+\paragraph{Weight sensitivity.}
+We evaluate six weight configurations from the calibration gate grid
+($\alpha \in \{0.3, 0.5, 0.7\}$, $\beta \in \{0.1, 0.3\}$,
+$\gamma = \delta = 0.25$).  All configurations show Harmony~$>$~frequency
+baseline, with $\alpha = 0.5, \beta = 0.3$ yielding the highest mean Harmony
+score.  This suggests that a moderate compressibility weight combined with
+non-trivial coherence weight best captures the structure of our curated KGs.
 
-\input{sections/appendix_tables_generated}
+\section{Proposal Validation Rules}\label{app:validation}
+
+The deterministic validator enforces three rules:
+\begin{enumerate}[nosep]
+  \item \textbf{Text length}: \texttt{claim}, \texttt{justification},
+    \texttt{falsification\_condition}, and \texttt{kg\_domain} must each be
+    $\geq 10$ characters.  (Note: short domain names such as \texttt{"physics"}
+    require padding or full descriptive strings in practice.)
+  \item \textbf{Type-specific fields}: \texttt{ADD\_EDGE} requires
+    \texttt{source\_entity}, \texttt{target\_entity}, and \texttt{edge\_type};
+    \texttt{ADD\_ENTITY} requires \texttt{entity\_id} and \texttt{entity\_type};
+    \texttt{REMOVE\_EDGE} requires \texttt{source\_entity},
+    \texttt{target\_entity}, and \texttt{edge\_type};
+    \texttt{REMOVE\_ENTITY} requires \texttt{entity\_id}.
+  \item \textbf{Edge type validity}: \texttt{edge\_type} must be one of the seven
+    valid \texttt{EdgeType} names.
+\end{enumerate}
+
+\section{Full Proposal Examples}\label{app:proposals}
+
+Below are three complete proposal records from the astronomy archive, showing
+all fields including justification and falsification conditions.
+
+\paragraph{Proposal 1: Stellar nucleosynthesis $\to$ heavy element abundance.}
+\begin{itemize}[nosep]
+  \item \textbf{Type}: \texttt{ADD\_EDGE}
+  \item \textbf{Source}: \texttt{stellar\_nucleosynthesis}
+  \item \textbf{Target}: \texttt{heavy\_element\_abundance}
+  \item \textbf{Edge type}: \texttt{explains}
+  \item \textbf{Claim}: ``Stellar nucleosynthesis explains the observed abundance
+    pattern of heavy elements in planetary nebulae.''
+  \item \textbf{Justification}: ``The s-process and r-process nucleosynthesis
+    pathways in AGB stars and supernovae produce characteristic abundance
+    patterns that match spectroscopic observations of planetary nebulae.''
+  \item \textbf{Falsification}: ``Discovery of heavy element abundance patterns
+    in planetary nebulae inconsistent with any known nucleosynthesis pathway
+    would falsify this claim.''
+\end{itemize}
+
+\paragraph{Proposal 2: Mass--luminosity relation derivation.}
+\begin{itemize}[nosep]
+  \item \textbf{Type}: \texttt{ADD\_EDGE}
+  \item \textbf{Source}: \texttt{hydrostatic\_equilibrium}
+  \item \textbf{Target}: \texttt{mass\_luminosity\_relation}
+  \item \textbf{Edge type}: \texttt{derives}
+  \item \textbf{Claim}: ``The mass--luminosity relation derives from hydrostatic
+    equilibrium in main sequence stars.''
+  \item \textbf{Justification}: ``Balancing gravitational pressure against
+    radiation pressure in the stellar core, combined with opacity-dependent
+    energy transport, yields $L \propto M^{3.5}$ for main sequence stars.''
+  \item \textbf{Falsification}: ``A main sequence star population where
+    luminosity is uncorrelated with mass would disprove this derivation.''
+\end{itemize}
+
+\paragraph{Proposal 3: Magnetar as new entity.}
+\begin{itemize}[nosep]
+  \item \textbf{Type}: \texttt{ADD\_ENTITY}
+  \item \textbf{Entity ID}: \texttt{magnetar}
+  \item \textbf{Entity type}: \texttt{celestial\_object}
+  \item \textbf{Claim}: ``Magnetar generalises the neutron star category with
+    extreme magnetic field properties ($B > 10^{14}$~G).''
+  \item \textbf{Justification}: ``Magnetars are observationally distinct from
+    ordinary neutron stars due to their ultra-strong magnetic fields, which power
+    soft gamma repeaters and anomalous X-ray pulsars.''
+  \item \textbf{Falsification}: ``Evidence that magnetar-attributed emissions
+    originate from non-magnetic mechanisms would undermine this classification.''
+\end{itemize}
+
+\section{Hyperparameter Settings}\label{app:hyperparams}
+
+Table~\ref{tab:hyperparams} lists all hyperparameters used in the experiments.
+
+\begin{table}[h]
+\centering
+\caption{Hyperparameter settings.}\label{tab:hyperparams}
+\begin{tabular}{llc}
+\toprule
+Component & Parameter & Value \\
+\midrule
+\multirow{4}{*}{Harmony metric}
+  & $\alpha$ (compressibility) & 0.25 \\
+  & $\beta$ (coherence) & 0.25 \\
+  & $\gamma$ (symmetry) & 0.25 \\
+  & $\delta$ (generativity) & 0.25 \\
+\midrule
+\multirow{6}{*}{DistMult}
+  & Embedding dimension & 50 \\
+  & Training epochs & 100 \\
+  & Margin & 1.0 \\
+  & Learning rate & 0.01 \\
+  & Negative samples & 5 \\
+  & Mask ratio & 0.20 \\
+\midrule
+\multirow{5}{*}{Search loop}
+  & Islands & 4 \\
+  & Population per island & 5 \\
+  & Generations & 20 \\
+  & Migration interval & 10 \\
+  & Temperatures & $\{0.3, 0.3, 0.8, 1.2\}$ \\
+\midrule
+\multirow{2}{*}{Stagnation}
+  & Trigger generations ($S$) & 5 \\
+  & Recovery generations ($R$) & 3 \\
+\midrule
+\multirow{2}{*}{MAP-Elites}
+  & Grid size & $5 \times 5$ \\
+  & Descriptors & simplicity, Harmony gain \\
+\midrule
+Value function
+  & $\lambda$ (cost penalty) & 0.1 \\
+\bottomrule
+\end{tabular}
+\end{table}

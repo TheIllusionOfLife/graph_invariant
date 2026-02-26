@@ -35,7 +35,7 @@ build-backend = "hatchling.build"
 packages = ["src/graph_invariant", "src/harmony"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 addopts = "-q"
 
 [tool.ruff]

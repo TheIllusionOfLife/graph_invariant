@@ -107,13 +107,45 @@ class TestBuildProposalPrompt:
         for et in EdgeType:
             assert et.name in prompt
 
-    def test_unconstrained_does_not_enumerate_entities(self, kg):
+    def test_free_mode_includes_entity_sample(self, kg):
         prompt = build_proposal_prompt(kg, ProposalStrategy.REFINEMENT, [], [], constrained=False)
-        # Spot check: most entity IDs should NOT appear in the free-form prompt
+        # Free mode should include some entity IDs so the LLM knows what to reference
         entity_ids = list(kg.entities.keys())
-        # At least half should be absent (free prompt is concise)
-        absent = sum(1 for eid in entity_ids if eid not in prompt)
-        assert absent > len(entity_ids) // 2
+        present = sum(1 for eid in entity_ids if eid in prompt)
+        # At least some entities should appear (sample or full list for small KGs)
+        assert present >= 1
+
+    def test_free_mode_includes_edge_types(self, kg):
+        prompt = build_proposal_prompt(kg, ProposalStrategy.REFINEMENT, [], [], constrained=False)
+        # Free mode should also list valid edge types
+        for et in EdgeType:
+            assert et.name in prompt
+
+    def test_free_mode_entity_sample_capped(self):
+        """For KGs with >20 entities, free mode caps at _MAX_FREE_ENTITY_SAMPLE."""
+        from harmony.proposals.llm_proposer import _MAX_FREE_ENTITY_SAMPLE
+
+        kg = build_linear_algebra_kg()
+        assert kg.num_entities > _MAX_FREE_ENTITY_SAMPLE, "Need >20 entities for cap test"
+
+        prompt = build_proposal_prompt(kg, ProposalStrategy.REFINEMENT, [], [], constrained=False)
+
+        # Should show the "(showing N of M)" suffix
+        assert f"(showing {_MAX_FREE_ENTITY_SAMPLE} of {kg.num_entities})" in prompt
+
+        # Extract the EXAMPLE ENTITY line and count entity IDs listed
+        for line in prompt.splitlines():
+            if line.startswith("EXAMPLE ENTITY"):
+                # Entity IDs are comma-separated after the colon
+                _, _, entity_csv = line.partition(": ")
+                listed_ids = [eid.strip() for eid in entity_csv.split(",") if eid.strip()]
+                assert len(listed_ids) == _MAX_FREE_ENTITY_SAMPLE
+                # All listed IDs must be real KG entities
+                for eid in listed_ids:
+                    assert eid in kg.entities, f"Listed entity '{eid}' not in KG"
+                break
+        else:
+            pytest.fail("No 'EXAMPLE ENTITY' line found in prompt")
 
 
 # ---------------------------------------------------------------------------

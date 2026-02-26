@@ -40,9 +40,9 @@ non-trivial coherence weight best captures the structure of our curated KGs.
 The deterministic validator enforces three rules:
 \begin{enumerate}[nosep]
   \item \textbf{Text length}: \texttt{claim}, \texttt{justification},
-    \texttt{falsification\_condition}, and \texttt{kg\_domain} must each be
-    $\geq 10$ characters.  (Note: short domain names such as \texttt{"physics"}
-    require padding or full descriptive strings in practice.)
+    and \texttt{falsification\_condition} must each be $\geq 10$ characters.
+    \texttt{kg\_domain} must be $\geq 3$ characters (controlled vocabulary,
+    not free text).
   \item \textbf{Type-specific fields}: \texttt{ADD\_EDGE} requires
     \texttt{source\_entity}, \texttt{target\_entity}, and \texttt{edge\_type};
     \texttt{ADD\_ENTITY} requires \texttt{entity\_id} and \texttt{entity\_type};

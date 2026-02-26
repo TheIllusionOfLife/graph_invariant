@@ -87,10 +87,48 @@ class TestTextFieldValidation:
         assert any("falsification_condition" in v for v in result.violations)
 
     def test_short_kg_domain_fails(self):
+        """Domain names under 3 chars should fail (trivial/empty guard)."""
         p = _make_add_edge_proposal(kg_domain="la")
         result = validate(p)
         assert result.is_valid is False
         assert any("kg_domain" in v for v in result.violations)
+
+    def test_empty_kg_domain_fails(self):
+        p = _make_add_edge_proposal(kg_domain="")
+        result = validate(p)
+        assert result.is_valid is False
+        assert any("kg_domain" in v for v in result.violations)
+
+    def test_none_kg_domain_fails(self):
+        p = _make_add_edge_proposal(kg_domain=None)
+        result = validate(p)
+        assert result.is_valid is False
+        assert any("kg_domain" in v for v in result.violations)
+
+    def test_physics_domain_passes(self):
+        """'physics' (7 chars) is a valid controlled-vocabulary domain."""
+        p = _make_add_edge_proposal(kg_domain="physics")
+        result = validate(p)
+        assert result.is_valid is True
+
+    def test_astronomy_domain_passes(self):
+        """'astronomy' (9 chars) is a valid controlled-vocabulary domain."""
+        p = _make_add_edge_proposal(kg_domain="astronomy")
+        result = validate(p)
+        assert result.is_valid is True
+
+    def test_whitespace_only_kg_domain_fails(self):
+        """Whitespace-only strings should be rejected."""
+        p = _make_add_edge_proposal(kg_domain="   ")
+        result = validate(p)
+        assert result.is_valid is False
+        assert any("kg_domain" in v for v in result.violations)
+
+    def test_exact_boundary_3_char_domain_passes(self):
+        """Exact 3-char domain sits on the boundary and should pass."""
+        p = _make_add_edge_proposal(kg_domain="abc")
+        result = validate(p)
+        assert result.is_valid is True
 
 
 class TestAddEdgeTypeSpecific:

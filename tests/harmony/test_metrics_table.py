@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -86,9 +86,7 @@ def _checkpoint_dir(tmp_path: Path, domain: str) -> Path:
     return d
 
 
-def _checkpoint_dir_with_archive(
-    tmp_path: Path, domain: str, kg: KnowledgeGraph
-) -> Path:
+def _checkpoint_dir_with_archive(tmp_path: Path, domain: str, kg: KnowledgeGraph) -> Path:
     """Create a checkpoint directory with an archive containing one ADD_EDGE proposal."""
     d = tmp_path / domain
     d.mkdir()

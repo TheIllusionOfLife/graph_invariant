@@ -54,9 +54,7 @@ _DOMAIN_BUILDERS: dict[str, str] = {
 def _load_kg_for_domain(domain: str) -> KnowledgeGraph:
     """Import and call the builder function for a named domain."""
     if domain not in _DOMAIN_BUILDERS:
-        raise ValueError(
-            f"Unknown domain '{domain}'. Known domains: {sorted(_DOMAIN_BUILDERS)}"
-        )
+        raise ValueError(f"Unknown domain '{domain}'. Known domains: {sorted(_DOMAIN_BUILDERS)}")
     module_path, func_name = _DOMAIN_BUILDERS[domain].rsplit(".", 1)
     import importlib
 
@@ -80,6 +78,9 @@ def _apply_proposals_to_kg(
     silently skipped to tolerate stale/invalid proposals in the archive.
     """
     kg_copy = copy.deepcopy(kg)
+    seen_edges: set[tuple[str, str, EdgeType]] = {
+        (edge.source, edge.target, edge.edge_type) for edge in kg_copy.edges
+    }
     for proposal in proposals:
         if proposal.proposal_type != ProposalType.ADD_EDGE:
             continue
@@ -93,6 +94,9 @@ def _apply_proposals_to_kg(
             edge_type = EdgeType[proposal.edge_type]
         except KeyError:
             continue
+        edge_key = (proposal.source_entity, proposal.target_entity, edge_type)
+        if edge_key in seen_edges:
+            continue
         try:
             kg_copy.add_edge(
                 TypedEdge(
@@ -101,8 +105,8 @@ def _apply_proposals_to_kg(
                     edge_type=edge_type,
                 )
             )
+            seen_edges.add(edge_key)
         except ValueError:
-            # e.g. entity not found — should not happen after checks above
             continue
     return kg_copy
 
@@ -251,8 +255,11 @@ def compute_metrics_table(
             try:
                 archive = deserialize_archive(state.archive)
                 proposals = [cell.proposal for cell in archive.cells.values()]
-            except Exception:
-                proposals = []
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"Failed to deserialize archive for domain '{domain}' "
+                    f"at '{output_dir / 'checkpoint.json'}'"
+                ) from exc
 
         # Apply best proposals to get post-search KG
         augmented_kg = _apply_proposals_to_kg(kg, proposals)

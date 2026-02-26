@@ -147,6 +147,7 @@ def _generate_template(report_path: Path, output_path: Path) -> None:
         "scored_at": "YYYY-MM-DD",
         "entries": entries,
     }
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(template, indent=2), encoding="utf-8")
     print(f"Template written to {output_path}")
     print("Fill in scores (1–5) for each proposal, then run with --load --summarize")

@@ -197,9 +197,7 @@ class TestRubricSummary:
     def test_rubric_summary_empty_entries_returns_zeros(self):
         from expert_rubric import ExpertRubric, rubric_summary
 
-        rubric = ExpertRubric(
-            domain="test", entries=[], scorer="self", scored_at="2026-02-26"
-        )
+        rubric = ExpertRubric(domain="test", entries=[], scorer="self", scored_at="2026-02-26")
         summary = rubric_summary(rubric)
         assert summary["overall"] == pytest.approx(0.0)
         assert summary["mean_plausibility"] == pytest.approx(0.0)

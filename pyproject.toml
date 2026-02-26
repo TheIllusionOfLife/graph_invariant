@@ -23,6 +23,7 @@ dev = [
   "pytest>=8.3",
   "ruff>=0.9",
   "matplotlib>=3.9",
+  "pandas>=2.0",
   "seaborn>=0.13",
 ]
 

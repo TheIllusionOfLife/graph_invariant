@@ -223,6 +223,10 @@ def plot_convergence(
     n = len(active)
     fig, axes = plt.subplots(1, n, figsize=(FULL_WIDTH, 2.2), squeeze=False)
 
+    # Compute shared y-axis range for best_harmony_gain across all domains
+    all_gains = [g for data in active.values() for g in data["best_harmony_gain"]]
+    gain_max = max(all_gains) * 1.15 if all_gains else 1.0  # 15% headroom
+
     for idx, (domain, data) in enumerate(active.items()):
         ax = axes[0, idx]
         gens = data["generation"]
@@ -241,6 +245,7 @@ def plot_convergence(
             label="Best gain",
         )
         ax2.set_ylabel("Best harmony gain", color=HARMONY_GAIN_COLOR)
+        ax2.set_ylim(0, gain_max)
 
         ax.set_xlabel("Generation")
         ax.set_title(domain.replace("_", " ").title())
@@ -282,9 +287,13 @@ def plot_archive_heatmap(
 
     for idx, (domain, (matrix, num_bins)) in enumerate(active.items()):
         ax = axes[0, idx]
+        # Explicit masked array so NaN cells render as white regardless of colormap
+        masked = np.ma.masked_invalid(matrix)
+        cmap = plt.cm.YlGn.copy()
+        cmap.set_bad(color="white")
         im = ax.imshow(
-            matrix,
-            cmap="YlGn",
+            masked,
+            cmap=cmap,
             aspect="equal",
             origin="lower",
             vmin=0,

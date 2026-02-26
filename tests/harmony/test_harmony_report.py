@@ -182,6 +182,24 @@ class TestGenerateReport:
 
         assert report["valid_rate_curve"] == []
 
+    def test_report_handles_malformed_jsonl(self, tmp_path: Path):
+        """Malformed JSONL lines are skipped without crashing report generation."""
+        from harmony_report import generate_report
+
+        _make_synthetic_checkpoint(tmp_path)
+
+        events_path = tmp_path / "logs" / "harmony_events.jsonl"
+        events_path.parent.mkdir(parents=True, exist_ok=True)
+        with events_path.open("w", encoding="utf-8") as f:
+            f.write('{"event":"generation_summary","generation":1,"valid_rate":0.5}\n')
+            f.write("TRUNCATED LINE {{not json\n")
+            f.write('{"event":"generation_summary","generation":2,"valid_rate":0.7}\n')
+
+        report = generate_report(tmp_path, "astronomy")
+
+        # Both valid lines parsed; the corrupted line is skipped
+        assert len(report["valid_rate_curve"]) == 2
+
     def test_report_heatmap_data_has_row_col_fitness(self, tmp_path: Path):
         """Each heatmap entry has row, col, fitness keys."""
         from harmony_report import generate_report

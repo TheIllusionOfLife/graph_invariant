@@ -173,7 +173,7 @@ def _mean_reciprocal_rank(
 
     if not reciprocal_ranks:
         return 0.0
-    return sum(reciprocal_ranks) / len(test_edges)
+    return sum(reciprocal_ranks) / len(reciprocal_ranks)
 
 
 def _mrr_random(
@@ -206,7 +206,7 @@ def _mrr_random(
 
     if not reciprocal_ranks:
         return 0.0
-    return sum(reciprocal_ranks) / len(test_edges)
+    return sum(reciprocal_ranks) / len(reciprocal_ranks)
 
 
 # ---------------------------------------------------------------------------

@@ -49,7 +49,10 @@ def generate_report(output_dir: Path, domain: str) -> dict[str, Any]:
                 line = line.strip()
                 if not line:
                     continue
-                event = json.loads(line)
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
                 if event.get("event") == "generation_summary":
                     valid_rate_curve.append(
                         {
@@ -158,11 +161,9 @@ def _write_markdown(report: dict[str, Any], path: Path) -> None:
         lines.append("| Generation | Valid Rate | Best Gain |")
         lines.append("|-----------|------------|-----------|")
         for entry in curve:
-            lines.append(
-                f"| {entry.get('generation', '?')} | "
-                f"{entry.get('valid_rate', 0.0):.3f} | "
-                f"{entry.get('best_harmony_gain', 0.0):.4f} |"
-            )
+            vr = entry.get("valid_rate") or 0.0
+            bg = entry.get("best_harmony_gain") or 0.0
+            lines.append(f"| {entry.get('generation', '?')} | {vr:.3f} | {bg:.4f} |")
         lines.append("")
 
     path.write_text("\n".join(lines), encoding="utf-8")

@@ -122,12 +122,30 @@ class TestBuildProposalPrompt:
             assert et.name in prompt
 
     def test_free_mode_entity_sample_capped(self):
-        """For large KGs, free mode should cap the entity sample size."""
+        """For KGs with >20 entities, free mode caps at _MAX_FREE_ENTITY_SAMPLE."""
+        from harmony.proposals.llm_proposer import _MAX_FREE_ENTITY_SAMPLE
+
         kg = build_linear_algebra_kg()
+        assert kg.num_entities > _MAX_FREE_ENTITY_SAMPLE, "Need >20 entities for cap test"
+
         prompt = build_proposal_prompt(kg, ProposalStrategy.REFINEMENT, [], [], constrained=False)
-        # The prompt should contain "EXAMPLE ENTITY" section with grounding
-        assert "EXAMPLE ENTITY" in prompt
-        assert "MUST be exact entity IDs" in prompt
+
+        # Should show the "(showing N of M)" suffix
+        assert f"(showing {_MAX_FREE_ENTITY_SAMPLE} of {kg.num_entities})" in prompt
+
+        # Extract the EXAMPLE ENTITY line and count entity IDs listed
+        for line in prompt.splitlines():
+            if line.startswith("EXAMPLE ENTITY"):
+                # Entity IDs are comma-separated after the colon
+                _, _, entity_csv = line.partition(": ")
+                listed_ids = [eid.strip() for eid in entity_csv.split(",") if eid.strip()]
+                assert len(listed_ids) == _MAX_FREE_ENTITY_SAMPLE
+                # All listed IDs must be real KG entities
+                for eid in listed_ids:
+                    assert eid in kg.entities, f"Listed entity '{eid}' not in KG"
+                break
+        else:
+            pytest.fail("No 'EXAMPLE ENTITY' line found in prompt")
 
 
 # ---------------------------------------------------------------------------

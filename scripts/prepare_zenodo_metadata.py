@@ -72,11 +72,13 @@ def main() -> int:
         resolved = path.resolve()
         if not resolved.exists():
             raise FileNotFoundError(f"not found: {path}")
-        artifacts.append({
-            "path": str(path),
-            "size_bytes": resolved.stat().st_size,
-            "sha256": _sha256(resolved),
-        })
+        artifacts.append(
+            {
+                "path": str(path),
+                "size_bytes": resolved.stat().st_size,
+                "sha256": _sha256(resolved),
+            }
+        )
 
     payload = {
         "schema_version": 1,

@@ -253,11 +253,13 @@ def _build_metadata(args: argparse.Namespace) -> dict:
     if args.keyword:
         meta["keywords"] = args.keyword
     if args.github_url:
-        meta["related_identifiers"] = [{
-            "identifier": args.github_url,
-            "relation": "isSupplementTo",
-            "scheme": "url",
-        }]
+        meta["related_identifiers"] = [
+            {
+                "identifier": args.github_url,
+                "relation": "isSupplementTo",
+                "scheme": "url",
+            }
+        ]
     if args.conference_title:
         meta["conference_title"] = args.conference_title
     if args.conference_url:

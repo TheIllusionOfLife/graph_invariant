@@ -1,0 +1,21 @@
+{
+  "title": "Harmony-Driven Theory Discovery in Knowledge Graphs via LLM-Guided Island Search",
+  "description": "Code repository for the Harmony framework: a four-component metric (compressibility, coherence, symmetry, generativity) combined with MAP-Elites island search and LLM-guided proposal generation for automated theory discovery in scientific knowledge graphs.",
+  "upload_type": "software",
+  "creators": [
+    {
+      "name": "Anonymous"
+    }
+  ],
+  "keywords": [
+    "knowledge graphs",
+    "theory discovery",
+    "harmony metric",
+    "LLM",
+    "MAP-Elites",
+    "island search",
+    "NeurIPS 2025"
+  ],
+  "license": "MIT",
+  "language": "eng"
+}

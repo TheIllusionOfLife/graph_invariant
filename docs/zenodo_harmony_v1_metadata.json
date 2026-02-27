@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-02-27T03:24:35.340508+00:00",
+  "experiment_name": "harmony_discovery",
+  "artifact_source_commit": "a0e56d547bb7a39029d18c8e9a3531af1597b1e3",
+  "entrypoint": null,
+  "metadata_generation_argv": [
+    "zenodo_staging/harmony_v1/harmony_experiments.tar.gz",
+    "--experiment-name",
+    "harmony_discovery",
+    "--steps",
+    "20",
+    "--seed-start",
+    "42",
+    "--seed-end",
+    "42",
+    "--output",
+    "docs/zenodo_harmony_v1_metadata.json"
+  ],
+  "seed_range": {
+    "start": 42,
+    "end": 42
+  },
+  "steps": 20,
+  "artifacts": [
+    {
+      "path": "zenodo_staging/harmony_v1/harmony_experiments.tar.gz",
+      "size_bytes": 11533,
+      "sha256": "eaea52269e00ef3ea8be79d4a3b5f9212fd2d5e3ca86a2710edba66b4c618c27"
+    }
+  ],
+  "paper_bindings": []
+}

@@ -32,6 +32,18 @@ following.  Our experiments use a single model; ensembling across model families
 could improve diversity and robustness.  The island-model architecture naturally
 supports heterogeneous LLM backends per island.
 
+\paragraph{Broader impacts.}
+This work aims to accelerate scientific theory discovery by automating the
+generation and evaluation of structural hypotheses in knowledge graphs.  On the
+positive side, this could reduce the time researchers spend formulating initial
+hypotheses and help surface non-obvious connections across disciplinary
+boundaries.  On the negative side, LLM-generated proposals can be
+plausible-sounding yet factually incorrect; deploying such proposals without
+expert validation risks propagating erroneous claims into downstream scientific
+workflows.  We mitigate this by including falsification conditions in every
+proposal and requiring expert rubric scoring before any claim is treated as
+established.
+
 \paragraph{Limitations.}
 (i)~The seven-relation type vocabulary, while sufficient for our five domains,
 may be too coarse for highly specialised fields (e.g.\ organic chemistry

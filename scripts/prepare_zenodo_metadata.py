@@ -93,7 +93,7 @@ def main() -> int:
         "experiment_name": args.experiment_name,
         "artifact_source_commit": _detect_git_commit(),
         "entrypoint": args.entrypoint,
-        # Never pass secrets via CLI — argv is safe here
+        # argv logged for reproducibility; ensure no secrets are passed as CLI args
         "metadata_generation_argv": list(sys.argv[1:]),
         "seed_range": {"start": args.seed_start, "end": args.seed_end},
         "steps": args.steps,

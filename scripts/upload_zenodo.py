@@ -37,7 +37,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 import requests
 
@@ -47,12 +47,12 @@ _ALLOWED_HOSTS = {"zenodo.org", "sandbox.zenodo.org"}
 
 
 def _validate_url(url: str, context: str) -> None:
-    """Ensure *url* points to a known Zenodo domain before sending credentials."""
+    """Ensure *url* uses HTTPS and points to a known Zenodo domain."""
     parsed = urlparse(url)
-    if parsed.hostname not in _ALLOWED_HOSTS:
+    if parsed.scheme != "https" or parsed.hostname not in _ALLOWED_HOSTS:
         print(
             f"ERROR [{context}]: refusing to send credentials to "
-            f"unexpected host '{parsed.hostname}' (url: {url})",
+            f"unexpected URL (scheme={parsed.scheme}, host={parsed.hostname}): {url}",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -162,7 +162,7 @@ def upload_file(bucket_url: str, token: str, path: Path) -> dict:
     print(f"  Uploading {path.name} ({size_mb:.1f} MB) ...", file=sys.stderr, end="", flush=True)
     with open(path, "rb") as fp:
         resp = requests.put(
-            f"{bucket_url}/{path.name}",
+            f"{bucket_url}/{quote(path.name, safe='')}",
             data=fp,
             headers=_auth_headers(token),
             timeout=600,
@@ -240,6 +240,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--github-url", default=None)
     parser.add_argument("--conference-title", default=None)
     parser.add_argument("--conference-url", default=None)
+    parser.add_argument(
+        "--upload-type",
+        default="dataset",
+        choices=["dataset", "software", "poster", "presentation", "publication"],
+    )
     parser.add_argument("--language", default=None)
     parser.add_argument("--publish", action="store_true")
     parser.add_argument("--sandbox", action="store_true")
@@ -259,7 +264,7 @@ def _build_metadata(args: argparse.Namespace) -> dict:
         creators = [{"name": "<authors>"}]
     meta: dict = {
         "title": args.title or "Research Dataset",
-        "upload_type": "dataset",
+        "upload_type": args.upload_type,
         "description": args.description or "Research experiment data.",
         "creators": creators,
         "license": "MIT",
@@ -366,6 +371,15 @@ def main() -> int:
     set_metadata(base_url, token, dep_id, zenodo_meta)
 
     if args.publish:
+        if zenodo_meta.get("title") in ("Research Dataset", "") or any(
+            c["name"] in ("<authors>", "") for c in zenodo_meta.get("creators", [])
+        ):
+            print(
+                "ERROR: refusing to publish with placeholder title/creator. "
+                "Pass --title and --creator explicitly.",
+                file=sys.stderr,
+            )
+            return 1
         result = publish_deposit(base_url, token, dep_id)
         print(f"\nDOI: {result['doi']}", file=sys.stderr)
     else:
@@ -375,4 +389,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except requests.RequestException as exc:
+        print(f"ERROR [network]: {exc}", file=sys.stderr)
+        sys.exit(1)

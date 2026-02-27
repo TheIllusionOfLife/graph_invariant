@@ -67,6 +67,13 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=Path("zenodo_metadata.json"))
     args = parser.parse_args()
 
+    if args.steps <= 0:
+        parser.error("--steps must be > 0")
+    if args.seed_start < 0 or args.seed_end < 0:
+        parser.error("--seed-start and --seed-end must be >= 0")
+    if args.seed_start > args.seed_end:
+        parser.error("--seed-start must be <= --seed-end")
+
     artifacts = []
     for path in sorted(args.files):
         resolved = path.resolve()

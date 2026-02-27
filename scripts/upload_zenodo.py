@@ -37,11 +37,25 @@ import json
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 
 ZENODO_API = "https://zenodo.org/api"
 SANDBOX_API = "https://sandbox.zenodo.org/api"
+_ALLOWED_HOSTS = {"zenodo.org", "sandbox.zenodo.org"}
+
+
+def _validate_url(url: str, context: str) -> None:
+    """Ensure *url* points to a known Zenodo domain before sending credentials."""
+    parsed = urlparse(url)
+    if parsed.hostname not in _ALLOWED_HOSTS:
+        print(
+            f"ERROR [{context}]: refusing to send credentials to "
+            f"unexpected host '{parsed.hostname}' (url: {url})",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 # ---------------------------------------------------------------------------
@@ -118,8 +132,10 @@ def create_new_version(base_url: str, token: str, record_id: int) -> dict:
         timeout=30,
     )
     _check_response(resp, "new version")
+    latest_draft_url = resp.json()["links"]["latest_draft"]
+    _validate_url(latest_draft_url, "new version latest_draft")
     resp2 = requests.get(
-        resp.json()["links"]["latest_draft"],
+        latest_draft_url,
         headers=_auth_headers(token),
         timeout=15,
     )
@@ -141,6 +157,7 @@ def edit_published(base_url: str, token: str, record_id: int) -> dict:
 
 
 def upload_file(bucket_url: str, token: str, path: Path) -> dict:
+    _validate_url(bucket_url, "upload bucket")
     size_mb = path.stat().st_size / (1024 * 1024)
     print(f"  Uploading {path.name} ({size_mb:.1f} MB) ...", file=sys.stderr, end="", flush=True)
     with open(path, "rb") as fp:
@@ -274,9 +291,16 @@ def _load_and_verify(args: argparse.Namespace, meta: dict) -> list[Path]:
     if not artifacts:
         print("ERROR: no artifacts in metadata.", file=sys.stderr)
         sys.exit(1)
+    base_dir = args.metadata.resolve().parent
     paths: list[Path] = []
+    seen_names: set[str] = set()
     for entry in artifacts:
-        p = Path(entry["path"])
+        raw = Path(entry["path"])
+        p = raw if raw.is_absolute() else (base_dir / raw).resolve()
+        if p.name in seen_names:
+            print(f"ERROR: duplicate filename '{p.name}' in artifact list", file=sys.stderr)
+            sys.exit(1)
+        seen_names.add(p.name)
         if not p.exists():
             print(f"ERROR: not found: {p}", file=sys.stderr)
             sys.exit(1)

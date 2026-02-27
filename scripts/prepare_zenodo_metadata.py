@@ -20,7 +20,7 @@ import hashlib
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 
@@ -80,7 +80,7 @@ def main() -> int:
 
     payload = {
         "schema_version": 1,
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "generated_at_utc": datetime.now(UTC).isoformat(),
         "experiment_name": args.experiment_name,
         "artifact_source_commit": _detect_git_commit(),
         "entrypoint": args.entrypoint,

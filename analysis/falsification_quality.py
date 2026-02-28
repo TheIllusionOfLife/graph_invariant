@@ -10,13 +10,33 @@ import math
 
 from harmony.proposals.types import Proposal
 
-_SPECIFICITY_MARKERS = frozenset({
-    "measure", "experiment", "observe", "test", "detect",
-    "yield", "produce", "show", "demonstrate", "falsif",
-    "temperature", "pressure", "concentration", "frequency",
-    "spectroscop", "diffraction", "microscop", "conductiv",
-    "nm", "mK", "GPa", "eV", "Hz", "K",
-})
+_SPECIFICITY_MARKERS = frozenset(
+    {
+        "measure",
+        "experiment",
+        "observe",
+        "test",
+        "detect",
+        "yield",
+        "produce",
+        "show",
+        "demonstrate",
+        "falsif",
+        "temperature",
+        "pressure",
+        "concentration",
+        "frequency",
+        "spectroscop",
+        "diffraction",
+        "microscop",
+        "conductiv",
+        "nm",
+        "mk",
+        "gpa",
+        "ev",
+        "hz",
+    }
+)
 
 
 def _text_specificity(text: str) -> float:
@@ -26,9 +46,7 @@ def _text_specificity(text: str) -> float:
     words = text.lower().split()
     n_words = len(words)
     length_score = 1.0 / (1.0 + math.exp(-0.15 * (n_words - 10)))
-    marker_hits = sum(
-        1 for w in words if any(m in w for m in _SPECIFICITY_MARKERS)
-    )
+    marker_hits = sum(1 for w in words if any(m in w for m in _SPECIFICITY_MARKERS))
     marker_ratio = min(marker_hits / max(n_words, 1), 1.0)
     return 0.6 * length_score + 0.4 * marker_ratio
 

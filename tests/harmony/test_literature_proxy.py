@@ -41,13 +41,13 @@ class TestProxyScore:
         s2 = proxy_score(p, seed=42)
         assert s1 == s2
 
-    def test_empty_claim_returns_zero(self) -> None:
+    def test_empty_fields_score_near_zero(self) -> None:
         from harmony.evaluation.literature_proxy import proxy_score
 
-        p = _make_proposal(claim="x" * 10)  # minimal valid claim
-        # Very short/generic claim should score low but not crash
+        p = _make_proposal(claim="", justification="", falsification="")
         score = proxy_score(p)
         assert isinstance(score, float)
+        assert score < 0.1
 
 
 class TestBatchProxy:

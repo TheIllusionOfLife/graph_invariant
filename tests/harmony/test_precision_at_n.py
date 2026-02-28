@@ -74,6 +74,18 @@ class TestPrecisionAtN:
         withheld = _withheld_edges()
         assert precision_at_n([], withheld, n=5) == 0.0
 
+    def test_duplicate_predictions_not_double_counted(self) -> None:
+        from analysis.precision_at_n import precision_at_n
+
+        proposals_ranked = [
+            ("A", "D", "DEPENDS_ON"),  # match
+            ("A", "D", "DEPENDS_ON"),  # duplicate — should be ignored
+            ("A", "B", "EXPLAINS"),     # no match (fills slot 2)
+        ]
+        withheld = _withheld_edges()
+        # Only 2 unique proposals evaluated: 1 match + 1 miss = 0.5
+        assert precision_at_n(proposals_ranked, withheld, n=2) == 0.5
+
     def test_returns_float_in_unit_interval(self) -> None:
         from analysis.precision_at_n import precision_at_n
 

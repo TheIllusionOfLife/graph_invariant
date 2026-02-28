@@ -146,6 +146,8 @@ def rubric_aggregate(scores: dict[str, float]) -> float:
         Mean score in [1, 5].
     """
     values = list(scores.values())
+    if not values:
+        return 1.0
     return sum(values) / len(values)
 
 

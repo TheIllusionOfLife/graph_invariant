@@ -15,11 +15,12 @@ def classify_proposal(proposal: Proposal, kg: KnowledgeGraph) -> str:
     Returns "rediscovery" if the exact (source, target, edge_type) triple
     already exists in the KG, otherwise "novel".
     """
+    proposal_edge_type = proposal.edge_type.upper()
     for edge in kg.edges:
         if (
             edge.source == proposal.source_entity
             and edge.target == proposal.target_entity
-            and edge.edge_type.name == proposal.edge_type
+            and edge.edge_type.name == proposal_edge_type
         ):
             return "rediscovery"
     return "novel"

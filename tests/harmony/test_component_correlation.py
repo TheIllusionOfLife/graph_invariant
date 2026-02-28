@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 
 class TestComponentCorrelation:
     def test_returns_4x4_matrix(self) -> None:
@@ -70,6 +72,20 @@ class TestComponentCorrelation:
         ]
         matrix = compute_correlation_matrix(scores)
         assert abs(matrix["compressibility"]["coherence"] - 1.0) < 1e-10
+
+    def test_constant_input_returns_nan(self) -> None:
+        from analysis.component_correlation import compute_correlation_matrix
+
+        # All values identical → zero variance → correlation undefined
+        scores = [
+            {"compressibility": 0.5, "coherence": 0.5, "symmetry": 0.5, "generativity": 0.5},
+            {"compressibility": 0.5, "coherence": 0.5, "symmetry": 0.5, "generativity": 0.5},
+            {"compressibility": 0.5, "coherence": 0.5, "symmetry": 0.5, "generativity": 0.5},
+        ]
+        matrix = compute_correlation_matrix(scores)
+        # Off-diagonal should be NaN (undefined), diagonal is 1.0
+        assert matrix["compressibility"]["compressibility"] == 1.0
+        assert math.isnan(matrix["compressibility"]["coherence"])
 
     def test_summary_string(self) -> None:
         from analysis.component_correlation import correlation_summary

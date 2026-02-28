@@ -29,10 +29,14 @@ def _rank(values: list[float]) -> list[float]:
 
 
 def _spearman(x: list[float], y: list[float]) -> float:
-    """Compute Spearman rank correlation between two lists."""
+    """Compute Spearman rank correlation between two lists.
+
+    Returns NaN when n < 2 or either vector has zero variance
+    (correlation is undefined for constant inputs).
+    """
     n = len(x)
     if n < 2:
-        return 1.0
+        return float("nan")
     rx = _rank(x)
     ry = _rank(y)
     mean_rx = statistics.mean(rx)
@@ -41,7 +45,7 @@ def _spearman(x: list[float], y: list[float]) -> float:
     den_x = sum((rx[i] - mean_rx) ** 2 for i in range(n)) ** 0.5
     den_y = sum((ry[i] - mean_ry) ** 2 for i in range(n)) ** 0.5
     if den_x == 0 or den_y == 0:
-        return 1.0
+        return float("nan")
     return num / (den_x * den_y)
 
 

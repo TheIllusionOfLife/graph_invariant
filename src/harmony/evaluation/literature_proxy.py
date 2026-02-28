@@ -3,8 +3,7 @@
 Scores proposals using a **different LLM** from the proposer (gpt-oss:20b)
 to avoid evaluation circularity.  When the evaluator LLM is unavailable
 (CI, offline), falls back to a deterministic heuristic based on textual
-features of the proposal (claim length, justification specificity, domain
-keyword overlap).
+features of the proposal (claim length, justification specificity).
 
 Public API
 ----------
@@ -47,9 +46,9 @@ def _text_quality_score(text: str) -> float:
 
 
 def _deterministic_hash_noise(proposal_id: str, seed: int) -> float:
-    """Deterministic pseudo-random noise in [0, 0.1] from proposal ID + seed."""
+    """Deterministic pseudo-random noise in [-0.05, 0.05] from proposal ID + seed."""
     h = hashlib.sha256(f"{proposal_id}:{seed}".encode()).hexdigest()
-    return int(h[:8], 16) / 0xFFFFFFFF * 0.1
+    return int(h[:8], 16) / 0xFFFFFFFF * 0.1 - 0.05
 
 
 def proxy_score(proposal: Proposal, seed: int = 42) -> float:

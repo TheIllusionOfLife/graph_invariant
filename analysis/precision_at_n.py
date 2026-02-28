@@ -26,6 +26,16 @@ def precision_at_n(
         return 0.0
 
     withheld_set = {(s, t, et) for s, t, et in withheld}
-    top_n = proposals_ranked[:n]
-    hits = sum(1 for triple in top_n if triple in withheld_set)
-    return float(hits) / len(top_n)
+    # Deduplicate predictions (first occurrence wins in ranking)
+    seen: set[tuple[str, str, str]] = set()
+    unique_top: list[tuple[str, str, str]] = []
+    for triple in proposals_ranked:
+        if triple not in seen:
+            seen.add(triple)
+            unique_top.append(triple)
+            if len(unique_top) == n:
+                break
+    if not unique_top:
+        return 0.0
+    hits = sum(1 for triple in unique_top if triple in withheld_set)
+    return float(hits) / len(unique_top)

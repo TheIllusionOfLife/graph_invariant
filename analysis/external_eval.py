@@ -122,9 +122,7 @@ class _RotatE:
                 t_re, t_im = self._get_complex(t, is_entity=True)
 
                 neg_candidates = [
-                    int(x)
-                    for x in rng.integers(0, self.n_entities, n_neg)
-                    if int(x) != t
+                    int(x) for x in rng.integers(0, self.n_entities, n_neg) if int(x) != t
                 ]
                 for neg_t in neg_candidates:
                     neg_score = self._score(s, r, neg_t)
@@ -138,7 +136,10 @@ class _RotatE:
                     # Gradient: push positive target closer, negative further
                     # L1 distance gradient: sign of (rot - target)
                     rot_re, rot_im = self._complex_mul(
-                        s_re, s_im, r_re, r_im,
+                        s_re,
+                        s_im,
+                        r_re,
+                        r_im,
                     )
                     sign_pos = np.sign(rot_re - t_re)
                     sign_pos_im = np.sign(rot_im - t_im)
@@ -153,23 +154,18 @@ class _RotatE:
 
                     # Update source entity: ∂L/∂E[s] via chain rule
                     # through complex multiply (pos - neg contribution)
-                    grad_s_re = (sign_pos - sign_neg) * r_re + (
-                        sign_pos_im - sign_neg_im
-                    ) * (-r_im)
-                    grad_s_im = (sign_pos - sign_neg) * r_im + (
-                        sign_pos_im - sign_neg_im
-                    ) * r_re
+                    grad_s_re = (sign_pos - sign_neg) * r_re + (sign_pos_im - sign_neg_im) * (-r_im)
+                    grad_s_im = (sign_pos - sign_neg) * r_im + (sign_pos_im - sign_neg_im) * r_re
                     self.E[s, 0::2] -= lr * grad_s_re
                     self.E[s, 1::2] -= lr * grad_s_im
 
                     # Update relation phase: ∂L/∂θ via chain rule
                     # d(cos θ)/dθ = -sin θ, d(sin θ)/dθ = cos θ
                     theta = self.phase[r]
-                    grad_theta = (
-                        (sign_pos - sign_neg)
-                        * (s_re * (-np.sin(theta)) - s_im * np.cos(theta))
-                        + (sign_pos_im - sign_neg_im)
-                        * (s_re * np.cos(theta) + s_im * (-np.sin(theta)))
+                    grad_theta = (sign_pos - sign_neg) * (
+                        s_re * (-np.sin(theta)) - s_im * np.cos(theta)
+                    ) + (sign_pos_im - sign_neg_im) * (
+                        s_re * np.cos(theta) + s_im * (-np.sin(theta))
                     )
                     self.phase[r] -= lr * grad_theta
 
@@ -211,12 +207,11 @@ class _ComplEx:
         # ⟨e_s, r, ē_t⟩ = Σ (s * r * conj(t))
         # Real part of (s_re + j*s_im)(r_re + j*r_im)(t_re - j*t_im)
         # = s_re*r_re*t_re + s_re*r_im*t_im + s_im*r_re*t_im - s_im*r_im*t_re
-        score = float(np.sum(
-            s_re * r_re * t_re
-            + s_re * r_im * t_im
-            + s_im * r_re * t_im
-            - s_im * r_im * t_re
-        ))
+        score = float(
+            np.sum(
+                s_re * r_re * t_re + s_re * r_im * t_im + s_im * r_re * t_im - s_im * r_im * t_re
+            )
+        )
         return score
 
     def score_all_targets(self, s: int, r: int) -> np.ndarray:
@@ -258,9 +253,7 @@ class _ComplEx:
                 sr_im = self.E[s, 0::2] * self.R[r, 1::2] + self.E[s, 1::2] * self.R[r, 0::2]
 
                 neg_candidates = [
-                    int(x)
-                    for x in rng.integers(0, self.n_entities, n_neg)
-                    if int(x) != t
+                    int(x) for x in rng.integers(0, self.n_entities, n_neg) if int(x) != t
                 ]
                 for neg_t in neg_candidates:
                     neg_score = self._score(s, r, neg_t)
@@ -383,8 +376,13 @@ def evaluate_rotate(
 ) -> float:
     """Hits@K using RotatE — external evaluation (not used in Harmony scoring)."""
     return _evaluate_model(
-        _RotatE, kg, seed=seed, mask_ratio=mask_ratio,
-        k=k, dim=dim, n_epochs=n_epochs,
+        _RotatE,
+        kg,
+        seed=seed,
+        mask_ratio=mask_ratio,
+        k=k,
+        dim=dim,
+        n_epochs=n_epochs,
     )
 
 
@@ -398,8 +396,13 @@ def evaluate_complex(
 ) -> float:
     """Hits@K using ComplEx — external evaluation (not used in Harmony scoring)."""
     return _evaluate_model(
-        _ComplEx, kg, seed=seed, mask_ratio=mask_ratio,
-        k=k, dim=dim, n_epochs=n_epochs,
+        _ComplEx,
+        kg,
+        seed=seed,
+        mask_ratio=mask_ratio,
+        k=k,
+        dim=dim,
+        n_epochs=n_epochs,
     )
 
 

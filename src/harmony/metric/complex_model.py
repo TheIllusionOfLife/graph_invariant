@@ -27,6 +27,10 @@ def complex_hits_at_k(
     from analysis.external_eval import evaluate_complex
 
     return evaluate_complex(
-        kg, seed=seed, mask_ratio=mask_ratio,
-        k=k, dim=dim, n_epochs=n_epochs,
+        kg,
+        seed=seed,
+        mask_ratio=mask_ratio,
+        k=k,
+        dim=dim,
+        n_epochs=n_epochs,
     )

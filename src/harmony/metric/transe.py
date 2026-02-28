@@ -25,11 +25,12 @@ class _TransE:
     """
 
     def __init__(
-        self, entity_ids: list[str], dim: int = 50, seed: int = 42,
+        self,
+        entity_ids: list[str],
+        dim: int = 50,
+        seed: int = 42,
     ) -> None:
-        self.entity_to_idx: dict[str, int] = {
-            eid: i for i, eid in enumerate(entity_ids)
-        }
+        self.entity_to_idx: dict[str, int] = {eid: i for i, eid in enumerate(entity_ids)}
         self.n_entities = len(entity_ids)
         self.n_relations = len(EdgeType)
         self.dim = dim
@@ -72,9 +73,7 @@ class _TransE:
                 h = self.E[s] + self.R[r]  # snapshot before updates
 
                 neg_candidates = [
-                    int(x)
-                    for x in rng.integers(0, self.n_entities, n_neg)
-                    if int(x) != t
+                    int(x) for x in rng.integers(0, self.n_entities, n_neg) if int(x) != t
                 ]
 
                 # Accumulate gradients before applying

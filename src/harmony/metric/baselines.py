@@ -148,8 +148,12 @@ def baseline_distmult_alone(
     from harmony.metric.generativity import generativity
 
     return generativity(
-        kg, seed=seed, mask_ratio=mask_ratio,
-        k=k, dim=dim, n_epochs=n_epochs,
+        kg,
+        seed=seed,
+        mask_ratio=mask_ratio,
+        k=k,
+        dim=dim,
+        n_epochs=n_epochs,
     )
 
 
@@ -165,8 +169,12 @@ def baseline_transe(
     from harmony.metric.transe import transe_hits_at_k
 
     return transe_hits_at_k(
-        kg, seed=seed, mask_ratio=mask_ratio,
-        k=k, dim=dim, n_epochs=n_epochs,
+        kg,
+        seed=seed,
+        mask_ratio=mask_ratio,
+        k=k,
+        dim=dim,
+        n_epochs=n_epochs,
     )
 
 
@@ -182,8 +190,12 @@ def baseline_rotate(
     from harmony.metric.rotate import rotate_hits_at_k
 
     return rotate_hits_at_k(
-        kg, seed=seed, mask_ratio=mask_ratio,
-        k=k, dim=dim, n_epochs=n_epochs,
+        kg,
+        seed=seed,
+        mask_ratio=mask_ratio,
+        k=k,
+        dim=dim,
+        n_epochs=n_epochs,
     )
 
 
@@ -199,6 +211,10 @@ def baseline_complex(
     from harmony.metric.complex_model import complex_hits_at_k
 
     return complex_hits_at_k(
-        kg, seed=seed, mask_ratio=mask_ratio,
-        k=k, dim=dim, n_epochs=n_epochs,
+        kg,
+        seed=seed,
+        mask_ratio=mask_ratio,
+        k=k,
+        dim=dim,
+        n_epochs=n_epochs,
     )

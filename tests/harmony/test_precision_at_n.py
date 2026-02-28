@@ -52,7 +52,7 @@ class TestPrecisionAtN:
 
         proposals_ranked = [
             ("A", "D", "DEPENDS_ON"),  # match
-            ("A", "B", "EXPLAINS"),     # no match
+            ("A", "B", "EXPLAINS"),  # no match
         ]
         withheld = _withheld_edges()
         assert precision_at_n(proposals_ranked, withheld, n=2) == 0.5
@@ -62,8 +62,8 @@ class TestPrecisionAtN:
 
         proposals_ranked = [
             ("A", "D", "DEPENDS_ON"),  # match
-            ("A", "B", "EXPLAINS"),     # no match
-            ("B", "D", "MAPS_TO"),      # match (but n=2, so ignored)
+            ("A", "B", "EXPLAINS"),  # no match
+            ("B", "D", "MAPS_TO"),  # match (but n=2, so ignored)
         ]
         withheld = _withheld_edges()
         assert precision_at_n(proposals_ranked, withheld, n=2) == 0.5
@@ -80,7 +80,7 @@ class TestPrecisionAtN:
         proposals_ranked = [
             ("A", "D", "DEPENDS_ON"),  # match
             ("A", "D", "DEPENDS_ON"),  # duplicate — should be ignored
-            ("A", "B", "EXPLAINS"),     # no match (fills slot 2)
+            ("A", "B", "EXPLAINS"),  # no match (fills slot 2)
         ]
         withheld = _withheld_edges()
         # Only 2 unique proposals evaluated: 1 match + 1 miss = 0.5

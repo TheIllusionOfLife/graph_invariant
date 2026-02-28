@@ -67,7 +67,7 @@ class TestClassifyBatch:
         proposals = [
             _make_proposal("A", "B", "DEPENDS_ON"),  # rediscovery
             _make_proposal("A", "C", "DEPENDS_ON"),  # novel
-            _make_proposal("B", "C", "MAPS_TO"),     # novel
+            _make_proposal("B", "C", "MAPS_TO"),  # novel
         ]
         result = classify_batch(proposals, kg)
         assert result["rediscovery"] == 1

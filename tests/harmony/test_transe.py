@@ -64,7 +64,8 @@ class TestTransE:
         for i in range(3):
             kg.add_edge(
                 TypedEdge(
-                    source=f"e{i}", target=f"e{i+1}",
+                    source=f"e{i}",
+                    target=f"e{i + 1}",
                     edge_type=EdgeType.DEPENDS_ON,
                 )
             )

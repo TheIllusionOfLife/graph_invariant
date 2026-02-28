@@ -53,7 +53,8 @@ class ScalabilityReport:
 
     def summary(self) -> str:
         lines = [
-            f"{'Component':<20} {'Entities':>8} {'Edges':>8} {'Median(s)':>10} {'Std(s)':>8} {'N':>3}",
+            f"{'Component':<20} {'Entities':>8} {'Edges':>8} "
+            f"{'Median(s)':>10} {'Std(s)':>8} {'N':>3}",
             "-" * 62,
         ]
         for r in sorted(self.results, key=lambda x: (x.component, x.n_entities)):

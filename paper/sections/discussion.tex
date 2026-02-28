@@ -26,11 +26,43 @@ low-novelty regions of the MAP-Elites grid.  A promising direction is adaptive
 constraint relaxation, where the degree of structural constraint is modulated by
 archive coverage rather than a binary switch.
 
-\paragraph{LLM dependence.}
+\paragraph{Symmetry and contradicts validity.}
+The symmetry component rewards entity-type behavioural uniformity, which may not
+suit domains where entity types serve fundamentally different functional roles
+(e.g.\ enzymes vs.\ substrates in biochemistry).  We acknowledge this limitation:
+in functionally specialised domains, symmetry should receive lower weight or be
+replaced by a type-aware variant that measures within-type consistency rather
+than across-type uniformity.  Similarly, \texttt{contradicts} edges need not
+represent noise---in scientific discourse, competing hypotheses are valuable and
+their explicit representation is a feature, not a defect.  Our coherence penalty
+targets only \emph{dense} contradiction (high contradicts-to-edge ratio), which
+signals structural noise; sparse contradiction is tolerated.  Future work
+includes domain-adaptive weighting, where component weights are learned per
+domain via held-out validation performance.
+
+\paragraph{LLM dependence and safety.}
 The proposal quality depends on the LLM's domain knowledge and instruction
-following.  Our experiments use a single model; ensembling across model families
-could improve diversity and robustness.  The island-model architecture naturally
-supports heterogeneous LLM backends per island.
+following.  Our experiments use a single model (\texttt{gpt-oss:20b});
+ensembling across model families could improve diversity and robustness.  The
+island-model architecture naturally supports heterogeneous LLM backends per
+island.  To mitigate the risk of LLM-generated misinformation entering
+scientific workflows, proposals enter a \emph{staging layer}: they are scored by
+the Harmony metric and archived, but never automatically integrated into the
+base KG.  Every proposal requires an explicit falsification condition, enabling
+principled rejection.  Before any proposal is treated as established knowledge,
+it must pass expert review---our rubric gate (mean plausibility $\geq 3.0$)
+serves as a minimum quality filter, and we recommend domain-expert validation as
+a mandatory step in any deployment.
+
+\paragraph{Scalability.}
+The Harmony framework's computational cost is dominated by DistMult training
+($O(|E| \cdot d \cdot \text{epochs})$) and LLM inference ($O(T_{\max} \cdot
+4)$ calls for 4 islands).  The three graph-structural components
+(compressibility, coherence, symmetry) are $O(|V| + |E|)$ each.  For our
+current KGs (17--22 entities), total wall time is $\sim$10 minutes per domain on
+a single CPU.  Scaling to medium-size KGs (200--300 entities) increases DistMult
+training time linearly with $|E|$ but does not change the LLM call count, making
+the framework practical for KGs up to $\sim$1000 entities without GPU hardware.
 
 \paragraph{Broader impacts.}
 This work aims to accelerate scientific theory discovery by automating the

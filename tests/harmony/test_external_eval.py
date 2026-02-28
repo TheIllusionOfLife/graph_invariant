@@ -104,6 +104,21 @@ class TestComplExEval:
         kg = _make_empty_kg()
         assert evaluate_complex(kg, seed=42) == 0.0
 
+    def test_too_few_edges_returns_zero(self) -> None:
+        from analysis.external_eval import evaluate_complex
+
+        kg = KnowledgeGraph(domain="tiny")
+        for i in range(5):
+            kg.add_entity(Entity(id=f"e{i}", entity_type="concept"))
+        for i in range(3):
+            kg.add_edge(
+                TypedEdge(
+                    source=f"e{i}", target=f"e{i+1}",
+                    edge_type=EdgeType.DEPENDS_ON,
+                )
+            )
+        assert evaluate_complex(kg, seed=42) == 0.0
+
 
 # ── Unified evaluation ───────────────────────────────────────────────
 
@@ -127,6 +142,24 @@ class TestEvaluateExternal:
             assert isinstance(score, float), f"{model_name} score is not float"
             assert 0.0 <= score <= 1.0, f"{model_name} score out of range"
 
+    def test_empty_kg_returns_all_zeros(self) -> None:
+        from analysis.external_eval import evaluate_external
+
+        kg = _make_empty_kg()
+        results = evaluate_external(kg, seed=42)
+        for model_name, score in results.items():
+            assert score == 0.0, f"{model_name} should be 0.0 for empty KG"
+
+    def test_models_produce_different_scores(self) -> None:
+        """Sanity check: at least two models differ on a sufficient KG."""
+        from analysis.external_eval import evaluate_external
+
+        kg = _make_sufficient_kg()
+        results = evaluate_external(kg, seed=42)
+        scores = list(results.values())
+        # At least two models should differ (they use different scoring functions)
+        assert len(set(scores)) >= 2, "All models returned identical scores"
+
 
 # ── NO_GENERATIVITY ablation ─────────────────────────────────────────
 
@@ -148,4 +181,5 @@ class TestNoGenerativityAblation:
         full_row = next(r for r in rows if r.component == "full")
         no_gen_row = next(r for r in rows if r.component == "w/o_gen")
         # With generativity zeroed, score should differ from full
-        assert no_gen_row.delta_vs_full != 0.0 or full_row.mean == no_gen_row.mean
+        # (generativity contributes non-trivially to the composite score)
+        assert abs(no_gen_row.mean - full_row.mean) > 1e-6

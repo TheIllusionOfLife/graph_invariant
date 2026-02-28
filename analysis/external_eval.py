@@ -136,17 +136,42 @@ class _RotatE:
                     rot_re, rot_im = self._complex_mul(s_re, s_im, r_re, r_im)
 
                     # Gradient: push positive target closer, negative further
-                    # Simplified gradient descent on L1 distance
+                    # L1 distance gradient: sign of (rot - target)
+                    rot_re, rot_im = self._complex_mul(
+                        s_re, s_im, r_re, r_im,
+                    )
                     sign_pos = np.sign(rot_re - t_re)
                     sign_pos_im = np.sign(rot_im - t_im)
                     sign_neg = np.sign(rot_re - nt_re)
                     sign_neg_im = np.sign(rot_im - nt_im)
 
-                    # Update target entities
+                    # Update target entities (push t closer, neg_t farther)
                     self.E[t, 0::2] += lr * sign_pos
                     self.E[t, 1::2] += lr * sign_pos_im
                     self.E[neg_t, 0::2] -= lr * sign_neg
                     self.E[neg_t, 1::2] -= lr * sign_neg_im
+
+                    # Update source entity: ∂L/∂E[s] via chain rule
+                    # through complex multiply (pos - neg contribution)
+                    grad_s_re = (sign_pos - sign_neg) * r_re + (
+                        sign_pos_im - sign_neg_im
+                    ) * (-r_im)
+                    grad_s_im = (sign_pos - sign_neg) * r_im + (
+                        sign_pos_im - sign_neg_im
+                    ) * r_re
+                    self.E[s, 0::2] -= lr * grad_s_re
+                    self.E[s, 1::2] -= lr * grad_s_im
+
+                    # Update relation phase: ∂L/∂θ via chain rule
+                    # d(cos θ)/dθ = -sin θ, d(sin θ)/dθ = cos θ
+                    theta = self.phase[r]
+                    grad_theta = (
+                        (sign_pos - sign_neg)
+                        * (s_re * (-np.sin(theta)) - s_im * np.cos(theta))
+                        + (sign_pos_im - sign_neg_im)
+                        * (s_re * np.cos(theta) + s_im * (-np.sin(theta)))
+                    )
+                    self.phase[r] -= lr * grad_theta
 
             # L2 normalise entity embeddings
             norms = np.linalg.norm(self.E, axis=1, keepdims=True)
@@ -250,6 +275,29 @@ class _ComplEx:
                     self.E[neg_t, 0::2] -= lr * sr_re
                     self.E[neg_t, 1::2] -= lr * sr_im
 
+                    # grad w.r.t. E[s]: (t_re - neg_t_re, t_im - neg_t_im)
+                    t_re = self.E[t, 0::2]
+                    t_im = self.E[t, 1::2]
+                    nt_re = self.E[neg_t, 0::2]
+                    nt_im = self.E[neg_t, 1::2]
+                    r_re = self.R[r, 0::2]
+                    r_im = self.R[r, 1::2]
+                    diff_re = t_re - nt_re
+                    diff_im = t_im - nt_im
+                    # ∂score/∂s_re = r_re*t_re + r_im*t_im
+                    grad_s_re = r_re * diff_re + r_im * diff_im
+                    grad_s_im = r_re * diff_im - r_im * diff_re
+                    self.E[s, 0::2] += lr * grad_s_re
+                    self.E[s, 1::2] += lr * grad_s_im
+
+                    # grad w.r.t. R[r]
+                    s_re = self.E[s, 0::2]
+                    s_im = self.E[s, 1::2]
+                    grad_r_re = s_re * diff_re + s_im * diff_im
+                    grad_r_im = s_re * diff_im - s_im * diff_re
+                    self.R[r, 0::2] += lr * grad_r_re
+                    self.R[r, 1::2] += lr * grad_r_im
+
             # L2 normalise entity embeddings
             norms = np.linalg.norm(self.E, axis=1, keepdims=True)
             self.E /= np.maximum(norms, 1e-8)
@@ -273,6 +321,15 @@ def _evaluate_model(
 
     Returns 0.0 when the KG has too few edges.
     """
+    if not (0.0 < mask_ratio < 1.0):
+        raise ValueError(f"mask_ratio must be in (0, 1), got {mask_ratio}")
+    if k <= 0:
+        raise ValueError(f"k must be > 0, got {k}")
+    if dim <= 0:
+        raise ValueError(f"dim must be > 0, got {dim}")
+    if n_epochs < 0:
+        raise ValueError(f"n_epochs must be >= 0, got {n_epochs}")
+
     if kg.num_edges == 0 or kg.num_entities == 0:
         return 0.0
 

@@ -23,9 +23,9 @@ identified a minimal set that covers dependency (\texttt{depends\_on}),
 derivation (\texttt{derives}), equivalence (\texttt{equivalent\_to}),
 correspondence (\texttt{maps\_to}), causal/explanatory links
 (\texttt{explains}), contradiction (\texttt{contradicts}), and taxonomic
-hierarchy (\texttt{generalizes}).  These seven types form a basis analogous to
-morphism classes in category theory: every scientific relation we encountered
-maps naturally to one of these types.  The fixed vocabulary enables cross-domain
+hierarchy (\texttt{generalizes}).  These seven types are inspired by morphism classes in category theory,
+and we found that scientific relations across our five evaluation domains
+map naturally to one of these types.  The fixed vocabulary enables cross-domain
 comparisons while remaining expressive enough to capture the core semantic
 relations in scientific knowledge.
 
@@ -122,22 +122,25 @@ discovery prior:
     ($\Compress$, $\Cohere$, $\Symm$, $\Gener$) is independently computable
     from the graph structure, enabling parallel evaluation and interpretable
     ablation.
-  \item \textbf{Directional monotonicity}: each component responds
-    predictably to edge addition---compressibility generally decreases (more
-    cross-edges reduce spanning fraction), coherence increases when the new
-    edge closes a type-consistent triangle, symmetry increases when the edge
-    balances entity-type distributions, and generativity increases when the
-    edge adds learnable relational signal.  The Harmony score thus captures
-    the \emph{net} structural effect of a mutation across these competing
-    pressures.
+  \item \textbf{Directional monotonicity} (empirical observation): each
+    component \emph{tends to} respond predictably to edge
+    addition---compressibility generally decreases (more cross-edges reduce
+    spanning fraction), coherence increases when the new edge closes a
+    type-consistent triangle, symmetry increases when the edge balances
+    entity-type distributions, and generativity increases when the edge adds
+    learnable relational signal.  The Harmony score thus captures the
+    \emph{net} structural effect of a mutation across these competing
+    pressures.  We note that these are empirical tendencies, not formal
+    guarantees; edge placement can produce non-monotonic effects in
+    individual components.
 \end{enumerate}
 
 \paragraph{Philosophical grounding.}
 The four components correspond to established principles of theory quality:
 compressibility instantiates Occam's razor via minimum description length
 (MDL); coherence enforces logical consistency across relational paths;
-symmetry operationalises Noether's theorem intuition that good theories
-exhibit invariance across structurally equivalent entities; and generativity
+symmetry operationalises an intuition analogous to Noether's theorem---that
+good theories exhibit invariance across structurally equivalent entities; and generativity
 captures predictive validity---the hallmark of a useful scientific theory.
 
 \subsection{Proposal Schema and Validation}\label{sec:proposals}

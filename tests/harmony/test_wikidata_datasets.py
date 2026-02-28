@@ -8,6 +8,16 @@ from harmony.types import EdgeType, KnowledgeGraph  # noqa: I001
 
 # ── Shared helpers ──────────────────────────────────────────────────
 
+
+def _build_undirected_adjacency(kg: KnowledgeGraph) -> dict[str, set[str]]:
+    """Build undirected adjacency dict from KG edges."""
+    adj: dict[str, set[str]] = {eid: set() for eid in kg.entities}
+    for e in kg.edges:
+        adj[e.source].add(e.target)
+        adj[e.target].add(e.source)
+    return adj
+
+
 def _assert_medium_scale(kg: KnowledgeGraph, min_entities: int = 200, min_edges: int = 800) -> None:
     """Assert KG meets medium-scale thresholds."""
     assert kg.num_entities >= min_entities, (
@@ -29,10 +39,7 @@ def _assert_connected(kg: KnowledgeGraph) -> None:
     """Assert the KG is weakly connected (single component)."""
     if kg.num_entities == 0:
         return
-    adj: dict[str, set[str]] = {eid: set() for eid in kg.entities}
-    for e in kg.edges:
-        adj[e.source].add(e.target)
-        adj[e.target].add(e.source)
+    adj = _build_undirected_adjacency(kg)
 
     visited: set[str] = set()
     stack = [next(iter(kg.entities))]
@@ -51,10 +58,7 @@ def _assert_connected(kg: KnowledgeGraph) -> None:
 
 def _assert_triangle_density(kg: KnowledgeGraph, min_triangles: int = 10) -> None:
     """Assert minimum triangle count for meaningful coherence computation."""
-    adj: dict[str, set[str]] = {eid: set() for eid in kg.entities}
-    for e in kg.edges:
-        adj[e.source].add(e.target)
-        adj[e.target].add(e.source)
+    adj = _build_undirected_adjacency(kg)
 
     triangles = 0
     for a in adj:
@@ -67,6 +71,15 @@ def _assert_triangle_density(kg: KnowledgeGraph, min_triangles: int = 10) -> Non
     assert triangles >= min_triangles, (
         f"Expected ≥{min_triangles} triangles, got {triangles}"
     )
+
+
+def _assert_no_duplicate_typed_edges(kg: KnowledgeGraph) -> None:
+    """Assert no duplicate (source, target, edge_type) triples."""
+    seen: set[tuple[str, str, EdgeType]] = set()
+    for e in kg.edges:
+        key = (e.source, e.target, e.edge_type)
+        assert key not in seen, f"Duplicate edge: {key}"
+        seen.add(key)
 
 
 def _assert_entity_type_diversity(kg: KnowledgeGraph, min_types: int = 5) -> None:
@@ -117,6 +130,9 @@ class TestWikidataPhysics:
                 f"{etype.name} has {count}/{kg.num_edges} = {ratio:.0%} of edges"
             )
 
+    def test_no_duplicate_typed_edges(self, kg: KnowledgeGraph) -> None:
+        _assert_no_duplicate_typed_edges(kg)
+
     def test_deterministic(self, kg: KnowledgeGraph) -> None:
         from harmony.datasets.wikidata_physics import build_wikidata_physics_kg
         kg2 = build_wikidata_physics_kg()
@@ -162,6 +178,9 @@ class TestWikidataMaterials:
             assert ratio < 0.70, (
                 f"{etype.name} has {count}/{kg.num_edges} = {ratio:.0%} of edges"
             )
+
+    def test_no_duplicate_typed_edges(self, kg: KnowledgeGraph) -> None:
+        _assert_no_duplicate_typed_edges(kg)
 
     def test_deterministic(self, kg: KnowledgeGraph) -> None:
         from harmony.datasets.wikidata_materials import build_wikidata_materials_kg

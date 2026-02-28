@@ -403,7 +403,7 @@ _EDGES: list[tuple[str, str, EdgeType]] = [
     ("ybco", "barium", EdgeType.DEPENDS_ON),
     ("ybco", "copper", EdgeType.DEPENDS_ON),
     ("ybco", "oxygen", EdgeType.DEPENDS_ON),
-    ("magnesium_diboride", "carbon", EdgeType.CONTRADICTS),  # no carbon
+    ("magnesium_diboride", "niobium", EdgeType.CONTRADICTS),  # competing SC
     # ========== Phase → property dependencies ==========
     ("ferromagnetic_phase", "curie_temperature", EdgeType.DEPENDS_ON),
     ("ferromagnetic_phase", "coercivity", EdgeType.DEPENDS_ON),
@@ -782,7 +782,7 @@ _EDGES: list[tuple[str, str, EdgeType]] = [
     ("precipitation_hardening", "diffusion", EdgeType.DEPENDS_ON),
     ("grain_refinement", "recrystallization", EdgeType.DERIVES),
     ("ferroelectricity", "piezoelectricity", EdgeType.GENERALIZES),
-    ("superconductivity", "magnetostriction", EdgeType.CONTRADICTS),
+    ("superconductivity", "magnetostriction", EdgeType.MAPS_TO),
     # ========== Material → phase mappings ==========
     ("iron", "ferromagnetic_phase", EdgeType.MAPS_TO),
     ("iron", "austenite", EdgeType.MAPS_TO),
@@ -798,8 +798,8 @@ _EDGES: list[tuple[str, str, EdgeType]] = [
     ("niobium_titanium", "superconducting_phase", EdgeType.MAPS_TO),
     ("ybco", "superconducting_phase", EdgeType.MAPS_TO),
     # ========== EQUIVALENT_TO relations ==========
-    ("electrical_conductivity", "electrical_resistivity", EdgeType.EQUIVALENT_TO),
-    ("tensile_strength", "compressive_strength", EdgeType.EQUIVALENT_TO),
+    ("electrical_conductivity", "electrical_resistivity", EdgeType.MAPS_TO),
+    ("tensile_strength", "compressive_strength", EdgeType.MAPS_TO),
     # ========== Additional cross-connections for density ==========
     ("polyethylene", "glass_transition_temp", EdgeType.MAPS_TO),
     ("polypropylene", "glass_transition_temp", EdgeType.MAPS_TO),

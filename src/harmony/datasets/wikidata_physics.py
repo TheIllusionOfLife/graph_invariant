@@ -1008,9 +1008,9 @@ _EDGES: list[tuple[str, str, EdgeType]] = [
     ("z_boson", "mass", EdgeType.MAPS_TO),
     # --- EQUIVALENT_TO edges (currently missing type) ---
     ("kinetic_energy", "work", EdgeType.EQUIVALENT_TO),
-    ("reduced_planck", "planck_constant", EdgeType.EQUIVALENT_TO),
-    ("electron_mass", "electron", EdgeType.EQUIVALENT_TO),
-    ("proton_mass", "proton", EdgeType.EQUIVALENT_TO),
+    ("reduced_planck", "planck_constant", EdgeType.DERIVES),
+    ("electron_mass", "electron", EdgeType.MAPS_TO),
+    ("proton_mass", "proton", EdgeType.MAPS_TO),
     # --- Additional cross-theory derivations ---
     ("quantum_mechanics", "spin", EdgeType.DERIVES),
     ("special_relativity", "energy", EdgeType.DERIVES),
@@ -1143,8 +1143,8 @@ _EDGES: list[tuple[str, str, EdgeType]] = [
     ("hartree_fock", "schrodinger_equation", EdgeType.MAPS_TO),
     ("density_functional", "schrodinger_equation", EdgeType.MAPS_TO),
     # More EQUIVALENT_TO for conceptual identities
-    ("speed_of_light", "vacuum_permittivity", EdgeType.MAPS_TO),
-    ("speed_of_light", "vacuum_permeability", EdgeType.MAPS_TO),
+    ("speed_of_light", "vacuum_permittivity", EdgeType.DERIVES),
+    ("speed_of_light", "vacuum_permeability", EdgeType.DERIVES),
     ("first_law_thermo", "conservation_energy", EdgeType.EQUIVALENT_TO),
     # Cosmology / astrophysics cross-connections
     ("cosmology", "dark_matter", EdgeType.EXPLAINS),

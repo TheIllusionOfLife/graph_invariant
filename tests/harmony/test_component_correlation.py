@@ -69,7 +69,7 @@ class TestComponentCorrelation:
             {"compressibility": 0.9, "coherence": 0.9, "symmetry": 0.9, "generativity": 0.9},
         ]
         matrix = compute_correlation_matrix(scores)
-        assert matrix["compressibility"]["coherence"] == 1.0
+        assert abs(matrix["compressibility"]["coherence"] - 1.0) < 1e-10
 
     def test_summary_string(self) -> None:
         from analysis.component_correlation import correlation_summary

@@ -147,4 +147,58 @@ def baseline_distmult_alone(
     """
     from harmony.metric.generativity import generativity
 
-    return generativity(kg, seed=seed, mask_ratio=mask_ratio, k=k, dim=dim, n_epochs=n_epochs)
+    return generativity(
+        kg, seed=seed, mask_ratio=mask_ratio,
+        k=k, dim=dim, n_epochs=n_epochs,
+    )
+
+
+def baseline_transe(
+    kg: KnowledgeGraph,
+    seed: int = 42,
+    mask_ratio: float = 0.2,
+    k: int = 10,
+    dim: int = 50,
+    n_epochs: int = 100,
+) -> float:
+    """Hits@K using TransE only — thin wrapper over transe_hits_at_k()."""
+    from harmony.metric.transe import transe_hits_at_k
+
+    return transe_hits_at_k(
+        kg, seed=seed, mask_ratio=mask_ratio,
+        k=k, dim=dim, n_epochs=n_epochs,
+    )
+
+
+def baseline_rotate(
+    kg: KnowledgeGraph,
+    seed: int = 42,
+    mask_ratio: float = 0.2,
+    k: int = 10,
+    dim: int = 50,
+    n_epochs: int = 100,
+) -> float:
+    """Hits@K using RotatE only — thin wrapper over rotate_hits_at_k()."""
+    from harmony.metric.rotate import rotate_hits_at_k
+
+    return rotate_hits_at_k(
+        kg, seed=seed, mask_ratio=mask_ratio,
+        k=k, dim=dim, n_epochs=n_epochs,
+    )
+
+
+def baseline_complex(
+    kg: KnowledgeGraph,
+    seed: int = 42,
+    mask_ratio: float = 0.2,
+    k: int = 10,
+    dim: int = 50,
+    n_epochs: int = 100,
+) -> float:
+    """Hits@K using ComplEx only — thin wrapper over complex_hits_at_k()."""
+    from harmony.metric.complex_model import complex_hits_at_k
+
+    return complex_hits_at_k(
+        kg, seed=seed, mask_ratio=mask_ratio,
+        k=k, dim=dim, n_epochs=n_epochs,
+    )

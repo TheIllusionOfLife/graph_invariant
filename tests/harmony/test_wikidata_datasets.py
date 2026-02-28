@@ -191,8 +191,13 @@ class TestWikidataMaterials:
 
 
 class TestCrossDataset:
-    def test_no_entity_overlap(self) -> None:
-        """Physics and materials KGs should have independent entity namespaces."""
+    def test_minimal_entity_overlap(self) -> None:
+        """Physics and materials KGs should have mostly independent entity namespaces.
+
+        A small number of cross-domain concepts (e.g. superconductivity, band_gap)
+        legitimately appear in both Wikidata subgraphs. We assert overlap is <5%
+        of the smaller dataset to guard against accidental namespace collision.
+        """
         from harmony.datasets.wikidata_materials import build_wikidata_materials_kg
         from harmony.datasets.wikidata_physics import build_wikidata_physics_kg
 
@@ -200,6 +205,16 @@ class TestCrossDataset:
         materials = build_wikidata_materials_kg()
         # Domains are different
         assert physics.domain != materials.domain
+        # Overlap should be small (< 5% of smaller KG)
+        physics_ids = set(physics.entities.keys())
+        materials_ids = set(materials.entities.keys())
+        overlap = physics_ids & materials_ids
+        smaller = min(len(physics_ids), len(materials_ids))
+        ratio = len(overlap) / smaller if smaller > 0 else 0.0
+        assert ratio < 0.05, (
+            f"Entity overlap too large: {len(overlap)}/{smaller} = {ratio:.1%}. "
+            f"Overlapping: {overlap}"
+        )
 
     def test_both_substantially_larger_than_small_datasets(self) -> None:
         """Medium-scale KGs should be ≥4x larger than existing small KGs."""

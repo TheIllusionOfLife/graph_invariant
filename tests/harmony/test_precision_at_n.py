@@ -2,20 +2,6 @@
 
 from __future__ import annotations
 
-from harmony.types import EdgeType, Entity, KnowledgeGraph, TypedEdge
-
-
-def _make_kg() -> KnowledgeGraph:
-    """KG with 4 entities and 4 edges; edge A→D withheld as ground truth."""
-    kg = KnowledgeGraph(domain="test")
-    for eid in ("A", "B", "C", "D"):
-        kg.add_entity(Entity(id=eid, entity_type="concept"))
-    kg.add_edge(TypedEdge(source="A", target="B", edge_type=EdgeType.DEPENDS_ON))
-    kg.add_edge(TypedEdge(source="B", target="C", edge_type=EdgeType.GENERALIZES))
-    kg.add_edge(TypedEdge(source="C", target="D", edge_type=EdgeType.DERIVES))
-    kg.add_edge(TypedEdge(source="A", target="C", edge_type=EdgeType.MAPS_TO))
-    return kg
-
 
 def _withheld_edges() -> list[tuple[str, str, str]]:
     """Ground-truth edges held out for evaluation."""

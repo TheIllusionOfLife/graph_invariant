@@ -15,8 +15,10 @@ import platform
 import statistics
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -76,10 +78,10 @@ class ScalabilityReport:
         )
 
 
-def _time_component(fn: object, *args: object, **kwargs: object) -> float:
+def _time_component(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> float:
     """Time a callable, returning wall-clock seconds."""
     start = time.perf_counter()
-    fn(*args, **kwargs)  # type: ignore[operator]
+    fn(*args, **kwargs)
     return time.perf_counter() - start
 
 

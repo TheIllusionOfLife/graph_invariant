@@ -58,6 +58,23 @@ class TestClassifyProposal:
         p = _make_proposal("A", "B", "GENERALIZES")
         assert classify_proposal(p, kg) == "novel"
 
+    def test_none_edge_type_is_novel(self) -> None:
+        """Proposals with edge_type=None (e.g. ADD_ENTITY) should be novel."""
+        from analysis.proposal_classification import classify_proposal
+
+        kg = _make_kg()
+        p = Proposal(
+            id="add-entity",
+            proposal_type=ProposalType.ADD_ENTITY,
+            claim="Adding entity D to the graph",
+            justification="D is a relevant concept in this domain",
+            falsification_condition="D has no connections to existing entities",
+            kg_domain="test",
+            entity_id="D",
+            entity_type="concept",
+        )
+        assert classify_proposal(p, kg) == "novel"
+
 
 class TestClassifyBatch:
     def test_returns_dict_with_correct_counts(self) -> None:

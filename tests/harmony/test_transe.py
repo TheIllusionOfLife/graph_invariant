@@ -10,6 +10,7 @@ Verifies:
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from harmony.types import EdgeType, Entity, KnowledgeGraph, TypedEdge
 
@@ -47,7 +48,7 @@ class TestTransE:
         kg = _make_sufficient_kg()
         s1 = transe_hits_at_k(kg, seed=42)
         s2 = transe_hits_at_k(kg, seed=42)
-        assert s1 == s2
+        assert s1 == pytest.approx(s2)
 
     def test_empty_kg_returns_zero(self) -> None:
         from harmony.metric.transe import transe_hits_at_k

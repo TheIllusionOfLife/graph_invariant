@@ -103,10 +103,11 @@ class _TransE:
                     grad_Es += grad_h
                     grad_Rr += grad_h
 
-                # Apply accumulated updates
+                # Apply accumulated updates (grad_Es/grad_Rr are already
+                # negative gradients, so += performs gradient descent)
                 self.E[t] += lr * grad_Et
-                self.E[s] -= lr * grad_Es
-                self.R[r] -= lr * grad_Rr
+                self.E[s] += lr * grad_Es
+                self.R[r] += lr * grad_Rr
                 for neg_t, grad in grad_neg.items():
                     self.E[neg_t] += lr * grad
 

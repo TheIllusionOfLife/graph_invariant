@@ -63,7 +63,7 @@ def aggregate_seed_results(
             msg = f"Seed {s} DataFrame shape mismatch: expected {list(domains)}/{metrics}"
             raise ValueError(msg)
 
-    result_rows: dict[str, dict[str, float]] = {}
+    result_rows: dict[str, dict[str, float | int]] = {}
     for domain in domains:
         row: dict[str, float] = {}
         for metric in metrics:

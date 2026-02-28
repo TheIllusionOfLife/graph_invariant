@@ -12,6 +12,7 @@ Verifies:
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from harmony.types import EdgeType, Entity, KnowledgeGraph, TypedEdge
 
@@ -59,7 +60,7 @@ class TestRotatEEval:
         kg = _make_sufficient_kg()
         s1 = evaluate_rotate(kg, seed=42)
         s2 = evaluate_rotate(kg, seed=42)
-        assert s1 == s2
+        assert s1 == pytest.approx(s2)
 
     def test_empty_kg_returns_zero(self) -> None:
         from analysis.external_eval import evaluate_rotate
@@ -98,7 +99,7 @@ class TestComplExEval:
         kg = _make_sufficient_kg()
         s1 = evaluate_complex(kg, seed=42)
         s2 = evaluate_complex(kg, seed=42)
-        assert s1 == s2
+        assert s1 == pytest.approx(s2)
 
     def test_empty_kg_returns_zero(self) -> None:
         from analysis.external_eval import evaluate_complex

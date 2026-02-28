@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 # Evaluator model — MUST differ from proposer (gpt-oss:20b) to avoid
 # evaluation circularity (Codex feedback on plan).
 # ---------------------------------------------------------------------------
-EVALUATOR_MODEL = "llama3:8b"
+EVALUATOR_MODEL: str = "llama3:8b"
 
 
 def _text_quality_score(text: str) -> float:

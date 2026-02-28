@@ -54,12 +54,16 @@ def run_all_kge_baselines(
 # Conceptual baselines (search-loop level, not metric-level)
 # ---------------------------------------------------------------------------
 
-# LLM-only baseline configuration:
-#   Run the harmony_loop with delta_weight=0 for all Harmony components,
-#   accepting any valid proposal regardless of Harmony gain.
-#   This is achieved by setting all Harmony weights to 0 and using only
-#   the validity check as the acceptance criterion.
-LLM_ONLY_CONFIG = {
+# ---------------------------------------------------------------------------
+# Conceptual baseline configurations for harmony_loop experiments.
+#
+# These are NOT Phase1Config instances — they document the keyword arguments
+# to pass to ``run_harmony_loop()`` when running ablation baselines.
+# ``alpha/beta/gamma/delta`` map to HarmonyConfig weights; ``accept_all_valid``,
+# ``num_bins``, and ``greedy`` map to HarmonySearchState / MAP-Elites settings.
+# ---------------------------------------------------------------------------
+
+LLM_ONLY_CONFIG: dict[str, object] = {
     "description": "LLM-only: proposals accepted by validity alone, no Harmony",
     "alpha": 0.0,
     "beta": 0.0,
@@ -68,10 +72,7 @@ LLM_ONLY_CONFIG = {
     "accept_all_valid": True,
 }
 
-# No-QD baseline configuration:
-#   Run the harmony_loop with MAP-Elites grid size = 1×1 (effectively greedy).
-#   Only the single best proposal survives, eliminating diversity pressure.
-NO_QD_CONFIG = {
+NO_QD_CONFIG: dict[str, object] = {
     "description": "No-QD: greedy selection, no MAP-Elites diversity",
     "num_bins": 1,
     "greedy": True,

@@ -261,6 +261,17 @@ class _ComplEx:
                     if loss <= 0:
                         continue
 
+                    # Snapshot all embeddings BEFORE any in-place updates
+                    # to avoid stale-gradient bug (CodeRabbit + Gemini review).
+                    t_re = self.E[t, 0::2].copy()
+                    t_im = self.E[t, 1::2].copy()
+                    nt_re = self.E[neg_t, 0::2].copy()
+                    nt_im = self.E[neg_t, 1::2].copy()
+                    s_re = self.E[s, 0::2].copy()
+                    s_im = self.E[s, 1::2].copy()
+                    r_re = self.R[r, 0::2].copy()
+                    r_im = self.R[r, 1::2].copy()
+
                     # Push positive target score up, negative target score down
                     # grad w.r.t. E[t]: sr_re (real part), sr_im (imag part)
                     self.E[t, 0::2] += lr * sr_re
@@ -268,24 +279,15 @@ class _ComplEx:
                     self.E[neg_t, 0::2] -= lr * sr_re
                     self.E[neg_t, 1::2] -= lr * sr_im
 
-                    # grad w.r.t. E[s]: (t_re - neg_t_re, t_im - neg_t_im)
-                    t_re = self.E[t, 0::2]
-                    t_im = self.E[t, 1::2]
-                    nt_re = self.E[neg_t, 0::2]
-                    nt_im = self.E[neg_t, 1::2]
-                    r_re = self.R[r, 0::2]
-                    r_im = self.R[r, 1::2]
+                    # grad w.r.t. E[s]: use snapshotted t/nt values
                     diff_re = t_re - nt_re
                     diff_im = t_im - nt_im
-                    # ∂score/∂s_re = r_re*t_re + r_im*t_im
                     grad_s_re = r_re * diff_re + r_im * diff_im
                     grad_s_im = r_re * diff_im - r_im * diff_re
                     self.E[s, 0::2] += lr * grad_s_re
                     self.E[s, 1::2] += lr * grad_s_im
 
-                    # grad w.r.t. R[r]
-                    s_re = self.E[s, 0::2]
-                    s_im = self.E[s, 1::2]
+                    # grad w.r.t. R[r]: use snapshotted s values
                     grad_r_re = s_re * diff_re + s_im * diff_im
                     grad_r_im = s_re * diff_im - s_im * diff_re
                     self.R[r, 0::2] += lr * grad_r_re

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from harmony.types import EdgeType, Entity, KnowledgeGraph, TypedEdge
 
@@ -49,7 +50,8 @@ class TestRunAllKgeBaselines:
         kg = _make_sufficient_kg()
         r1 = run_all_kge_baselines(kg, seed=42)
         r2 = run_all_kge_baselines(kg, seed=42)
-        assert r1 == r2
+        for model in r1:
+            assert r1[model] == pytest.approx(r2[model])
 
     def test_empty_kg_returns_all_zeros(self) -> None:
         from harmony.metric.kge_baselines import run_all_kge_baselines

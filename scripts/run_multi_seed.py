@@ -17,13 +17,9 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-
-if TYPE_CHECKING:
-    pass
 
 # ---------------------------------------------------------------------------
 # Seed configuration (plan §Phase 7)
@@ -52,10 +48,20 @@ def aggregate_seed_results(
     DataFrame with columns: {metric}_mean, {metric}_std, n_seeds
     for each original metric column.
     """
+    if not seed_dfs:
+        return pd.DataFrame()
+
     seeds = sorted(seed_dfs.keys())
     reference_df = seed_dfs[seeds[0]]
     domains = reference_df.index
     metrics = list(reference_df.columns)
+
+    # Validate all DataFrames share the same shape
+    for s in seeds[1:]:
+        df = seed_dfs[s]
+        if list(df.index) != list(domains) or list(df.columns) != list(metrics):
+            msg = f"Seed {s} DataFrame shape mismatch: expected {list(domains)}/{metrics}"
+            raise ValueError(msg)
 
     result_rows: dict[str, dict[str, float]] = {}
     for domain in domains:
@@ -63,8 +69,8 @@ def aggregate_seed_results(
         for metric in metrics:
             values = [float(seed_dfs[s].loc[domain, metric]) for s in seeds]
             row[f"{metric}_mean"] = float(np.mean(values))
-            row[f"{metric}_std"] = float(np.std(values, ddof=0))
-        row["n_seeds"] = float(len(seeds))
+            row[f"{metric}_std"] = float(np.std(values, ddof=1)) if len(values) > 1 else 0.0
+        row["n_seeds"] = len(seeds)
         result_rows[domain] = row
 
     df = pd.DataFrame.from_dict(result_rows, orient="index")
@@ -115,6 +121,15 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # Deduplicate seeds (preserve order, first occurrence wins)
+    seen_seeds: set[int] = set()
+    unique_seeds: list[int] = []
+    for s in args.seeds:
+        if s not in seen_seeds:
+            seen_seeds.add(s)
+            unique_seeds.append(s)
+    args.seeds = unique_seeds
+
     domain_checkpoints: dict[str, Path] = {}
     for domain in known_domains:
         d = getattr(args, domain, None)
@@ -127,11 +142,19 @@ def main() -> None:
         print(f"Domains: {list(domain_checkpoints.keys()) or '(none specified)'}")
         print(f"Output: {args.output}")
         print(f"Total runs: {len(args.seeds)} seeds × {len(domain_checkpoints)} domains")
+        if not domain_checkpoints:
+            print("WARNING: No domains specified.")
         print("Dry run passed — configuration valid.")
         return
 
     if not domain_checkpoints:
         parser.error("Specify at least one domain checkpoint directory.")
+
+    # Validate checkpoint paths exist
+    for domain, cp_dir in domain_checkpoints.items():
+        cp_file = cp_dir / "checkpoint.json"
+        if not cp_file.exists():
+            parser.error(f"Checkpoint not found for domain '{domain}': {cp_file}")
 
     from analysis.metrics_table import compute_metrics_table
 
@@ -155,8 +178,8 @@ def main() -> None:
 
     # Save metadata
     meta = {
-        "seeds": args.seeds,
-        "n_seeds": len(args.seeds),
+        "seeds": list(seed_dfs.keys()),
+        "n_seeds": len(seed_dfs),
         "domains": list(domain_checkpoints.keys()),
     }
     (args.output / "metadata.json").write_text(json.dumps(meta, indent=2))

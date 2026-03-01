@@ -17,6 +17,8 @@ from harmony.datasets.linear_algebra import build_linear_algebra_kg
 from harmony.datasets.materials import build_materials_kg
 from harmony.datasets.periodic_table import build_periodic_table_kg
 from harmony.datasets.physics import build_physics_kg
+from harmony.datasets.wikidata_materials import build_wikidata_materials_kg
+from harmony.datasets.wikidata_physics import build_wikidata_physics_kg
 from harmony.harmony_loop import run_harmony_loop
 
 _DOMAIN_BUILDERS = {
@@ -25,6 +27,8 @@ _DOMAIN_BUILDERS = {
     "astronomy": build_astronomy_kg,
     "physics": build_physics_kg,
     "materials": build_materials_kg,
+    "wikidata_physics": build_wikidata_physics_kg,
+    "wikidata_materials": build_wikidata_materials_kg,
 }
 
 

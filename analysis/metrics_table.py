@@ -48,6 +48,8 @@ _DOMAIN_BUILDERS: dict[str, str] = {
     "astronomy": "harmony.datasets.astronomy.build_astronomy_kg",
     "physics": "harmony.datasets.physics.build_physics_kg",
     "materials": "harmony.datasets.materials.build_materials_kg",
+    "wikidata_physics": "harmony.datasets.wikidata_physics.build_wikidata_physics_kg",
+    "wikidata_materials": "harmony.datasets.wikidata_materials.build_wikidata_materials_kg",
 }
 
 
@@ -300,7 +302,7 @@ def compute_metrics_table(
 def main() -> None:
     import argparse
 
-    known_domains = ["astronomy", "physics", "materials", "linear_algebra", "periodic_table"]
+    known_domains = sorted(_DOMAIN_BUILDERS.keys())
     parser = argparse.ArgumentParser(description="Compute Harmony metrics table")
     for domain in known_domains:
         parser.add_argument(f"--{domain}", type=Path, metavar="DIR", dest=domain)

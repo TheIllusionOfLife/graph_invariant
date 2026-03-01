@@ -13,6 +13,8 @@ Usage:
         --astronomy artifacts/harmony/astronomy \
         --physics   artifacts/harmony/physics \
         --materials artifacts/harmony/materials \
+        --wikidata_physics artifacts/harmony/wikidata_physics \
+        --wikidata_materials artifacts/harmony/wikidata_materials \
         --figures-dir paper/figures/
 """
 
@@ -431,7 +433,13 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="Generate NeurIPS figures for Harmony paper")
-    discovery_domains = ["astronomy", "physics", "materials"]
+    discovery_domains = [
+        "astronomy",
+        "physics",
+        "materials",
+        "wikidata_physics",
+        "wikidata_materials",
+    ]
     for domain in discovery_domains:
         parser.add_argument(f"--{domain}", type=Path, metavar="DIR", dest=domain)
     parser.add_argument(

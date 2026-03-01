@@ -104,6 +104,36 @@ def _checkpoint_dir_with_archive(tmp_path: Path, domain: str, kg: KnowledgeGraph
     return d
 
 
+class TestDomainBuilders:
+    """Verify that _DOMAIN_BUILDERS covers all expected domains."""
+
+    EXPECTED_DOMAINS = {
+        "linear_algebra",
+        "periodic_table",
+        "astronomy",
+        "physics",
+        "materials",
+        "wikidata_physics",
+        "wikidata_materials",
+    }
+
+    def test_domain_builders_has_all_domains(self):
+        from metrics_table import _DOMAIN_BUILDERS
+
+        assert self.EXPECTED_DOMAINS == set(_DOMAIN_BUILDERS.keys())
+
+    @pytest.mark.parametrize("domain", sorted(EXPECTED_DOMAINS))
+    def test_domain_builder_importable(self, domain: str):
+        """Each domain builder path resolves to a callable."""
+        import importlib
+
+        from metrics_table import _DOMAIN_BUILDERS
+
+        module_path, func_name = _DOMAIN_BUILDERS[domain].rsplit(".", 1)
+        module = importlib.import_module(module_path)
+        assert callable(getattr(module, func_name))
+
+
 class TestComputeMetricsTable:
     EXPECTED_COLUMNS = {
         "random_hits10",

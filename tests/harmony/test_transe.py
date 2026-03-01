@@ -84,3 +84,25 @@ class TestTransE:
         # Score(a, 0, b) should be 0 (perfect translation)
         score = model._score(0, 0, 1)
         assert abs(score) < 1e-6
+
+    def test_training_improves_positive_triple_score(self) -> None:
+        """Regression guard: training must perform gradient DESCENT.
+
+        After training on a single positive triple (s, r, t), the score
+        for that triple should increase (become less negative), proving
+        the gradient update pushes in the correct direction.
+        """
+        from harmony.metric.transe import _TransE
+
+        model = _TransE(entity_ids=["s", "t", "neg"], dim=10, seed=42)
+        score_before = model._score(0, 0, 1)
+
+        # Train on the single triple (s=0, r=0, t=1) for a few epochs
+        model.train([(0, 0, 1)], n_epochs=20, lr=0.01, margin=1.0, n_neg=3, seed=42)
+        score_after = model._score(0, 0, 1)
+
+        # Score should improve (increase) after training — gradient descent
+        assert score_after > score_before, (
+            f"Training did not improve score: {score_before:.4f} → {score_after:.4f}. "
+            "Gradient sign may be inverted."
+        )

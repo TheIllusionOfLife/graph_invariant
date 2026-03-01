@@ -65,7 +65,7 @@ def aggregate_seed_results(
 
     result_rows: dict[str, dict[str, float | int]] = {}
     for domain in domains:
-        row: dict[str, float] = {}
+        row: dict[str, float | int] = {}
         for metric in metrics:
             values = [float(seed_dfs[s].loc[domain, metric]) for s in seeds]
             row[f"{metric}_mean"] = float(np.mean(values))

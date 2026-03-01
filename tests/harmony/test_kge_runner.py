@@ -50,6 +50,7 @@ class TestRunAllKgeBaselines:
         kg = _make_sufficient_kg()
         r1 = run_all_kge_baselines(kg, seed=42)
         r2 = run_all_kge_baselines(kg, seed=42)
+        assert set(r1.keys()) == set(r2.keys()), "Key sets differ between runs"
         for model in r1:
             assert r1[model] == pytest.approx(r2[model])
 

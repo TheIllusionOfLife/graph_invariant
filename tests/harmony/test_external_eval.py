@@ -187,3 +187,28 @@ class TestNoGenerativityAblation:
         # With generativity zeroed, score should differ from full
         # (generativity contributes non-trivially to the composite score)
         assert abs(no_gen_row.mean - full_row.mean) > 1e-6
+
+
+# ── ComplEx snapshot consistency regression guard ────────────────────
+
+
+class TestComplExSnapshotConsistency:
+    def test_training_improves_positive_triple_score(self) -> None:
+        """Regression guard: ComplEx training must use consistent gradients.
+
+        After training on a single positive triple, the score for that
+        triple should increase, proving the snapshot-before-update fix
+        produces correct gradient descent.
+        """
+        from analysis.external_eval import _ComplEx
+
+        model = _ComplEx(entity_ids=["s", "t", "neg"], dim=10, seed=42)
+        score_before = model._score(0, 0, 1)
+
+        model.train([(0, 0, 1)], n_epochs=20, lr=0.01, margin=1.0, n_neg=3, seed=42)
+        score_after = model._score(0, 0, 1)
+
+        assert score_after > score_before, (
+            f"ComplEx training did not improve score: {score_before:.4f} → {score_after:.4f}. "
+            "Stale-embedding bug may have regressed."
+        )

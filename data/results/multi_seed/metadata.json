@@ -15,6 +15,7 @@
   "domains": [
     "astronomy",
     "physics",
-    "materials"
+    "materials",
+    "wikidata_physics"
   ]
 }

@@ -42,19 +42,27 @@ Domain & Method & Hits@10 & MRR \\
   & Frequency       & $0.36 \pm 0.18$ & --- \\
   & DistMult-alone  & $0.29 \pm 0.14$ & $0.15 \pm 0.09$ \\
   & Harmony (ours)  & $\textbf{0.31} \pm 0.14$ & $0.13 \pm 0.05$ \\
+\midrule
+\multirow{4}{*}{\shortstack[l]{Wikidata\\Physics}}
+  & Random          & $0.05 \pm 0.01$ & $0.02 \pm 0.01$ \\
+  & Frequency       & $\textbf{0.29} \pm 0.02$ & --- \\
+  & DistMult-alone  & $0.25 \pm 0.02$ & $\textbf{0.10} \pm 0.01$ \\
+  & Harmony (ours)  & $0.26 \pm 0.04$ & $0.09 \pm 0.02$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 Multi-seed evaluation (Table~\ref{tab:metrics}) shows that Harmony-guided
 proposals match or slightly outperform the DistMult-alone baseline on Hits@10
-in the materials domain ($0.31$ vs.\ $0.29$), while the frequency heuristic
-proves a strong competitor across all domains.  The high variance across seeds
-(std $\approx 0.14$--$0.23$) reflects the stochastic nature of LLM-guided
-proposal generation; aggregating across 10 seeds provides a more reliable
-comparison than single-seed evaluation.  In materials, Harmony (ours) achieves
-the best Hits@10 while maintaining lower MRR variance ($0.05$ vs.\ $0.09$),
-suggesting more consistent link prediction quality.
+in materials ($0.31$ vs.\ $0.29$) and Wikidata Physics ($0.26$ vs.\ $0.25$),
+while the frequency heuristic proves a strong competitor across all domains.
+On the larger Wikidata-sourced KG, variance across seeds is substantially
+lower (std $\approx 0.02$--$0.04$), reflecting the more stable evaluation
+that comes with a denser graph.  In the smaller hand-curated domains, higher
+variance (std $\approx 0.14$--$0.23$) reflects both the stochastic nature of
+LLM-guided proposal generation and the sensitivity of link prediction to test
+split composition on small KGs.  Aggregating across 10 seeds provides a more
+reliable comparison than single-seed evaluation.
 
 \begin{figure}[t]
 \centering

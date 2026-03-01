@@ -48,6 +48,8 @@ _DOMAIN_BUILDERS: dict[str, str] = {
     "astronomy": "harmony.datasets.astronomy.build_astronomy_kg",
     "physics": "harmony.datasets.physics.build_physics_kg",
     "materials": "harmony.datasets.materials.build_materials_kg",
+    "wikidata_physics": "harmony.datasets.wikidata_physics.build_wikidata_physics_kg",
+    "wikidata_materials": "harmony.datasets.wikidata_materials.build_wikidata_materials_kg",
 }
 
 

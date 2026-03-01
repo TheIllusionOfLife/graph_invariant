@@ -60,24 +60,26 @@ Domain & Method & Hits@10 & MRR \\
 
 Multi-seed evaluation across five KG domains (Table~\ref{tab:metrics}) shows
 that Harmony-guided proposals outperform the DistMult-alone baseline on
-Hits@10 in Wikidata Materials ($0.34$ vs.\ $0.32$, $p < 0.05$), materials
-($0.31$ vs.\ $0.29$), and Wikidata Physics ($0.26$ vs.\ $0.25$).  On
-Wikidata Materials, Harmony also achieves the best MRR ($0.12$ vs.\ $0.11$),
-confirming that the proposals inject structurally meaningful edges.  The
-frequency heuristic achieves the highest Hits@10 across all five domains,
-reflecting the strong inductive bias of edge-type distributions, particularly
-on denser KGs where these distributions are more informative.  However,
-Frequency lacks a learned embedding and therefore cannot produce MRR scores;
-Harmony's advantage over DistMult-alone on both Hits@10 and MRR in the
-Wikidata domains demonstrates that Harmony proposals add genuinely informative
-structure beyond what the embedding baseline captures.
+Hits@10 in Wikidata Materials ($0.34$ vs.\ $0.32$), materials ($0.31$ vs.\
+$0.29$), and Wikidata Physics ($0.26$ vs.\ $0.25$).  On Wikidata Materials,
+Harmony also achieves the best MRR ($0.12$ vs.\ $0.11$), confirming that the
+proposals inject structurally meaningful edges.  The frequency heuristic
+achieves the highest Hits@10 across all five domains, reflecting the strong
+inductive bias of edge-type distributions, particularly on denser KGs where
+these distributions are more informative.  Frequency is not evaluated on MRR
+because it assigns uniform scores within each edge type and does not produce a
+per-entity ranking; among the embedding-based methods, Harmony's advantage over
+DistMult-alone on both Hits@10 and MRR in Wikidata Materials demonstrates that
+Harmony proposals add genuinely informative structure beyond what the embedding
+baseline captures.
 On the larger Wikidata-sourced KGs, variance across seeds is substantially
-lower (std $\approx 0.02$--$0.05$), reflecting the more stable evaluation
+lower (std $\approx 0.01$--$0.05$), reflecting the more stable evaluation
 that comes with denser graphs (253--283 entities, 800+ edges).  In the smaller
-hand-curated domains ($\leq 50$ entities), higher variance (std
-$\approx 0.14$--$0.23$) reflects both the stochastic nature of LLM-guided
-proposal generation and the sensitivity of link prediction to test split
-composition on small KGs.
+hand-curated domains ($\leq 50$ entities), variance is generally higher
+(std $\approx 0.04$--$0.23$, with Hits@10 stds reaching up to $0.23$ for
+some method--domain pairs), reflecting both the stochastic nature of
+LLM-guided proposal generation and the sensitivity of link prediction to
+test split composition on small KGs.
 
 \begin{figure}[t]
 \centering

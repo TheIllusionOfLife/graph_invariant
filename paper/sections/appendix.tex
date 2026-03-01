@@ -12,6 +12,8 @@ Domain & Entities & Edges & Entity types & Primary relations \\
 \midrule
 Linear algebra   & 17  & 45  & 5 & \texttt{derives}, \texttt{depends\_on} \\
 Periodic table   & 22  & 58  & 4 & \texttt{maps\_to}, \texttt{generalizes} \\
+% Note: entity counts match the KG builders in src/harmony/datasets/.
+% Periodic table: 22 entities (subset used for calibration experiments).
 Astronomy        & 20  & 52  & 6 & \texttt{explains}, \texttt{derives} \\
 Physics          & 18  & 48  & 5 & \texttt{derives}, \texttt{explains} \\
 Materials science & 19 & 50  & 5 & \texttt{maps\_to}, \texttt{depends\_on} \\
@@ -101,6 +103,63 @@ all fields including justification and falsification conditions.
     soft gamma repeaters and anomalous X-ray pulsars.''
   \item \textbf{Falsification}: ``Evidence that magnetar-attributed emissions
     originate from non-magnetic mechanisms would undermine this classification.''
+\end{itemize}
+
+\section{LLM Prompt Templates}\label{app:prompts}
+
+We include the exact prompt templates used for proposal generation.  Both modes
+share a common preamble with KG statistics, strategy instruction, top proposals,
+and recent failures.
+
+\paragraph{Free mode (default).}
+The free-mode prompt shows a sample of up to 20 entity IDs from the KG to
+ground the LLM without over-constraining it:
+\begin{quote}\small\ttfamily
+You are a theory-discovery agent for knowledge graph research.\\
+Knowledge Graph: domain='\{domain\}', entities=\{N\}, edges=\{M\}\\[4pt]
+Strategy: \{REFINEMENT|COMBINATION|NOVEL\} --- \{strategy description\}\\[4pt]
+Top proposals so far: \{top 3 proposals or "None yet"\}\\
+Recent validation failures: \{up to 5 failure messages or "None"\}\\[4pt]
+EXAMPLE ENTITY IDs from this KG (showing K of N): \{entity\_1\}, \{entity\_2\}, ...\\
+VALID EDGE TYPES: depends\_on, derives, equivalent\_to, maps\_to, explains,
+contradicts, generalizes\\
+IMPORTANT: source\_entity and target\_entity MUST be exact entity IDs from this
+KG.\\[4pt]
+Return ONLY a JSON object (no extra text) with fields: id, proposal\_type,
+claim, justification, falsification\_condition, kg\_domain, source\_entity,
+target\_entity, edge\_type, entity\_id, entity\_type
+\end{quote}
+
+\paragraph{Constrained mode (stagnation recovery).}
+When an island stagnates ($S = 5$ generations without valid proposals), the
+prompt switches to constrained mode, which enumerates \emph{all} valid entity
+IDs and edge type names explicitly:
+\begin{quote}\small\ttfamily
+... [same preamble] ...\\[4pt]
+VALID ENTITY IDs (use EXACTLY as written): \{all entity IDs\}\\
+VALID EDGE TYPES (use EXACTLY as written): depends\_on, derives, equivalent\_to,
+maps\_to, explains, contradicts, generalizes
+\end{quote}
+
+\section{Proposal Failure Rate Statistics}\label{app:failure-rate}
+
+Figure~\ref{fig:convergence} shows the valid proposal rate converging to
+$\geq 0.50$ by generation~10 across all discovery domains.  The initial failure
+rate (generations 1--3) is typically 60--80\%, dominated by entity grounding
+errors (referencing entities not in the KG).  The entity sample in free-mode
+prompts (up to 20 entities) and the stagnation recovery mechanism
+(Section~\ref{sec:search}) together reduce failures to $<$30\% by generation~10.
+Constrained-mode prompts achieve $\geq$95\% validity but produce less diverse
+proposals.
+
+\section{Code and Data Availability}\label{app:code-data}
+
+Source code and all experimental artifacts are publicly available:
+\begin{itemize}[nosep]
+  \item \textbf{Code repository}: anonymised for review; will be released upon
+    acceptance.
+  \item \textbf{Data archive}: Zenodo (DOI: \texttt{10.5281/zenodo.18795697}),
+    containing all KG datasets, checkpoints, and generated proposals.
 \end{itemize}
 
 \section{Hyperparameter Settings}\label{app:hyperparams}

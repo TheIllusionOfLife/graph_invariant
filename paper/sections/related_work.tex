@@ -32,9 +32,13 @@ combine it with an island-model \citep{whitley1997island} topology where four
 islands maintain distinct LLM prompting strategies.
 
 \paragraph{LLM-guided reasoning over KGs.}
-Surveys have explored the intersection of LLMs and structured knowledge
-\citep{ji2021kgsurvey}, with recent systems using chain-of-thought prompting or
-retrieval-augmented generation to reason over KGs.  Our approach differs: the LLM is a \emph{proposer} that generates
-structured mutations (new edges/entities) with accompanying justifications,
-rather than an end-to-end question-answering system.  Proposals are scored by a
-deterministic metric, not by LLM self-evaluation.
+Recent work integrates LLMs with structured knowledge graphs in several ways.
+KAPING \citep{baek2023kaping} augments LLM prompts with retrieved KG triples for
+zero-shot question answering.  Think-on-Graph \citep{sun2024thinkongraph}
+performs multi-hop reasoning by iteratively traversing KG neighbours guided by
+LLM chain-of-thought.  StructGPT \citep{jiang2023structgpt} provides a general
+interface for LLMs to query and reason over structured data including KGs.
+These systems use KGs as \emph{context} for LLM reasoning; our approach inverts
+the role: the LLM is a \emph{proposer} that generates structured mutations (new
+edges and entities) with accompanying justifications, and a deterministic Harmony
+metric---not LLM self-evaluation---scores and selects proposals.

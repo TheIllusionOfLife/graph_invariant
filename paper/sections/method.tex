@@ -13,7 +13,19 @@ $E$.  Each entity $v \in V$ has an \texttt{entity\_type} label (e.g.\
 Each edge $(u, v, r) \in E$ carries one of seven semantic relation types:
 \texttt{depends\_on}, \texttt{derives}, \texttt{equivalent\_to},
 \texttt{maps\_to}, \texttt{explains}, \texttt{contradicts}, and
-\texttt{generalizes}.  This fixed type vocabulary enables cross-domain
+\texttt{generalizes}.
+
+\paragraph{Edge type rationale.}
+The seven relation types are derived from a morphism-first principle: we surveyed
+the core semantic roles needed to express scientific relationships across five
+domains (linear algebra, chemistry, astronomy, physics, materials science) and
+identified a minimal set that covers dependency (\texttt{depends\_on}),
+derivation (\texttt{derives}), equivalence (\texttt{equivalent\_to}),
+correspondence (\texttt{maps\_to}), causal/explanatory links
+(\texttt{explains}), contradiction (\texttt{contradicts}), and taxonomic
+hierarchy (\texttt{generalizes}).  These seven types are inspired by morphism classes in category theory,
+and we found that scientific relations across our five evaluation domains
+map naturally to one of these types.  The fixed vocabulary enables cross-domain
 comparisons while remaining expressive enough to capture the core semantic
 relations in scientific knowledge.
 
@@ -69,7 +81,8 @@ entities of type~$\tau$.  Then:
 \end{equation}
 where $T$ is the number of distinct entity types and
 $\text{JS}(\cdot, \cdot) = \sqrt{\text{JSD}(\cdot \| \cdot)}$ is the
-Jensen--Shannon distance (base~2), bounded in $[0,1]$.  When $T \leq 1$ (a
+Jensen--Shannon distance, defined as the square root of the Jensen--Shannon
+divergence (base~2 logarithm), yielding a proper metric bounded in $[0,1]$.  When $T \leq 1$ (a
 single entity type or no entities), $\Symm(G) = 1$ by convention (vacuous
 symmetry).
 
@@ -97,6 +110,38 @@ where $G \oplus \Delta$ denotes the graph after applying $\Delta$, and
 $\Cost(\Delta)$ is a normalised structural cost (e.g.\ number of added edges
 divided by $|E|$).  The penalty weight $\lambda = 0.1$ discourages trivially
 large proposals.
+
+\paragraph{Formal properties.}
+The Harmony metric satisfies three properties that make it suitable as a
+discovery prior:
+\begin{enumerate}[nosep]
+  \item \textbf{Boundedness}: $\mathcal{H}(G) \in [0, 1]$ for any KG $G$,
+    since each component is bounded in $[0,1]$ and weights are normalised to
+    sum to~1.
+  \item \textbf{Decomposability}: each component
+    ($\Compress$, $\Cohere$, $\Symm$, $\Gener$) is independently computable
+    from the graph structure, enabling parallel evaluation and interpretable
+    ablation.
+  \item \textbf{Directional monotonicity} (empirical observation): each
+    component \emph{tends to} respond predictably to edge
+    addition---compressibility generally decreases (more cross-edges reduce
+    spanning fraction), coherence increases when the new edge closes a
+    type-consistent triangle, symmetry increases when the edge balances
+    entity-type distributions, and generativity increases when the edge adds
+    learnable relational signal.  The Harmony score thus captures the
+    \emph{net} structural effect of a mutation across these competing
+    pressures.  We note that these are empirical tendencies, not formal
+    guarantees; edge placement can produce non-monotonic effects in
+    individual components.
+\end{enumerate}
+
+\paragraph{Philosophical grounding.}
+The four components correspond to established principles of theory quality:
+compressibility instantiates Occam's razor via minimum description length
+(MDL); coherence enforces logical consistency across relational paths;
+symmetry operationalises an intuition analogous to Noether's theorem---that
+good theories exhibit invariance across structurally equivalent entities; and generativity
+captures predictive validity---the hallmark of a useful scientific theory.
 
 \subsection{Proposal Schema and Validation}\label{sec:proposals}
 
@@ -165,7 +210,7 @@ generation to enable resumption.
   \IF{\textsc{Validate}$(\hat{p})$}
     \STATE $\Delta \gets$ apply $\hat{p}$ to $G$
     \STATE $v \gets V(\Delta)$ \COMMENT{Eq.~\ref{eq:value}}
-    \STATE \textsc{TryInsert}$(\mathcal{A}, \hat{p}, v, \text{descriptor}(\hat{p}))$
+    \STATE \textsc{TryInsert}$(\mathcal{A}, \hat{p}, v, \text{descriptor}(\hat{p}))$ \COMMENT{descriptor $=$ (simplicity, gain)}
     \STATE Update $I_k$ population
   \ELSE
     \STATE Log failure; feed back to next prompt

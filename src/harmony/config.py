@@ -29,6 +29,7 @@ class HarmonyConfig:
     beta: float = 0.25  # coherence
     gamma: float = 0.25  # symmetry
     delta: float = 0.25  # generativity
+    epsilon: float = 0.0  # frequency (hybrid; 0.0 = pure Harmony)
     # Dataset split
     hidden_ratio: float = 0.1
     # Proposal engine
@@ -79,21 +80,23 @@ class HarmonyConfig:
             ("beta", self.beta),
             ("gamma", self.gamma),
             ("delta", self.delta),
+            ("epsilon", self.epsilon),
         ]:
             if val < 0.0:
                 raise ValueError(f"{name} must be >= 0.0")
-        total = self.alpha + self.beta + self.gamma + self.delta
+        total = self.alpha + self.beta + self.gamma + self.delta + self.epsilon
         if total <= 0.0:
-            raise ValueError("alpha, beta, gamma, delta must sum to > 0.0")
+            raise ValueError("alpha, beta, gamma, delta, epsilon must sum to > 0.0")
         if abs(total - 1.0) > 1e-9:
             warnings.warn(
-                "alpha, beta, gamma, delta did not sum to 1.0; normalizing weights",
+                "Harmony weights did not sum to 1.0; normalizing",
                 stacklevel=3,
             )
             self.alpha /= total
             self.beta /= total
             self.gamma /= total
             self.delta /= total
+            self.epsilon /= total
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> HarmonyConfig:

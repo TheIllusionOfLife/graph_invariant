@@ -1,12 +1,13 @@
 """Composite Harmony metric and proposal value function.
 
-Harmony(D) = α·comp + β·coh + γ·sym + δ·gen  ∈ [0,1]
+Harmony(D) = α·comp + β·coh + γ·sym + δ·gen + ε·freq  ∈ [0,1]
 
-where comp, coh, sym, gen are each normalised to [0,1]:
+where comp, coh, sym, gen, freq are each normalised to [0,1]:
   - comp: compressibility  (MDL proxy)
   - coh : coherence        (path agreement + contradiction-free rate)
-  - sym : symmetry         (1 − avg pairwise JS divergence)
+  - sym : symmetry         (intra-type behavioral consistency)
   - gen : generativity     (DistMult Hits@K on masked edges)
+  - freq: frequency        (frequency-based Hits@K baseline)
 
 Distortion(D) = 1 − Harmony(D)  ∈ [0,1]
 
@@ -16,13 +17,14 @@ Proposal value function:
 
 A positive value means the proposal improves harmony net of cost.
 
-Default weights are equal (α=β=γ=δ=0.25).  Custom weights are accepted
-but must be non-negative; they are normalised internally if they do not
-sum to 1.0.
+Default weights: α=β=γ=δ=0.25, ε=0.0 (pure Harmony by default).
+Custom weights are accepted but must be non-negative; they are
+normalised internally if they do not sum to 1.0.
 """
 
 from __future__ import annotations
 
+from harmony.metric.baselines import baseline_frequency
 from harmony.metric.coherence import coherence
 from harmony.metric.compressibility import compressibility
 from harmony.metric.generativity import generativity
@@ -36,6 +38,7 @@ def harmony_score(
     beta: float = 0.25,
     gamma: float = 0.25,
     delta: float = 0.25,
+    epsilon: float = 0.0,
     seed: int = 42,
     mask_ratio: float = 0.2,
     k: int = 10,
@@ -46,28 +49,30 @@ def harmony_score(
     ----------
     kg:
         The knowledge graph to score.
-    alpha, beta, gamma, delta:
+    alpha, beta, gamma, delta, epsilon:
         Non-negative weights for compressibility, coherence, symmetry,
-        and generativity.  Raw (unnormalized) values are accepted and
-        divided by their sum internally — callers do NOT need to pre-
-        normalise.  All weights must be >= 0 and at least one must be > 0.
+        generativity, and frequency.  Raw (unnormalized) values are
+        accepted and divided by their sum internally — callers do NOT
+        need to pre-normalise.  All weights must be >= 0 and at least
+        one must be > 0.  epsilon=0.0 (default) gives pure Harmony.
     seed:
         Random seed forwarded to the generativity component.
     mask_ratio:
         Fraction of edges masked for the link-prediction task (generativity).
     k:
-        Hits@K cutoff for the generativity component.
+        Hits@K cutoff for the generativity and frequency components.
     """
-    if any(w < 0.0 for w in (alpha, beta, gamma, delta)):
+    if any(w < 0.0 for w in (alpha, beta, gamma, delta, epsilon)):
         raise ValueError("All weights must be >= 0.0")
-    total_w = alpha + beta + gamma + delta
+    total_w = alpha + beta + gamma + delta + epsilon
     if total_w <= 0.0:
         raise ValueError("At least one weight must be > 0")
-    alpha, beta, gamma, delta = (
+    alpha, beta, gamma, delta, epsilon = (
         alpha / total_w,
         beta / total_w,
         gamma / total_w,
         delta / total_w,
+        epsilon / total_w,
     )
 
     comp = compressibility(kg)
@@ -75,7 +80,10 @@ def harmony_score(
     sym = symmetry(kg)
     gen = generativity(kg, seed=seed, mask_ratio=mask_ratio, k=k)
 
-    return alpha * comp + beta * coh + gamma * sym + delta * gen
+    # Frequency component: only computed when epsilon > 0 (avoids wasted work)
+    freq = baseline_frequency(kg, seed=seed, mask_ratio=mask_ratio, k=k) if epsilon > 0 else 0.0
+
+    return alpha * comp + beta * coh + gamma * sym + delta * gen + epsilon * freq
 
 
 def distortion(
@@ -84,6 +92,7 @@ def distortion(
     beta: float = 0.25,
     gamma: float = 0.25,
     delta: float = 0.25,
+    epsilon: float = 0.0,
     seed: int = 42,
     mask_ratio: float = 0.2,
     k: int = 10,
@@ -95,6 +104,7 @@ def distortion(
         beta=beta,
         gamma=gamma,
         delta=delta,
+        epsilon=epsilon,
         seed=seed,
         mask_ratio=mask_ratio,
         k=k,
@@ -108,6 +118,7 @@ def value_of(
     beta: float = 0.25,
     gamma: float = 0.25,
     delta: float = 0.25,
+    epsilon: float = 0.0,
     lambda_cost: float = 0.1,
     cost: float = 0.0,
     seed: int = 42,
@@ -144,6 +155,7 @@ def value_of(
         beta=beta,
         gamma=gamma,
         delta=delta,
+        epsilon=epsilon,
         seed=seed,
         mask_ratio=mask_ratio,
         k=k,
@@ -154,6 +166,7 @@ def value_of(
         beta=beta,
         gamma=gamma,
         delta=delta,
+        epsilon=epsilon,
         seed=seed,
         mask_ratio=mask_ratio,
         k=k,

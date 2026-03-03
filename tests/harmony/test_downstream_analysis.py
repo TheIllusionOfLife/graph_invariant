@@ -11,8 +11,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "analysis"))
 
 from harmony.types import EdgeType, Entity, KnowledgeGraph, TypedEdge
@@ -37,11 +35,41 @@ def _make_test_kg() -> KnowledgeGraph:
 def _make_proposal_scores() -> list[dict[str, float]]:
     """Fake per-proposal component deltas + Hits@10 delta."""
     return [
-        {"delta_compress": 0.1, "delta_cohere": 0.05, "delta_symm": 0.0, "delta_gener": 0.2, "delta_hits10": 0.15},
-        {"delta_compress": -0.05, "delta_cohere": 0.1, "delta_symm": 0.02, "delta_gener": -0.1, "delta_hits10": -0.05},
-        {"delta_compress": 0.2, "delta_cohere": -0.03, "delta_symm": 0.1, "delta_gener": 0.3, "delta_hits10": 0.25},
-        {"delta_compress": 0.0, "delta_cohere": 0.0, "delta_symm": 0.0, "delta_gener": 0.0, "delta_hits10": 0.0},
-        {"delta_compress": 0.15, "delta_cohere": 0.08, "delta_symm": -0.01, "delta_gener": 0.1, "delta_hits10": 0.1},
+        {
+            "delta_compress": 0.1,
+            "delta_cohere": 0.05,
+            "delta_symm": 0.0,
+            "delta_gener": 0.2,
+            "delta_hits10": 0.15,
+        },
+        {
+            "delta_compress": -0.05,
+            "delta_cohere": 0.1,
+            "delta_symm": 0.02,
+            "delta_gener": -0.1,
+            "delta_hits10": -0.05,
+        },
+        {
+            "delta_compress": 0.2,
+            "delta_cohere": -0.03,
+            "delta_symm": 0.1,
+            "delta_gener": 0.3,
+            "delta_hits10": 0.25,
+        },
+        {
+            "delta_compress": 0.0,
+            "delta_cohere": 0.0,
+            "delta_symm": 0.0,
+            "delta_gener": 0.0,
+            "delta_hits10": 0.0,
+        },
+        {
+            "delta_compress": 0.15,
+            "delta_cohere": 0.08,
+            "delta_symm": -0.01,
+            "delta_gener": 0.1,
+            "delta_hits10": 0.1,
+        },
     ]
 
 
@@ -74,8 +102,18 @@ class TestFailureModeAnalysis:
         from harmony_downstream_analysis import failure_mode_analysis
 
         proposals = [
-            {"proposal_type": "ADD_EDGE", "edge_type": "DEPENDS_ON", "valid": True, "hits10_delta": 0.1},
-            {"proposal_type": "ADD_EDGE", "edge_type": "CONTRADICTS", "valid": True, "hits10_delta": -0.05},
+            {
+                "proposal_type": "ADD_EDGE",
+                "edge_type": "DEPENDS_ON",
+                "valid": True,
+                "hits10_delta": 0.1,
+            },
+            {
+                "proposal_type": "ADD_EDGE",
+                "edge_type": "CONTRADICTS",
+                "valid": True,
+                "hits10_delta": -0.05,
+            },
             {"proposal_type": "ADD_ENTITY", "edge_type": None, "valid": False, "hits10_delta": 0.0},
         ]
         result = failure_mode_analysis(proposals)
@@ -87,9 +125,24 @@ class TestFailureModeAnalysis:
         from harmony_downstream_analysis import failure_mode_analysis
 
         proposals = [
-            {"proposal_type": "ADD_EDGE", "edge_type": "DEPENDS_ON", "valid": True, "hits10_delta": 0.1},
-            {"proposal_type": "ADD_EDGE", "edge_type": "CONTRADICTS", "valid": True, "hits10_delta": 0.0},
-            {"proposal_type": "ADD_EDGE", "edge_type": "DERIVES", "valid": True, "hits10_delta": -0.05},
+            {
+                "proposal_type": "ADD_EDGE",
+                "edge_type": "DEPENDS_ON",
+                "valid": True,
+                "hits10_delta": 0.1,
+            },
+            {
+                "proposal_type": "ADD_EDGE",
+                "edge_type": "CONTRADICTS",
+                "valid": True,
+                "hits10_delta": 0.0,
+            },
+            {
+                "proposal_type": "ADD_EDGE",
+                "edge_type": "DERIVES",
+                "valid": True,
+                "hits10_delta": -0.05,
+            },
         ]
         result = failure_mode_analysis(proposals)
         expected_categories = {"valid_helpful", "valid_neutral", "valid_harmful"}

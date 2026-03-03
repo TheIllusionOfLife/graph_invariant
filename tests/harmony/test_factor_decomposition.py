@@ -8,8 +8,6 @@ TDD: written BEFORE implementation. Verifies:
 
 from __future__ import annotations
 
-import pytest
-
 from harmony.config import HarmonyConfig
 from harmony.types import EdgeType, Entity, KnowledgeGraph, TypedEdge
 
@@ -80,7 +78,7 @@ class TestRandomProposer:
         kg = _make_test_kg()
         a = generate_random_proposals(kg, n=5, seed=42)
         b = generate_random_proposals(kg, n=5, seed=42)
-        for pa, pb in zip(a, b):
+        for pa, pb in zip(a, b, strict=True):
             assert pa.source_entity == pb.source_entity
             assert pa.target_entity == pb.target_entity
             assert pa.edge_type == pb.edge_type
@@ -94,7 +92,7 @@ class TestRandomProposer:
         # At least one proposal should differ
         any_different = any(
             pa.source_entity != pb.source_entity or pa.target_entity != pb.target_entity
-            for pa, pb in zip(a, b)
+            for pa, pb in zip(a, b, strict=True)
         )
         assert any_different
 

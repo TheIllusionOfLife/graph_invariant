@@ -228,7 +228,7 @@ def test_symmetry_inconsistent_same_type_is_lower():
 def test_symmetry_multi_type_each_internally_consistent():
     """Multiple entity types, each internally consistent → high symmetry."""
     kg = _make_heterogeneous_entity_type_kg()
-    # concept: a uses only DEPENDS_ON; theorem: b uses only DERIVES; element: c uses only EQUIVALENT_TO
+    # concept: a→DEPENDS_ON; theorem: b→DERIVES; element: c→EQUIVALENT_TO
     # d ("concept") has no outgoing edges → skipped
     # Each type has ≤1 entity with outgoing edges → trivially consistent → 1.0
     score = symmetry(kg)

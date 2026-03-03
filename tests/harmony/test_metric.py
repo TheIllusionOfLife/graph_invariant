@@ -592,3 +592,61 @@ def test_coherence_lenient_triangle_with_parallel_edges():
     score = coherence(kg)
     # Triangle is coherent (closing type matches one hop) → coherence = 1.0
     assert score == pytest.approx(1.0)
+
+
+# ── Epsilon (Harmony+Frequency hybrid) ─────────────────────────────
+
+
+def test_harmony_epsilon_zero_backward_compatible():
+    """epsilon=0.0 (default) produces the same result as no epsilon argument."""
+    kg = build_linear_algebra_kg()
+    score_no_eps = harmony_score(kg, seed=42)
+    score_eps_zero = harmony_score(kg, epsilon=0.0, seed=42)
+    assert score_no_eps == pytest.approx(score_eps_zero)
+
+
+def test_harmony_epsilon_nonzero_changes_score():
+    """epsilon > 0 should change the composite score (frequency component)."""
+    kg = build_linear_algebra_kg()
+    score_base = harmony_score(kg, seed=42)
+    score_eps = harmony_score(kg, epsilon=0.2, seed=42)
+    # They should differ because frequency component is added
+    assert score_base != pytest.approx(score_eps, abs=1e-6)
+
+
+def test_harmony_epsilon_nonzero_still_in_bounds():
+    """Score with epsilon > 0 must still be in [0, 1]."""
+    kg = build_linear_algebra_kg()
+    score = harmony_score(kg, epsilon=0.3, seed=42)
+    assert 0.0 <= score <= 1.0
+
+
+def test_harmony_weight_normalization_with_epsilon():
+    """5 weights (α+β+γ+δ+ε) should be normalised internally."""
+    kg = build_linear_algebra_kg()
+    # All weights = 0.2 → should sum to 1.0
+    score = harmony_score(kg, alpha=0.2, beta=0.2, gamma=0.2, delta=0.2, epsilon=0.2, seed=42)
+    assert 0.0 <= score <= 1.0
+
+
+def test_harmony_rejects_negative_epsilon():
+    """Negative epsilon should raise ValueError."""
+    kg = build_linear_algebra_kg()
+    with pytest.raises(ValueError, match=">="):
+        harmony_score(kg, epsilon=-0.1)
+
+
+def test_distortion_passes_epsilon_through():
+    """distortion() should accept and forward epsilon."""
+    kg = build_linear_algebra_kg()
+    h = harmony_score(kg, epsilon=0.1, seed=42)
+    d = distortion(kg, epsilon=0.1, seed=42)
+    assert d == pytest.approx(1.0 - h)
+
+
+def test_value_of_passes_epsilon_through():
+    """value_of() should accept and forward epsilon."""
+    kg = build_linear_algebra_kg()
+    val = value_of(kg, kg, epsilon=0.1, lambda_cost=0.0, cost=0.0, seed=42)
+    # Same KG before and after → value = 0.0
+    assert val == pytest.approx(0.0)

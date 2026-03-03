@@ -76,6 +76,7 @@ def run_pipeline(
     proposals: list[Proposal],
     seed: int = 42,
     archive_bins: int = 5,
+    accept_all_valid: bool = False,
 ) -> PipelineResult:
     """Validate → apply mutation → score → archive each proposal.
 
@@ -85,6 +86,9 @@ def run_pipeline(
     Descriptor (simplicity, gain_norm) is inserted into the MAP-Elites archive,
     where gain_norm is min-max normalised across valid proposals in this batch.
 
+    When accept_all_valid=True (LLM-only baseline), harmony_score is skipped
+    and all valid proposals receive gain=1.0.
+
     Logs valid_rate on every call.
     """
     if not proposals:
@@ -93,7 +97,9 @@ def run_pipeline(
         return PipelineResult(results=[], valid_rate=0.0, archive=empty_archive)
 
     archive = HarmonyMapElites(num_bins=archive_bins)
-    h_before = harmony_score(kg, seed=seed)
+
+    if not accept_all_valid:
+        h_before = harmony_score(kg, seed=seed)
 
     # First pass: validate and compute gains
     results: list[ProposalResult] = []
@@ -113,12 +119,16 @@ def run_pipeline(
             continue
 
         valid_count += 1
-        try:
-            kg_after = _apply_mutation(kg, proposal)
-            gain: float | None = harmony_score(kg_after, seed=seed) - h_before
-        except Exception as e:
-            logger.warning("Error processing valid proposal %s: %s", proposal.id, e)
-            gain = None
+
+        if accept_all_valid:
+            gain: float | None = 1.0
+        else:
+            try:
+                kg_after = _apply_mutation(kg, proposal)
+                gain = harmony_score(kg_after, seed=seed) - h_before
+            except Exception as e:
+                logger.warning("Error processing valid proposal %s: %s", proposal.id, e)
+                gain = None
 
         results.append(
             ProposalResult(

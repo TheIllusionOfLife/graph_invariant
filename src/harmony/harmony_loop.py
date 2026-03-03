@@ -279,6 +279,7 @@ def run_harmony_loop(
             proposals=all_new_proposals,
             seed=cfg.seed,
             archive_bins=cfg.map_elites_bins,
+            accept_all_valid=cfg.accept_all_valid,
         )
 
         # --- Update island context with best proposals ---

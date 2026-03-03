@@ -93,6 +93,18 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="Number of LLM proposals per island per generation (default: 5).",
     )
+    parser.add_argument(
+        "--accept-all-valid",
+        action="store_true",
+        default=False,
+        help="LLM-only baseline: skip Harmony scoring, accept all valid proposals.",
+    )
+    parser.add_argument(
+        "--greedy",
+        action="store_true",
+        default=False,
+        help="No-QD baseline: single-bin archive (no MAP-Elites diversity).",
+    )
     return parser
 
 
@@ -111,6 +123,9 @@ def main() -> None:
         allow_remote_ollama=args.allow_remote,
         seed=args.seed,
         population_size=args.population_size,
+        accept_all_valid=args.accept_all_valid,
+        greedy=args.greedy,
+        map_elites_bins=1 if args.greedy else 5,
     )
 
     output_dir = Path(args.output_dir)

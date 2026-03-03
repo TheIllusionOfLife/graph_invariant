@@ -1,23 +1,24 @@
-"""Symmetry distortion component.
+"""Symmetry component — intra-type behavioral consistency.
 
-Measures how consistently different *entity types* use edge types when
-connecting to their neighbours.  Higher score = more symmetric.
+Measures how consistently entities *within the same type* use edge types
+when connecting to their neighbours.  Higher score = more symmetric.
 
-Approach — Jensen-Shannon divergence on typed-neighbor distributions:
-  For each entity type, build a probability vector over the 7 EdgeTypes
-  based on outgoing edges from entities of that type.  Then compute the
-  average pairwise JS divergence between entity-type distributions.
+Approach — per-entity edge-type distributions compared to type centroid:
+  1. For each entity type T, collect per-entity outgoing edge-type
+     distributions (normalised probability vectors).
+  2. Compute the centroid distribution for type T.
+  3. within_type_consistency(T) = 1 − mean JS distance to centroid.
+  4. symmetry = weighted mean of consistency(T), weighted by the number
+     of contributing entities per type.
 
-  scipy.spatial.distance.jensenshannon(p, q, base=2) returns the JS
-  *distance* = √(JS divergence), which lies in [0, 1] for normalised
-  distributions with base=2.  A value of 0 means identical distributions
-  (maximally symmetric); 1 means entirely disjoint.
-
-  symmetry = 1 − mean_pairwise_JS_distance  ∈ [0,1]
+This design avoids penalising natural functional specialisation between
+entity types (e.g. stars ≠ planets), which the previous inter-type JS
+divergence approach incorrectly penalised.
 
 Special cases:
-  - Empty graph or no edges → 1.0  (vacuously symmetric)
-  - Single entity type → 1.0  (no pairs to compare)
+  - Empty graph or no edges → 1.0  (vacuously consistent)
+  - Single entity with outgoing edges per type → 1.0  (trivially consistent)
+  - Entity with no outgoing edges → skipped (does not contribute)
 """
 
 from __future__ import annotations
@@ -34,56 +35,76 @@ _N_EDGE_TYPES: int = len(_ALL_EDGE_TYPES)
 _ET_TO_IDX: dict[EdgeType, int] = {et: i for i, et in enumerate(_ALL_EDGE_TYPES)}
 
 
-def _entity_type_distributions(kg: KnowledgeGraph) -> dict[str, np.ndarray]:
-    """Return a probability distribution over EdgeType for each entity type.
+def _per_entity_distributions(
+    kg: KnowledgeGraph,
+) -> dict[str, list[np.ndarray]]:
+    """Return per-entity outgoing edge-type distributions grouped by entity type.
 
-    Only entities with at least one outgoing edge contribute to their type's
-    distribution.  Entity types with no outgoing edges are omitted.
+    Returns a dict mapping entity_type → list of normalised probability
+    vectors (one per entity that has ≥1 outgoing edge).
     """
-    counts: dict[str, Counter[EdgeType]] = defaultdict(Counter)
+    # Collect raw edge-type counts per entity
+    entity_counts: dict[str, Counter[EdgeType]] = defaultdict(Counter)
     for edge in kg.edges:
-        # kg.entities[edge.source] is guaranteed to exist: KnowledgeGraph.add_edge
-        # enforces referential integrity before appending to kg.edges.
-        source_entity_type = kg.entities[edge.source].entity_type
-        counts[source_entity_type][edge.edge_type] += 1
+        entity_counts[edge.source][edge.edge_type] += 1
 
-    distributions: dict[str, np.ndarray] = {}
-    for etype, edge_counts in counts.items():
+    # Group by entity type
+    type_distributions: dict[str, list[np.ndarray]] = defaultdict(list)
+    for entity_id, edge_counts in entity_counts.items():
+        entity_type = kg.entities[entity_id].entity_type
         total = sum(edge_counts.values())
         vec = np.zeros(_N_EDGE_TYPES, dtype=float)
         for et, c in edge_counts.items():
             vec[_ET_TO_IDX[et]] = c / total
-        distributions[etype] = vec
+        type_distributions[entity_type].append(vec)
 
-    return distributions
+    return dict(type_distributions)
 
 
 def symmetry(kg: KnowledgeGraph) -> float:
-    """Symmetry score ∈ [0,1]; higher = more symmetric entity-type behaviour.
+    """Symmetry score ∈ [0,1]; higher = more consistent intra-type behaviour.
 
-    Returns 1.0 for empty graphs or KGs with ≤1 entity type (no divergence
-    to measure).
+    Returns 1.0 for empty graphs, KGs with no outgoing edges, or KGs
+    where every entity type has at most one entity with outgoing edges.
     """
     if kg.num_edges == 0:
         return 1.0
 
-    dists = _entity_type_distributions(kg)
-    entity_types = list(dists.keys())
+    type_dists = _per_entity_distributions(kg)
 
-    if len(entity_types) <= 1:
-        return 1.0  # Single entity type → identical distributions → JS = 0
+    if not type_dists:
+        return 1.0  # No outgoing edges from any entity
 
-    total_js = 0.0
-    n_pairs = 0
-    for i in range(len(entity_types)):
-        for j in range(i + 1, len(entity_types)):
-            p = dists[entity_types[i]]
-            q = dists[entity_types[j]]
-            js = float(jensenshannon(p, q, base=2))
-            # Guard against numerical noise pushing JS slightly above 1
+    total_weight = 0
+    weighted_consistency = 0.0
+
+    for _entity_type, distributions in type_dists.items():
+        n_entities = len(distributions)
+
+        if n_entities <= 1:
+            # Single entity → trivially consistent → consistency = 1.0
+            weighted_consistency += n_entities * 1.0
+            total_weight += n_entities
+            continue
+
+        # Compute centroid distribution
+        centroid = np.mean(distributions, axis=0)
+
+        # Average JS distance from each entity to centroid
+        total_js = 0.0
+        for dist in distributions:
+            js = float(jensenshannon(dist, centroid, base=2))
+            # Guard against numerical noise
             js = min(max(js, 0.0), 1.0)
             total_js += js
-            n_pairs += 1
 
-    avg_js = total_js / n_pairs
-    return 1.0 - avg_js
+        avg_js = total_js / n_entities
+        consistency = 1.0 - avg_js
+
+        weighted_consistency += n_entities * consistency
+        total_weight += n_entities
+
+    if total_weight == 0:
+        return 1.0
+
+    return weighted_consistency / total_weight

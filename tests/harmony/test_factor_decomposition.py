@@ -91,7 +91,9 @@ class TestRandomProposer:
         b = generate_random_proposals(kg, n=5, seed=99)
         # At least one proposal should differ
         any_different = any(
-            pa.source_entity != pb.source_entity or pa.target_entity != pb.target_entity
+            pa.source_entity != pb.source_entity
+            or pa.target_entity != pb.target_entity
+            or pa.edge_type != pb.edge_type
             for pa, pb in zip(a, b, strict=True)
         )
         assert any_different

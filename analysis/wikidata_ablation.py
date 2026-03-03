@@ -48,6 +48,8 @@ def run_wikidata_ablation(
     -------
     DataFrame with columns: domain, component, mean, std, ci95_low, ci95_high.
     """
+    if n_bootstrap <= 0:
+        raise ValueError(f"n_bootstrap must be > 0, got {n_bootstrap}")
     rows: list[dict[str, object]] = []
     rng = np.random.default_rng(seed)
 

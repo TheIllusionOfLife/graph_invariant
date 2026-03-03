@@ -7,8 +7,6 @@ decomposition experiments.
 
 from __future__ import annotations
 
-import uuid
-
 import numpy as np
 
 from harmony.proposals.types import Proposal, ProposalType
@@ -44,13 +42,13 @@ def generate_random_proposals(
     rng = np.random.default_rng(seed)
     proposals: list[Proposal] = []
 
-    for _ in range(n):
+    for i in range(n):
         src_idx, tgt_idx = rng.choice(len(entity_ids), size=2, replace=False)
         edge_type_idx = rng.integers(0, len(_EDGE_TYPE_NAMES))
 
         proposals.append(
             Proposal(
-                id=f"rand-{uuid.uuid4().hex[:8]}",
+                id=f"rand-{seed}-{i:06d}",
                 proposal_type=ProposalType.ADD_EDGE,
                 claim="Randomly generated edge for ablation baseline.",
                 justification="Random mutation — no LLM reasoning involved.",

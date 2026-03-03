@@ -53,7 +53,7 @@ def frequency_dominance_analysis(kg: KnowledgeGraph) -> dict[str, float]:
     # Sparsity
     n = kg.num_entities
     max_edges = n * (n - 1) if n > 1 else 1
-    sparsity = 1.0 - (total_edges / max_edges)
+    sparsity = max(0.0, min(1.0, 1.0 - (total_edges / max_edges)))
 
     # Skewness: ratio of max to min count
     counts = list(edge_type_counts.values())

@@ -6,11 +6,7 @@ link prediction gains) and reviewer A-Q3 (per-domain failure analysis).
 
 from __future__ import annotations
 
-import sys
 from collections import Counter
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from analysis.component_correlation import _spearman
 
@@ -42,7 +38,7 @@ def component_correlation_analysis(
         rho = _spearman(comp_values, hits10_values)
         correlations[comp] = rho
         # Placeholder p-value (real implementation would use scipy.stats)
-        p_values[comp] = 0.0
+        p_values[comp] = float("nan")
 
     return {"correlations": correlations, "p_values": p_values}
 
@@ -99,8 +95,8 @@ def failure_mode_analysis(
 
 
 def regime_characterization(
-    domain_results: list[dict[str, float]],
-) -> dict[str, list[dict[str, float]]]:
+    domain_results: list[dict[str, object]],
+) -> dict[str, list[dict[str, object]]]:
     """Build scatter data for regime characterization.
 
     Parameters

@@ -61,7 +61,7 @@ def backtest_proposals(
 
     return BacktestResult(
         n_proposals=len(proposals_ranked),
-        n_hidden=len(hidden_edges),
+        n_hidden=len(hidden_set),
         precision_at_5=precision_at_n(proposals_ranked, hidden_edges, n=5),
         precision_at_10=precision_at_n(proposals_ranked, hidden_edges, n=10),
         precision_at_20=precision_at_n(proposals_ranked, hidden_edges, n=20),

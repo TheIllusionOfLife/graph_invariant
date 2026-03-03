@@ -69,8 +69,9 @@ class HarmonyConfig:
             raise ValueError("llm_timeout_sec must be > 0.0")
         if self.self_correction_max_retries < 0:
             raise ValueError("self_correction_max_retries must be >= 0")
-        if self.map_elites_bins < 2:
-            raise ValueError("map_elites_bins must be >= 2")
+        min_bins = 1 if self.greedy else 2
+        if self.map_elites_bins < min_bins:
+            raise ValueError(f"map_elites_bins must be >= {min_bins}")
         if not (0.0 < self.hidden_ratio < 1.0):
             raise ValueError("hidden_ratio must be in (0, 1)")
         self._validate_weights()

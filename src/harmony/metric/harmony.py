@@ -78,7 +78,7 @@ def harmony_score(
     comp = compressibility(kg)
     coh = coherence(kg)
     sym = symmetry(kg)
-    gen = generativity(kg, seed=seed, mask_ratio=mask_ratio, k=k)
+    gen = generativity(kg, seed=seed, mask_ratio=mask_ratio, k=k) if delta > 0 else 0.0
 
     # Frequency component: only computed when epsilon > 0 (avoids wasted work)
     freq = baseline_frequency(kg, seed=seed, mask_ratio=mask_ratio, k=k) if epsilon > 0 else 0.0

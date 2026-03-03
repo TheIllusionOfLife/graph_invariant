@@ -288,7 +288,7 @@ def _mrr_frequency(
     seed: int = 42,
     mask_ratio: float = 0.2,
 ) -> float:
-    """MRR using frequency-based scoring with degree-based tiebreaking."""
+    """MRR using frequency-based scoring with random tiebreaking."""
     from collections import Counter
 
     if kg.num_edges == 0 or kg.num_entities == 0:
@@ -411,9 +411,10 @@ def compute_metrics_table(
         harmony_hits = generativity(augmented_kg, seed=seed)
         harmony_mrr = _mean_reciprocal_rank(augmented_kg, seed=seed)
 
-        # Harmony-3 (delta=0, no generativity in objective) on augmented KG
-        harmony3_hits = generativity(augmented_kg, seed=seed)
-        harmony3_mrr = _mean_reciprocal_rank(augmented_kg, seed=seed)
+        # Harmony-3 (delta=0, no generativity in objective) on original KG
+        # Uses the unaugmented KG to show baseline without Harmony-guided proposals
+        harmony3_hits = generativity(kg, seed=seed)
+        harmony3_mrr = _mean_reciprocal_rank(kg, seed=seed)
 
         # MRR for baseline comparisons
         mrr_rand = _mrr_random(kg, seed=seed)

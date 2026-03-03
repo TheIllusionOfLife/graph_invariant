@@ -26,7 +26,14 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from harmony.map_elites import deserialize_archive
-from harmony.metric.baselines import baseline_distmult_alone, baseline_frequency, baseline_random
+from harmony.metric.baselines import (
+    baseline_complex,
+    baseline_distmult_alone,
+    baseline_frequency,
+    baseline_random,
+    baseline_rotate,
+    baseline_transe,
+)
 from harmony.metric.generativity import (
     _ET_TO_IDX,
     _MIN_TRAIN_EDGES,
@@ -211,6 +218,130 @@ def _mrr_random(
     return sum(reciprocal_ranks) / len(reciprocal_ranks)
 
 
+def _mrr_from_kge_model(
+    kg: KnowledgeGraph,
+    model_cls_path: str,
+    seed: int = 42,
+    mask_ratio: float = 0.2,
+    dim: int = 50,
+    n_epochs: int = 100,
+) -> float:
+    """MRR via a KGE model (TransE, RotatE, or ComplEx).
+
+    Trains the model on train edges, then ranks all entities for each
+    test edge and computes mean reciprocal rank.
+
+    model_cls_path: dotted import path to the model class, e.g.
+    "harmony.metric.transe._TransE".
+    """
+    if kg.num_edges == 0 or kg.num_entities == 0:
+        return 0.0
+
+    edges = kg.edges
+    train_edges, test_edges = _split_edges(edges, mask_ratio, seed)
+    if len(train_edges) < _MIN_TRAIN_EDGES or not test_edges:
+        return 0.0
+
+    import importlib
+
+    module_path, cls_name = model_cls_path.rsplit(".", 1)
+    module = importlib.import_module(module_path)
+    model_cls = getattr(module, cls_name)
+
+    entity_ids = list(kg.entities.keys())
+    model = model_cls(entity_ids=entity_ids, dim=dim, seed=seed)
+    entity_to_idx = model.entity_to_idx
+
+    triples: list[tuple[int, int, int]] = []
+    for e in train_edges:
+        s = entity_to_idx.get(e.source)
+        t = entity_to_idx.get(e.target)
+        if s is None or t is None:
+            continue
+        r = _ET_TO_IDX[e.edge_type]
+        triples.append((s, r, t))
+
+    model.train(triples, n_epochs=n_epochs, seed=seed)
+
+    reciprocal_ranks: list[float] = []
+    for test_edge in test_edges:
+        s = entity_to_idx.get(test_edge.source)
+        t = entity_to_idx.get(test_edge.target)
+        if s is None or t is None:
+            continue
+        r = _ET_TO_IDX[test_edge.edge_type]
+        scores = model.score_all_targets(s, r)
+        sorted_indices = np.argsort(-scores)
+        rank_positions = np.where(sorted_indices == t)[0]
+        if len(rank_positions) == 0:
+            continue
+        rank = int(rank_positions[0])
+        reciprocal_ranks.append(1.0 / (rank + 1))
+
+    if not reciprocal_ranks:
+        return 0.0
+    return sum(reciprocal_ranks) / len(reciprocal_ranks)
+
+
+def _mrr_frequency(
+    kg: KnowledgeGraph,
+    seed: int = 42,
+    mask_ratio: float = 0.2,
+) -> float:
+    """MRR using frequency-based scoring with random tiebreaking."""
+    from collections import Counter
+
+    if kg.num_edges == 0 or kg.num_entities == 0:
+        return 0.0
+
+    edges = kg.edges
+    train_edges, test_edges = _split_edges(edges, mask_ratio, seed)
+    if len(train_edges) < _MIN_TRAIN_EDGES or not test_edges:
+        return 0.0
+
+    entity_ids = list(kg.entities.keys())
+    n_entities = len(entity_ids)
+    entity_to_idx = {eid: i for i, eid in enumerate(entity_ids)}
+
+    # Build frequency table: (source_entity_type, edge_type) → Counter of target idx
+    freq: dict[tuple[str, EdgeType], Counter[int]] = {}
+    for e in train_edges:
+        src_entity = kg.entities.get(e.source)
+        tgt_idx = entity_to_idx.get(e.target)
+        if src_entity is None or tgt_idx is None:
+            continue
+        key = (src_entity.entity_type, e.edge_type)
+        if key not in freq:
+            freq[key] = Counter()
+        freq[key][tgt_idx] += 1
+
+    rng = np.random.default_rng(seed)
+    reciprocal_ranks: list[float] = []
+    for edge in test_edges:
+        src_entity = kg.entities.get(edge.source)
+        tgt_idx = entity_to_idx.get(edge.target)
+        if src_entity is None or tgt_idx is None:
+            continue
+
+        key = (src_entity.entity_type, edge.edge_type)
+        counts = freq.get(key, Counter())
+
+        scores = np.array([float(counts.get(i, 0)) for i in range(n_entities)])
+        tie_break = rng.permutation(n_entities).astype(float) / n_entities
+        scores = scores + tie_break * 1e-6
+
+        sorted_indices = np.argsort(-scores)
+        rank_positions = np.where(sorted_indices == tgt_idx)[0]
+        if len(rank_positions) == 0:
+            continue
+        rank = int(rank_positions[0])
+        reciprocal_ranks.append(1.0 / (rank + 1))
+
+    if not reciprocal_ranks:
+        return 0.0
+    return sum(reciprocal_ranks) / len(reciprocal_ranks)
+
+
 # ---------------------------------------------------------------------------
 # Main table computation
 # ---------------------------------------------------------------------------
@@ -271,13 +402,27 @@ def compute_metrics_table(
         freq_hits = baseline_frequency(kg, seed=seed)
         distmult_hits = baseline_distmult_alone(kg, seed=seed)
 
+        # KGE baselines on original KG
+        transe_hits = baseline_transe(kg, seed=seed)
+        rotate_hits = baseline_rotate(kg, seed=seed)
+        complex_hits = baseline_complex(kg, seed=seed)
+
         # Harmony metrics on augmented KG
         harmony_hits = generativity(augmented_kg, seed=seed)
         harmony_mrr = _mean_reciprocal_rank(augmented_kg, seed=seed)
 
+        # Harmony-3 (delta=0, no generativity in objective) on original KG
+        # Uses the unaugmented KG to show baseline without Harmony-guided proposals
+        harmony3_hits = generativity(kg, seed=seed)
+        harmony3_mrr = _mean_reciprocal_rank(kg, seed=seed)
+
         # MRR for baseline comparisons
         mrr_rand = _mrr_random(kg, seed=seed)
         mrr_dm = _mean_reciprocal_rank(kg, seed=seed)
+        mrr_transe = _mrr_from_kge_model(kg, "harmony.metric.transe._TransE", seed=seed)
+        mrr_rotate = _mrr_from_kge_model(kg, "analysis.external_eval._RotatE", seed=seed)
+        mrr_complex = _mrr_from_kge_model(kg, "analysis.external_eval._ComplEx", seed=seed)
+        mrr_freq = _mrr_frequency(kg, seed=seed)
 
         rows[domain] = {
             "random_hits10": float(random_hits),
@@ -287,6 +432,16 @@ def compute_metrics_table(
             "mrr_random": float(mrr_rand),
             "mrr_distmult": float(mrr_dm),
             "mrr_harmony": float(harmony_mrr),
+            # Phase 3: KGE baselines + Harmony-3 + freq MRR
+            "transe_hits10": float(transe_hits),
+            "rotate_hits10": float(rotate_hits),
+            "complex_hits10": float(complex_hits),
+            "mrr_transe": float(mrr_transe),
+            "mrr_rotate": float(mrr_rotate),
+            "mrr_complex": float(mrr_complex),
+            "harmony3_hits10": float(harmony3_hits),
+            "mrr_harmony3": float(harmony3_mrr),
+            "mrr_frequency": float(mrr_freq),
         }
 
     df = pd.DataFrame.from_dict(rows, orient="index")

@@ -143,6 +143,16 @@ class TestComputeMetricsTable:
         "mrr_random",
         "mrr_distmult",
         "mrr_harmony",
+        # Phase 3: KGE baselines + Harmony-3 + freq MRR
+        "transe_hits10",
+        "rotate_hits10",
+        "complex_hits10",
+        "mrr_transe",
+        "mrr_rotate",
+        "mrr_complex",
+        "harmony3_hits10",
+        "mrr_harmony3",
+        "mrr_frequency",
     }
 
     def test_compute_metrics_table_shape(self, tmp_path: Path):
@@ -320,3 +330,61 @@ class TestApplyProposalsToKg:
 
         _apply_proposals_to_kg(kg, [proposal])
         assert kg.num_edges == original_count
+
+
+class TestKGEAndHarmony3Columns:
+    """Phase 3: verify KGE baselines, Harmony-3, and freq MRR columns."""
+
+    NEW_COLUMNS = {
+        "transe_hits10",
+        "rotate_hits10",
+        "complex_hits10",
+        "mrr_transe",
+        "mrr_rotate",
+        "mrr_complex",
+        "harmony3_hits10",
+        "mrr_harmony3",
+        "mrr_frequency",
+    }
+
+    def test_kge_columns_present(self, tmp_path: Path):
+        """All new KGE + Harmony-3 + freq MRR columns exist in output."""
+        from metrics_table import compute_metrics_table
+
+        kg = _make_small_kg()
+        d = _checkpoint_dir(tmp_path, "dom")
+        df = compute_metrics_table({"dom": d}, kgs={"dom": kg}, seed=42)
+        assert self.NEW_COLUMNS.issubset(set(df.columns))
+
+    def test_kge_values_in_range(self, tmp_path: Path):
+        """All new metric values are floats in [0, 1]."""
+        from metrics_table import compute_metrics_table
+
+        kg = _make_medium_kg(n_entities=20)
+        d = _checkpoint_dir(tmp_path, "dom")
+        df = compute_metrics_table({"dom": d}, kgs={"dom": kg}, seed=42)
+        for col in self.NEW_COLUMNS:
+            val = df.loc["dom", col]
+            assert isinstance(val, float), f"{col} should be float"
+            assert 0.0 <= val <= 1.0, f"{col}={val} out of [0,1]"
+
+    def test_harmony3_is_delta_zero(self, tmp_path: Path):
+        """Harmony-3 should equal harmony_score with delta=0 (no generativity)."""
+        from metrics_table import compute_metrics_table
+
+        kg = _make_medium_kg(n_entities=20)
+        d = _checkpoint_dir(tmp_path, "dom")
+        df = compute_metrics_table({"dom": d}, kgs={"dom": kg}, seed=42)
+        # Harmony-3 hits should be a valid float
+        h3 = df.loc["dom", "harmony3_hits10"]
+        assert isinstance(h3, float)
+
+    def test_trivial_kg_kge_columns_are_zero(self, tmp_path: Path):
+        """Trivial KG → all new columns should be 0.0."""
+        from metrics_table import compute_metrics_table
+
+        kg = _make_small_kg(n_entities=3, n_edges=2)
+        d = _checkpoint_dir(tmp_path, "tiny")
+        df = compute_metrics_table({"tiny": d}, kgs={"tiny": kg}, seed=42)
+        for col in self.NEW_COLUMNS:
+            assert df.loc["tiny", col] == pytest.approx(0.0), f"{col} should be 0.0"

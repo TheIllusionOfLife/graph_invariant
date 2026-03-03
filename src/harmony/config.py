@@ -29,6 +29,7 @@ class HarmonyConfig:
     beta: float = 0.25  # coherence
     gamma: float = 0.25  # symmetry
     delta: float = 0.25  # generativity
+    epsilon: float = 0.0  # frequency (hybrid; 0.0 = pure Harmony)
     # Dataset split
     hidden_ratio: float = 0.1
     # Proposal engine
@@ -46,6 +47,9 @@ class HarmonyConfig:
     constrained_recovery_generations: int = 3
     # Early stopping
     early_stop_patience: int = 10
+    # Factor decomposition flags
+    accept_all_valid: bool = False  # LLM-only baseline: bypass Harmony scoring
+    greedy: bool = False  # No-QD baseline: single-bin archive (no MAP-Elites)
     # Artifacts
     artifacts_dir: str = "artifacts/harmony"
     experiment_id: str | None = None
@@ -65,8 +69,9 @@ class HarmonyConfig:
             raise ValueError("llm_timeout_sec must be > 0.0")
         if self.self_correction_max_retries < 0:
             raise ValueError("self_correction_max_retries must be >= 0")
-        if self.map_elites_bins < 2:
-            raise ValueError("map_elites_bins must be >= 2")
+        min_bins = 1 if self.greedy else 2
+        if self.map_elites_bins < min_bins:
+            raise ValueError(f"map_elites_bins must be >= {min_bins}")
         if not (0.0 < self.hidden_ratio < 1.0):
             raise ValueError("hidden_ratio must be in (0, 1)")
         self._validate_weights()
@@ -79,21 +84,23 @@ class HarmonyConfig:
             ("beta", self.beta),
             ("gamma", self.gamma),
             ("delta", self.delta),
+            ("epsilon", self.epsilon),
         ]:
             if val < 0.0:
                 raise ValueError(f"{name} must be >= 0.0")
-        total = self.alpha + self.beta + self.gamma + self.delta
+        total = self.alpha + self.beta + self.gamma + self.delta + self.epsilon
         if total <= 0.0:
-            raise ValueError("alpha, beta, gamma, delta must sum to > 0.0")
+            raise ValueError("alpha, beta, gamma, delta, epsilon must sum to > 0.0")
         if abs(total - 1.0) > 1e-9:
             warnings.warn(
-                "alpha, beta, gamma, delta did not sum to 1.0; normalizing weights",
+                "Harmony weights did not sum to 1.0; normalizing",
                 stacklevel=3,
             )
             self.alpha /= total
             self.beta /= total
             self.gamma /= total
             self.delta /= total
+            self.epsilon /= total
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> HarmonyConfig:

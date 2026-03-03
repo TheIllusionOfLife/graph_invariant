@@ -31,17 +31,23 @@ relations in scientific knowledge.
 
 \subsection{Harmony Metric}\label{sec:metric}
 
-The Harmony score combines four signals, each normalised to $[0,1]$:
+The Harmony score combines four core signals, each normalised to $[0,1]$,
+with an optional frequency component:
 \begin{equation}\label{eq:harmony}
   \mathcal{H}(G)
   = \alpha \cdot \Compress(G)
   + \beta  \cdot \Cohere(G)
   + \gamma \cdot \Symm(G)
-  + \delta \cdot \Gener(G),
+  + \delta \cdot \Gener(G)
+  + \varepsilon \cdot \Freq(G),
 \end{equation}
-where $\alpha, \beta, \gamma, \delta \geq 0$ are normalised internally so that
-$\alpha + \beta + \gamma + \delta = 1$.  Default weights are uniform
-($\alpha = \beta = \gamma = \delta = 0.25$).
+where $\alpha, \beta, \gamma, \delta, \varepsilon \geq 0$ are normalised
+internally so that $\alpha + \beta + \gamma + \delta + \varepsilon = 1$.
+Default weights are uniform over the four core components
+($\alpha = \beta = \gamma = \delta = 0.25$, $\varepsilon = 0$); the
+frequency component $\Freq(G)$ is the Hits@$K$ of the frequency heuristic
+(predicting the most common edge type between entity pairs) and is included
+only when $\varepsilon > 0$ for hybrid analysis (Section~\ref{sec:freq-analysis}).
 
 \paragraph{Compressibility.}
 An MDL proxy measuring how structured the edge-type distribution is:
@@ -71,20 +77,28 @@ second term penalises \texttt{contradicts} edges, which signal structural noise
 when dense.
 
 \paragraph{Symmetry.}
-Entity-type behavioural uniformity via Jensen--Shannon (JS) divergence.  For
-each entity type $\tau$, define $\mathbf{q}_\tau \in \Delta^6$ as the
-probability distribution over the seven edge types based on outgoing edges from
-entities of type~$\tau$.  Then:
-\begin{equation}\label{eq:symm}
-  \Symm(G) = 1 - \frac{1}{\binom{T}{2}}
-    \sum_{i < j} \text{JS}(\mathbf{q}_{\tau_i}, \mathbf{q}_{\tau_j}),
+Intra-type behavioural consistency via Jensen--Shannon (JS) divergence.  For
+each entity type $\tau$ with $n_\tau$ entities, define $\mathbf{q}_v \in
+\Delta^6$ as the outgoing edge-type distribution of entity $v$ (normalised over
+the seven relation types), and let $\bar{\mathbf{q}}_\tau =
+\frac{1}{n_\tau}\sum_{v \in \tau} \mathbf{q}_v$ be the centroid distribution
+for type~$\tau$.  The within-type consistency is:
+\begin{equation}\label{eq:within}
+  \text{consistency}(\tau) = 1 - \frac{1}{n_\tau} \sum_{v \in \tau}
+    \text{JS}(\mathbf{q}_v, \bar{\mathbf{q}}_\tau),
 \end{equation}
-where $T$ is the number of distinct entity types and
-$\text{JS}(\cdot, \cdot) = \sqrt{\text{JSD}(\cdot \| \cdot)}$ is the
-Jensen--Shannon distance, defined as the square root of the Jensen--Shannon
-divergence (base~2 logarithm), yielding a proper metric bounded in $[0,1]$.  When $T \leq 1$ (a
-single entity type or no entities), $\Symm(G) = 1$ by convention (vacuous
-symmetry).
+where $\text{JS}(\cdot, \cdot) = \sqrt{\text{JSD}(\cdot \| \cdot)}$ is the
+Jensen--Shannon distance (base~2 logarithm), bounded in $[0,1]$.  The symmetry
+score is the entity-count-weighted mean across types:
+\begin{equation}\label{eq:symm}
+  \Symm(G) = \frac{\sum_\tau n_\tau \cdot \text{consistency}(\tau)}
+    {\sum_\tau n_\tau}.
+\end{equation}
+When a type has a single entity, $\text{consistency}(\tau) = 1$ (vacuous
+consistency).  Entities with no outgoing edges are excluded from the
+computation.  This design measures whether entities of the same type use edge
+types consistently, rather than penalising natural functional specialisation
+across types (e.g.\ stars vs.\ planets in astronomy).
 
 \paragraph{Generativity.}
 Link-prediction learnability via a DistMult model \citep{yang2015distmult}:

@@ -6,15 +6,19 @@ incomplete: missing edges and entities limit downstream reasoning.  We introduce
 mutations---new edges or entities---that maximise a composite quality metric.
 The \emph{Harmony score} combines four complementary signals: \textbf{compressibility}
 (minimum description length proxy), \textbf{coherence} (path-semantic consistency),
-\textbf{symmetry} (entity-type behavioural uniformity via Jensen--Shannon divergence),
-and \textbf{generativity} (link-prediction learnability via DistMult).  An LLM
+\textbf{symmetry} (intra-type behavioural consistency),
+and \textbf{generativity} (link-prediction learnability via DistMult), with an
+optional \textbf{frequency} component for hybrid scoring.  An LLM
 proposer generates candidate theory-level propositions, which are validated,
-scored, and archived in a MAP-Elites quality-diversity grid.  Four islands cycling through three
-strategies---refinement, combination, and novelty---explore the proposal space
-concurrently, with periodic migration.  Calibration experiments on
-linear algebra and periodic table KGs show Harmony scores 31--65\% above
-frequency baselines.  On three discovery domains (astronomy, physics, materials
-science), the system produces valid, diverse proposals that improve Hits@10 over
-a standalone DistMult baseline.  Expert rubric evaluation confirms that top
-proposals achieve plausibility scores $\geq 3.0$ on a 5-point scale.
+scored, and archived in a MAP-Elites quality-diversity grid across an
+island-model search topology.  We evaluate on seven KG domains (five
+hand-curated, two Wikidata-sourced) with 10-seed cross-validation and four
+external KGE baselines (DistMult, TransE, RotatE, ComplEx).  Factor
+decomposition isolates the contributions of the LLM proposer, Harmony scoring,
+and quality-diversity archive.  A regime characterisation analysis reveals that
+Harmony adds complementary value to frequency-based approaches in denser,
+multi-type KGs: on Wikidata Materials, Harmony-guided proposals outperform
+DistMult-alone on both Hits@10 ($0.34$ vs.\ $0.32$) and MRR ($0.12$ vs.\
+$0.11$).  Backtesting against held-out edges provides external validity evidence
+independent of the training objective.
 \end{abstract}

@@ -180,7 +180,11 @@ def test_coherence_linear_algebra_kg_in_bounds():
     assert 0.0 <= score <= 1.0
 
 
-# ── Symmetry ─────────────────────────────────────────────────────────
+# ── Symmetry (intra-type behavioral consistency) ────────────────────
+#
+# New design: within each entity type, how consistently do individual
+# entities use edge types?  symmetry = weighted mean of per-type
+# consistency, where consistency(T) = 1 − avg JS distance to centroid.
 
 
 def test_symmetry_returns_float_in_unit_interval():
@@ -200,22 +204,126 @@ def test_symmetry_is_deterministic():
     assert symmetry(kg) == symmetry(kg)
 
 
-def test_symmetry_single_entity_type_is_one():
-    """All entities of same type → no divergence → max symmetry."""
-    score = symmetry(_make_single_entity_type_kg())
-    assert score == pytest.approx(1.0), f"Expected 1.0 for homogeneous KG, got {score}"
+def test_symmetry_consistent_same_type_is_high():
+    """All entities of same type using the SAME edge type → max intra-type consistency."""
+    kg = KnowledgeGraph(domain="consistent_same_type")
+    for eid in ("a", "b", "c", "d"):
+        kg.add_entity(Entity(id=eid, entity_type="concept"))
+    # Every entity uses only DEPENDS_ON outgoing
+    kg.add_edge(TypedEdge(source="a", target="b", edge_type=EdgeType.DEPENDS_ON))
+    kg.add_edge(TypedEdge(source="b", target="c", edge_type=EdgeType.DEPENDS_ON))
+    kg.add_edge(TypedEdge(source="c", target="d", edge_type=EdgeType.DEPENDS_ON))
+    score = symmetry(kg)
+    assert score == pytest.approx(1.0), f"Expected 1.0 for consistent KG, got {score}"
 
 
-def test_symmetry_heterogeneous_lower_than_homogeneous():
-    homo = symmetry(_make_single_entity_type_kg())
-    hetero = symmetry(_make_heterogeneous_entity_type_kg())
-    assert hetero < homo, (
-        f"Heterogeneous ({hetero:.3f}) should be lower than homogeneous ({homo:.3f})"
+def test_symmetry_inconsistent_same_type_is_lower():
+    """Same entity type but each entity uses different edge types → lower consistency."""
+    kg = _make_single_entity_type_kg()
+    # a→b: DEPENDS_ON, b→c: DERIVES, c→d: EQUIVALENT_TO — each entity is different
+    score = symmetry(kg)
+    assert score < 1.0, f"Expected < 1.0 for inconsistent same-type KG, got {score}"
+
+
+def test_symmetry_multi_type_each_internally_consistent():
+    """Multiple entity types, each internally consistent → high symmetry."""
+    kg = _make_heterogeneous_entity_type_kg()
+    # concept: a uses only DEPENDS_ON; theorem: b uses only DERIVES; element: c uses only EQUIVALENT_TO
+    # d ("concept") has no outgoing edges → skipped
+    # Each type has ≤1 entity with outgoing edges → trivially consistent → 1.0
+    score = symmetry(kg)
+    assert score == pytest.approx(1.0), (
+        f"Expected 1.0 for multi-type internally-consistent KG, got {score}"
     )
 
 
 def test_symmetry_empty_kg_is_one():
     assert symmetry(_make_empty_kg()) == pytest.approx(1.0)
+
+
+def test_symmetry_single_entity_per_type_is_one():
+    """Each entity type has exactly one entity → trivially consistent → 1.0."""
+    kg = KnowledgeGraph(domain="single_per_type")
+    kg.add_entity(Entity(id="a", entity_type="star"))
+    kg.add_entity(Entity(id="b", entity_type="planet"))
+    kg.add_entity(Entity(id="c", entity_type="moon"))
+    kg.add_edge(TypedEdge(source="a", target="b", edge_type=EdgeType.GENERALIZES))
+    kg.add_edge(TypedEdge(source="b", target="c", edge_type=EdgeType.DEPENDS_ON))
+    score = symmetry(kg)
+    assert score == pytest.approx(1.0), f"Expected 1.0 for single-entity-per-type, got {score}"
+
+
+def test_symmetry_two_entities_same_type_consistent():
+    """Two entities of the same type, both using the same edge type → 1.0."""
+    kg = KnowledgeGraph(domain="two_consistent")
+    kg.add_entity(Entity(id="a", entity_type="concept"))
+    kg.add_entity(Entity(id="b", entity_type="concept"))
+    kg.add_entity(Entity(id="c", entity_type="other"))
+    kg.add_edge(TypedEdge(source="a", target="c", edge_type=EdgeType.DEPENDS_ON))
+    kg.add_edge(TypedEdge(source="b", target="c", edge_type=EdgeType.DEPENDS_ON))
+    score = symmetry(kg)
+    assert score == pytest.approx(1.0), f"Expected 1.0 for two consistent entities, got {score}"
+
+
+def test_symmetry_two_entities_same_type_inconsistent():
+    """Two entities of same type using completely different edge types → lower score."""
+    kg = KnowledgeGraph(domain="two_inconsistent")
+    kg.add_entity(Entity(id="a", entity_type="concept"))
+    kg.add_entity(Entity(id="b", entity_type="concept"))
+    kg.add_entity(Entity(id="c", entity_type="other"))
+    kg.add_edge(TypedEdge(source="a", target="c", edge_type=EdgeType.DEPENDS_ON))
+    kg.add_edge(TypedEdge(source="b", target="c", edge_type=EdgeType.CONTRADICTS))
+    score = symmetry(kg)
+    assert score < 1.0, f"Expected < 1.0 for inconsistent pair, got {score}"
+
+
+def test_symmetry_three_entities_mixed_consistency():
+    """Three entities of same type: 2 consistent, 1 different → intermediate score."""
+    kg = KnowledgeGraph(domain="three_mixed")
+    kg.add_entity(Entity(id="a", entity_type="concept"))
+    kg.add_entity(Entity(id="b", entity_type="concept"))
+    kg.add_entity(Entity(id="c", entity_type="concept"))
+    kg.add_entity(Entity(id="target", entity_type="other"))
+    kg.add_edge(TypedEdge(source="a", target="target", edge_type=EdgeType.DEPENDS_ON))
+    kg.add_edge(TypedEdge(source="b", target="target", edge_type=EdgeType.DEPENDS_ON))
+    kg.add_edge(TypedEdge(source="c", target="target", edge_type=EdgeType.CONTRADICTS))
+    score = symmetry(kg)
+    # 2 out of 3 are consistent, so score should be between low and 1.0
+    assert 0.0 < score < 1.0, f"Expected intermediate score, got {score}"
+
+
+def test_symmetry_no_outgoing_edges_is_one():
+    """Entities with no outgoing edges should not affect symmetry score."""
+    kg = KnowledgeGraph(domain="no_outgoing")
+    kg.add_entity(Entity(id="a", entity_type="concept"))
+    kg.add_entity(Entity(id="b", entity_type="concept"))
+    # b→a has outgoing from b only; a has no outgoing
+    kg.add_edge(TypedEdge(source="b", target="a", edge_type=EdgeType.DEPENDS_ON))
+    score = symmetry(kg)
+    # Only one entity (b) contributes → trivially consistent → 1.0
+    assert score == pytest.approx(1.0)
+
+
+def test_symmetry_weighted_by_entity_count():
+    """Larger entity types should have more weight in the final score."""
+    # Type A: 3 entities, all consistent (all DEPENDS_ON)
+    # Type B: 2 entities, inconsistent (DEPENDS_ON vs CONTRADICTS)
+    kg = KnowledgeGraph(domain="weighted")
+    for eid in ("a1", "a2", "a3"):
+        kg.add_entity(Entity(id=eid, entity_type="majority"))
+    for eid in ("b1", "b2"):
+        kg.add_entity(Entity(id=eid, entity_type="minority"))
+    kg.add_entity(Entity(id="target", entity_type="other"))
+    # majority: all DEPENDS_ON → consistency = 1.0
+    for src in ("a1", "a2", "a3"):
+        kg.add_edge(TypedEdge(source=src, target="target", edge_type=EdgeType.DEPENDS_ON))
+    # minority: inconsistent → consistency < 1.0
+    kg.add_edge(TypedEdge(source="b1", target="target", edge_type=EdgeType.DEPENDS_ON))
+    kg.add_edge(TypedEdge(source="b2", target="target", edge_type=EdgeType.CONTRADICTS))
+    score = symmetry(kg)
+    # Weighted avg: 3/(3+2)*1.0 + 2/(3+2)*consistency(minority)
+    # Overall should be > 0.5 because majority is perfect
+    assert score > 0.5, f"Expected > 0.5 due to majority weighting, got {score}"
 
 
 def test_symmetry_linear_algebra_kg_in_bounds():

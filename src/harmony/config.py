@@ -47,6 +47,9 @@ class HarmonyConfig:
     constrained_recovery_generations: int = 3
     # Early stopping
     early_stop_patience: int = 10
+    # Factor decomposition flags
+    accept_all_valid: bool = False  # LLM-only baseline: bypass Harmony scoring
+    greedy: bool = False  # No-QD baseline: single-bin archive (no MAP-Elites)
     # Artifacts
     artifacts_dir: str = "artifacts/harmony"
     experiment_id: str | None = None

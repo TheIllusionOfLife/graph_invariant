@@ -18,9 +18,14 @@ _MLX_CACHE: dict[str, tuple[Any, Any]] = {}
 
 
 def _do_load_mlx_model(model_id: str) -> tuple[Any, Any]:
-    """Actually load the model+tokenizer (separated for testability)."""
+    """Actually load the model+tokenizer (separated for testability).
+
+    Uses ``strict=False`` to skip vision_tower weights present in VLM
+    quantizations (e.g. Qwen3.5-35B-A3B-4bit) that are unused for text
+    generation.
+    """
     try:
-        from mlx_lm import load as mlx_load
+        from mlx_lm.utils import _download, load_model, load_tokenizer
     except ImportError as exc:
         raise ImportError(
             "mlx_lm is required for the MLX backend. "
@@ -28,7 +33,9 @@ def _do_load_mlx_model(model_id: str) -> tuple[Any, Any]:
         ) from exc
 
     logger.info("Loading MLX model %s (this may take a moment)...", model_id)
-    model, tokenizer = mlx_load(model_id, strict=False)
+    model_path = _download(model_id)
+    model, _config = load_model(model_path, lazy=False, strict=False)
+    tokenizer = load_tokenizer(model_path)
     logger.info("MLX model %s loaded.", model_id)
     return model, tokenizer
 
@@ -45,11 +52,27 @@ def clear_mlx_cache() -> None:
     _MLX_CACHE.clear()
 
 
-def mlx_generate(model: Any, tokenizer: Any, prompt: str, **kwargs: Any) -> str:
-    """Thin wrapper around mlx_lm.generate (separated for testability)."""
-    from mlx_lm import generate as _mlx_generate
+def mlx_generate(
+    model: Any,
+    tokenizer: Any,
+    prompt: str,
+    max_tokens: int = 1024,
+    temperature: float = 0.7,
+    top_k: int = 50,
+    top_p: float = 0.9,
+) -> str:
+    """Thin wrapper around mlx_lm.generate (separated for testability).
 
-    return _mlx_generate(model, tokenizer, prompt=prompt, **kwargs)
+    Translates user-facing params (temperature, top_k, top_p) into the
+    ``make_sampler`` + ``generate`` API that mlx_lm expects.
+    """
+    from mlx_lm import generate as _mlx_generate
+    from mlx_lm.sample_utils import make_sampler
+
+    sampler = make_sampler(temp=temperature, top_k=top_k, top_p=top_p)
+    return _mlx_generate(
+        model, tokenizer, prompt=prompt, max_tokens=max_tokens, sampler=sampler
+    )
 
 
 def _strip_thinking(text: str) -> str:
@@ -81,13 +104,9 @@ def generate_proposal_mlx(
         )
 
         raw = mlx_generate(
-            model,
-            tokenizer,
-            prompt=chat_prompt,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_k=top_k,
-            top_p=top_p,
+            model, tokenizer, prompt=chat_prompt,
+            max_tokens=max_tokens, temperature=temperature,
+            top_k=top_k, top_p=top_p,
         )
 
         text = _strip_thinking(raw).strip()

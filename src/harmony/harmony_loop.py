@@ -63,6 +63,24 @@ def _init_island_state(state: HarmonySearchState, n_islands: int) -> None:
             state.islands[i] = []
 
 
+def _migrate_ring_top1(state: HarmonySearchState) -> None:
+    """Migrate top-1 proposal in ring topology: island i -> (i+1) mod N."""
+    island_ids = sorted(state.islands.keys())
+    if len(island_ids) < 2:
+        return
+    migrants: dict[int, dict[str, Any] | None] = {}
+    for island_id in island_ids:
+        proposals = state.islands.get(island_id, [])
+        migrants[island_id] = proposals[0] if proposals else None
+    for island_id in island_ids:
+        src = island_ids[(island_ids.index(island_id) - 1) % len(island_ids)]
+        migrant = migrants.get(src)
+        if migrant is None:
+            continue
+        existing = state.islands.get(island_id, [])
+        state.islands[island_id] = [migrant] + existing[:4]
+
+
 # ---------------------------------------------------------------------------
 # Island generation
 # ---------------------------------------------------------------------------
@@ -274,6 +292,14 @@ def run_harmony_loop(
             seed=cfg.seed,
             archive_bins=cfg.map_elites_bins,
             accept_all_valid=cfg.accept_all_valid,
+            archive=archive,
+            lambda_cost=cfg.lambda_cost,
+            cost_mode=cfg.cost_mode,
+            alpha=cfg.alpha,
+            beta=cfg.beta,
+            gamma=cfg.gamma,
+            delta=cfg.delta,
+            epsilon=cfg.epsilon,
         )
 
         # --- Update island context with best proposals ---
@@ -288,6 +314,18 @@ def run_harmony_loop(
                 target_island = rank % n_islands
                 existing = state.islands[target_island]
                 state.islands[target_island] = [result.proposal.to_dict()] + existing[:4]
+
+        if cfg.migration_interval > 0 and (state.generation + 1) % cfg.migration_interval == 0:
+            _migrate_ring_top1(state)
+            _append_jsonl(
+                {
+                    "event": "migration",
+                    "experiment_id": state.experiment_id,
+                    "generation": state.generation + 1,
+                    "migration_interval": cfg.migration_interval,
+                },
+                log_path,
+            )
 
         # --- Update archive checkpoint ---
         state.archive = serialize_archive(pipeline_result.archive)

@@ -30,6 +30,8 @@ class HarmonyConfig:
     gamma: float = 0.25  # symmetry
     delta: float = 0.25  # generativity
     epsilon: float = 0.0  # frequency (hybrid; 0.0 = pure Harmony)
+    lambda_cost: float = 0.1
+    cost_mode: str = "normalized_mutation_size"
     # Dataset split
     hidden_ratio: float = 0.1
     # Proposal engine
@@ -70,10 +72,16 @@ class HarmonyConfig:
             raise ValueError("stagnation_trigger_generations must be >= 1")
         if self.constrained_recovery_generations < 1:
             raise ValueError("constrained_recovery_generations must be >= 1")
+        if self.migration_interval < 1:
+            raise ValueError("migration_interval must be >= 1")
         if self.llm_timeout_sec <= 0.0:
             raise ValueError("llm_timeout_sec must be > 0.0")
         if self.self_correction_max_retries < 0:
             raise ValueError("self_correction_max_retries must be >= 0")
+        if self.lambda_cost < 0.0:
+            raise ValueError("lambda_cost must be >= 0.0")
+        if self.cost_mode not in ("normalized_mutation_size", "none"):
+            raise ValueError("cost_mode must be 'normalized_mutation_size' or 'none'")
         min_bins = 1 if self.greedy else 2
         if self.map_elites_bins < min_bins:
             raise ValueError(f"map_elites_bins must be >= {min_bins}")

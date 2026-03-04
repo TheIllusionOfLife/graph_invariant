@@ -14,6 +14,7 @@ from __future__ import annotations
 import pytest
 
 from harmony.datasets.linear_algebra import build_linear_algebra_kg
+from harmony.map_elites import HarmonyMapElites
 from harmony.proposals.pipeline import run_pipeline
 from harmony.proposals.types import Proposal, ProposalType
 
@@ -109,6 +110,23 @@ class TestValidRate:
         assert result.valid_rate == pytest.approx(0.0)
         assert result.results == []
 
+    def test_grounding_invalid_not_counted_as_valid(self, kg):
+        p = Proposal(
+            id="unknown-entities",
+            proposal_type=ProposalType.ADD_EDGE,
+            claim="Unknown entities should be rejected by grounding checks.",
+            justification="Schema can pass while grounding must still fail.",
+            falsification_condition="If unknown entities are accepted as valid.",
+            kg_domain="linear_algebra",
+            source_entity="does_not_exist",
+            target_entity="also_missing",
+            edge_type="DEPENDS_ON",
+        )
+        result = run_pipeline(kg, [p], seed=42)
+        assert result.valid_rate == pytest.approx(0.0)
+        assert result.results[0].validation.is_valid is False
+        assert any("unknown source_entity" in v for v in result.results[0].validation.violations)
+
 
 class TestDeterminism:
     def test_pipeline_deterministic(self, kg):
@@ -193,3 +211,12 @@ class TestArchive:
         result = run_pipeline(kg, proposals, seed=42)
         assert result.archive is not None
         assert hasattr(result.archive, "cells")
+
+    def test_pipeline_reuses_existing_archive(self, kg):
+        proposals = [_make_valid_add_entity_proposal("p1")]
+        archive = HarmonyMapElites(num_bins=5)
+        result1 = run_pipeline(kg, proposals, seed=42, archive=archive)
+        coverage1 = len(result1.archive.cells)
+        result2 = run_pipeline(kg, proposals, seed=42, archive=result1.archive)
+        coverage2 = len(result2.archive.cells)
+        assert coverage2 >= coverage1

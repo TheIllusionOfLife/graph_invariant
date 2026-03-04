@@ -40,7 +40,7 @@ def test_validate_ollama_url_public_ip_allow_remote_true():
 def test_validate_ollama_url_metadata_ip_blocked():
     # Test allow_remote=True with metadata IP (blocked)
     # 169.254.169.254 is link-local
-    with pytest.raises(ValueError, match="link-local"):
+    with pytest.raises(ValueError, match="private address|link-local"):
         validate_ollama_url("http://169.254.169.254/latest", True)
 
 
@@ -80,9 +80,11 @@ def test_validate_ollama_url_ipv6_bracket():
 
 
 def test_validate_ollama_url_user_pass():
-    # Test URL with user:pass
-    # http://user:pass@localhost:11434
-    url, headers = validate_ollama_url("http://user:pass@localhost:11434", False)
-    assert "user:pass@" in url
-    assert "127.0.0.1" in url or "::1" in url
-    assert headers["Host"] == "localhost:11434"
+    # URLs with inline credentials are forbidden.
+    with pytest.raises(ValueError, match="must not include username/password"):
+        validate_ollama_url("http://user:pass@localhost:11434", False)
+
+
+def test_validate_ollama_url_private_ip_blocked_when_remote_enabled():
+    with pytest.raises(ValueError, match="private address"):
+        validate_ollama_url("http://10.0.0.2:11434", True)

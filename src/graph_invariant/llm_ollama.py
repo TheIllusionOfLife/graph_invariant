@@ -252,6 +252,8 @@ def validate_ollama_url(generate_url: str, allow_remote: bool) -> tuple[str, dic
         raise ValueError("ollama_url must use http or https")
     if not parsed.netloc:
         raise ValueError("ollama_url must include a host")
+    if parsed.username or parsed.password:
+        raise ValueError("ollama_url must not include username/password credentials")
 
     hostname = parsed.hostname
     port = parsed.port
@@ -284,7 +286,11 @@ def validate_ollama_url(generate_url: str, allow_remote: bool) -> tuple[str, dic
         if not ip.is_loopback:
             raise ValueError("ollama_url must target localhost unless allow_remote_ollama is true")
     else:
-        # Remote allowed: Block dangerous IPs
+        # Remote allowed: still block non-routable/sensitive address classes.
+        if ip.is_private:
+            raise ValueError(f"ollama_url targets private address {ip_str}, which is forbidden")
+        if ip.is_unspecified:
+            raise ValueError(f"ollama_url targets unspecified address {ip_str}, which is forbidden")
         if ip.is_link_local:
             raise ValueError(f"ollama_url targets link-local address {ip_str}, which is forbidden")
         if ip.is_multicast:

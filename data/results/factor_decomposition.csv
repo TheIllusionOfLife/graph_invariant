@@ -1,0 +1,16 @@
+config,domain,generations,best_harmony_gain,archive_size
+llm_only,astronomy,11,1.0,1
+llm_only,physics,11,1.0,1
+llm_only,materials,11,1.0,1
+llm_only,wikidata_physics,11,1.0,1
+llm_only,wikidata_materials,11,1.0,1
+no_qd,astronomy,11,0.05179947770206361,1
+no_qd,physics,12,0.025917346902128435,1
+no_qd,materials,11,0.026014355437764314,1
+no_qd,wikidata_physics,10,0.0,1
+no_qd,wikidata_materials,14,0.017160126875303328,1
+harmony_only,astronomy,20,0.053918376004839286,5
+harmony_only,physics,20,0.03185433456263731,4
+harmony_only,materials,20,0.029149639056102905,5
+harmony_only,wikidata_physics,20,0.0021348271472243496,4
+harmony_only,wikidata_materials,20,0.01856903436973356,5

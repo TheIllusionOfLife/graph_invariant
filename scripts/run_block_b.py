@@ -2,7 +2,7 @@
 """Block B orchestrator: LLM-dependent experiments (requires Ollama).
 
 Runs sequentially (GPU contention):
-  1. Qwen pilot (3 gens on linear_algebra, validate valid_rate >= 85%)
+  1. Qwen pilot (3 gens on linear_algebra, validate valid_rate >= 80%)
   2. LLM-only runs (5 domains × 20 gens, --accept-all-valid)
   3. No-QD runs (5 domains × 20 gens, --greedy)
   4. Harmony-only (random proposer + Harmony scoring, no LLM)
@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 import pandas as pd
@@ -171,9 +172,7 @@ def _run_harmony_only(
     )
 
     for gen in range(generations):
-        proposals = generate_random_proposals(
-            kg, n=population_size, seed=cfg.seed + gen
-        )
+        proposals = generate_random_proposals(kg, n=population_size, seed=cfg.seed + gen)
         result = run_pipeline(
             kg=kg,
             proposals=proposals,
@@ -222,7 +221,7 @@ def step_pilot(
         backend=backend,
         mlx_model_id=mlx_model_id,
     )
-    output_dir = Path("/tmp/harmony_pilot")
+    output_dir = Path(tempfile.mkdtemp(prefix="harmony_pilot_"))
     run_harmony_loop(cfg, kg, output_dir=output_dir)
 
     # Check events log for valid_rate
@@ -264,7 +263,7 @@ def step_aggregate(output_root: Path, results_dir: Path, domains: list[str]) -> 
                 try:
                     archive = deserialize_archive(state.archive)
                     n_archive = len(archive.cells)
-                except Exception:
+                except (KeyError, TypeError, ValueError):
                     pass
             rows.append(
                 {

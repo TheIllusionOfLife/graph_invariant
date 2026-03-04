@@ -32,15 +32,6 @@ _DOMAIN_DISPLAY = {
     "wikidata_materials": "Wikidata Mat.",
 }
 
-# Mapping from domain display name patterns in LaTeX to domain keys
-_LATEX_DOMAIN_MAP = {
-    "Astronomy": "astronomy",
-    "Physics}": "physics",  # matches \multirow{8}{*}{Physics}
-    "Materials}": "materials",  # matches \multirow{8}{*}{Materials}
-    "Wikidata\\\\Physics": "wikidata_physics",
-    "Wikidata\\\\Materials": "wikidata_materials",
-}
-
 
 def _fmt(value: float, precision: int = 2) -> str:
     """Format a float to fixed precision."""
@@ -110,9 +101,7 @@ def populate_table1(
             old_pattern = f"& {method}" + r"\s+& --- & ---"
             new_text = f"& {method:<15s} & {hits_str} & {mrr_str}"
             # re.sub treats \p as backreference; bind via default arg
-            content = re.sub(
-                old_pattern, lambda _, t=new_text: t, content, count=1
-            )
+            content = re.sub(old_pattern, lambda _, t=new_text: t, content, count=1)
 
         # Populate p-value and Cliff's delta for Harmony row
         if domain in stat_tests:
@@ -212,11 +201,13 @@ def populate_reproducibility_table(
 
         # Replace rows with --- placeholders
         # Pattern: Display & N & M & X & --- & Source
-        src_display = source.capitalize() if source[0].islower() else source
+        source_str = str(source).strip()
+        if source_str and source_str[0].islower():
+            src_display = source_str.capitalize()
+        else:
+            src_display = source_str
         old_pattern = (
-            re.escape(display)
-            + r"\s+& \d+\s+& \d+\s+& \d+\s+& ---\s+& "
-            + re.escape(src_display)
+            re.escape(display) + r"\s+& \d+\s+& \d+\s+& \d+\s+& ---\s+& " + re.escape(src_display)
         )
         new_row = (
             f"{display:<18s} & {entities:<3d} & {edges:<3d}"
@@ -226,9 +217,7 @@ def populate_reproducibility_table(
 
         # Handle Wikidata rows with all ---
         old_wiki = (
-            re.escape(display)
-            + r"\s+& ---\s+& ---\s+& ---\s+& ---\s+& "
-            + re.escape("Wikidata")
+            re.escape(display) + r"\s+& ---\s+& ---\s+& ---\s+& ---\s+& " + re.escape("Wikidata")
         )
         new_wiki = (
             f"{display:<18s} & {entities:<3d} & {edges:<3d}"
@@ -302,8 +291,7 @@ def main() -> None:
             print(f"  Updated {appendix_tex}")
     else:
         print(
-            f"  Skipping reproducibility: repro={repro_path.exists()},"
-            f" tex={appendix_tex.exists()}"
+            f"  Skipping reproducibility: repro={repro_path.exists()}, tex={appendix_tex.exists()}"
         )
 
     print("\nDone.")

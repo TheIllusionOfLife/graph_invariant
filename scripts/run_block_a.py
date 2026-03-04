@@ -60,12 +60,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--astronomy", type=Path, dest="astronomy", metavar="DIR")
     parser.add_argument("--physics", type=Path, dest="physics", metavar="DIR")
     parser.add_argument("--materials", type=Path, dest="materials", metavar="DIR")
-    parser.add_argument(
-        "--wikidata-physics", type=Path, dest="wikidata_physics", metavar="DIR"
-    )
-    parser.add_argument(
-        "--wikidata-materials", type=Path, dest="wikidata_materials", metavar="DIR"
-    )
+    parser.add_argument("--wikidata-physics", type=Path, dest="wikidata_physics", metavar="DIR")
+    parser.add_argument("--wikidata-materials", type=Path, dest="wikidata_materials", metavar="DIR")
     parser.add_argument(
         "--output",
         type=Path,
@@ -90,9 +86,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def step_multi_seed(
-    domain_checkpoints: dict[str, Path], output_dir: Path
-) -> None:
+def step_multi_seed(domain_checkpoints: dict[str, Path], output_dir: Path) -> None:
     """Step 1: Multi-seed evaluation."""
     import pandas as pd
 
@@ -161,9 +155,7 @@ def step_statistical_tests(output_dir: Path) -> None:
     print(f"  Written to {out_path}")
 
 
-def step_backtesting(
-    domain_checkpoints: dict[str, Path], output_dir: Path
-) -> None:
+def step_backtesting(domain_checkpoints: dict[str, Path], output_dir: Path) -> None:
     """Step 3: Backtest archive proposals against hidden edges."""
     from analysis.backtesting import backtest_proposals
     from harmony.dataset import KGDataset
@@ -179,9 +171,7 @@ def step_backtesting(
         dataset = KGDataset.from_kg(kg, seed=42)
 
         # Extract hidden edges as triples
-        hidden_triples = [
-            (e.source, e.target, e.edge_type.name) for e in dataset.hidden_edges
-        ]
+        hidden_triples = [(e.source, e.target, e.edge_type.name) for e in dataset.hidden_edges]
 
         # Load archive proposals ranked by fitness
         state = load_state(cp_dir / "checkpoint.json")
@@ -196,9 +186,7 @@ def step_backtesting(
             for cell in cells:
                 p = cell.proposal
                 if p.proposal_type == ProposalType.ADD_EDGE:
-                    proposals_ranked.append(
-                        (p.source_entity, p.target_entity, p.edge_type)
-                    )
+                    proposals_ranked.append((p.source_entity, p.target_entity, p.edge_type))
 
         result = backtest_proposals(proposals_ranked, hidden_triples)
         results[domain] = {
@@ -233,9 +221,7 @@ def step_downstream(output_dir: Path) -> None:
     print(f"  Stub written to {out_path}")
 
 
-def step_frequency(
-    domain_checkpoints: dict[str, Path], output_dir: Path
-) -> None:
+def step_frequency(domain_checkpoints: dict[str, Path], output_dir: Path) -> None:
     """Step 5: Frequency dominance analysis."""
     from analysis.frequency_analysis import frequency_dominance_analysis
 
@@ -251,9 +237,7 @@ def step_frequency(
     print(f"  Written to {out_path}")
 
 
-def step_wikidata_ablation(
-    domain_checkpoints: dict[str, Path], output_dir: Path
-) -> None:
+def step_wikidata_ablation(domain_checkpoints: dict[str, Path], output_dir: Path) -> None:
     """Step 6: Wikidata per-component ablation."""
     from analysis.wikidata_ablation import run_wikidata_ablation
 

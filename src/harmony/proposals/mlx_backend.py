@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import re
+import threading
 from typing import Any
 
 from harmony.proposals.errors import LLMBackendError
@@ -15,6 +16,7 @@ from harmony.proposals.llm_proposer import _extract_proposal_dict
 logger = logging.getLogger(__name__)
 
 _MLX_CACHE: dict[str, tuple[Any, Any]] = {}
+_MLX_LOCK = threading.Lock()
 
 
 def _do_load_mlx_model(model_id: str) -> tuple[Any, Any]:
@@ -28,8 +30,7 @@ def _do_load_mlx_model(model_id: str) -> tuple[Any, Any]:
         from mlx_lm.utils import _download, load_model, load_tokenizer
     except ImportError as exc:
         raise ImportError(
-            "mlx_lm is required for the MLX backend. "
-            "Install with: uv pip install mlx-lm"
+            "mlx_lm is required for the MLX backend. Install with: uv pip install mlx-lm"
         ) from exc
 
     logger.info("Loading MLX model %s (this may take a moment)...", model_id)
@@ -41,10 +42,11 @@ def _do_load_mlx_model(model_id: str) -> tuple[Any, Any]:
 
 
 def _load_mlx_model(model_id: str) -> tuple[Any, Any]:
-    """Load model+tokenizer with singleton caching."""
-    if model_id not in _MLX_CACHE:
-        _MLX_CACHE[model_id] = _do_load_mlx_model(model_id)
-    return _MLX_CACHE[model_id]
+    """Load model+tokenizer with singleton caching (thread-safe)."""
+    with _MLX_LOCK:
+        if model_id not in _MLX_CACHE:
+            _MLX_CACHE[model_id] = _do_load_mlx_model(model_id)
+        return _MLX_CACHE[model_id]
 
 
 def clear_mlx_cache() -> None:
@@ -70,9 +72,7 @@ def mlx_generate(
     from mlx_lm.sample_utils import make_sampler
 
     sampler = make_sampler(temp=temperature, top_k=top_k, top_p=top_p)
-    return _mlx_generate(
-        model, tokenizer, prompt=prompt, max_tokens=max_tokens, sampler=sampler
-    )
+    return _mlx_generate(model, tokenizer, prompt=prompt, max_tokens=max_tokens, sampler=sampler)
 
 
 def _strip_thinking(text: str) -> str:
@@ -96,17 +96,31 @@ def generate_proposal_mlx(
     try:
         model, tokenizer = _load_mlx_model(model_id)
 
-        chat_prompt = tokenizer.apply_chat_template(
-            [{"role": "user", "content": prompt}],
-            tokenize=False,
-            add_generation_prompt=True,
-            enable_thinking=False,
-        )
+        chat_kwargs: dict[str, Any] = {
+            "tokenize": False,
+            "add_generation_prompt": True,
+        }
+        # enable_thinking is Qwen-specific; gracefully degrade for other tokenizers
+        try:
+            chat_prompt = tokenizer.apply_chat_template(
+                [{"role": "user", "content": prompt}],
+                enable_thinking=False,
+                **chat_kwargs,
+            )
+        except TypeError:
+            chat_prompt = tokenizer.apply_chat_template(
+                [{"role": "user", "content": prompt}],
+                **chat_kwargs,
+            )
 
         raw = mlx_generate(
-            model, tokenizer, prompt=chat_prompt,
-            max_tokens=max_tokens, temperature=temperature,
-            top_k=top_k, top_p=top_p,
+            model,
+            tokenizer,
+            prompt=chat_prompt,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_k=top_k,
+            top_p=top_p,
         )
 
         text = _strip_thinking(raw).strip()

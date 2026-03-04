@@ -2,4 +2,4 @@
 
 
 class LLMBackendError(Exception):
-    """Raised by LLM backends on transient failures."""
+    """Raised by LLM backends (Ollama/MLX) on runtime failures."""

@@ -213,9 +213,11 @@ class TestHarmonyLoopForwardsFlags:
         )
         kg = _make_test_kg()
 
+        import tempfile
+
         from harmony.harmony_loop import run_harmony_loop
 
-        run_harmony_loop(cfg, kg, output_dir="/tmp/test_forward_flag")
+        run_harmony_loop(cfg, kg, output_dir=tempfile.mkdtemp(prefix="test_forward_flag_"))
 
         assert len(captured_kwargs) == 1
         assert captured_kwargs[0]["accept_all_valid"] is True

@@ -82,7 +82,7 @@ class TestGenerateProposalMlx:
 
         # Response with <think>...</think> prefix before JSON
         thinking_response = (
-            '<think>Let me analyze this...</think>'
+            "<think>Let me analyze this...</think>"
             '{"id": "p2", "proposal_type": "add_edge", "claim": "stripped"}'
         )
 

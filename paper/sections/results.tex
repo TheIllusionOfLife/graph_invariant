@@ -245,10 +245,10 @@ achieved by each configuration across 20 generations.
 \begin{table}[t]
 \centering
 \caption{Factor decomposition: best harmony gain per configuration.
-LLM-only bypasses scoring (gain~$= 1.0$ by construction).  No-QD uses
-a greedy single-bin archive; Harmony-only uses a random proposer with the
-full $5 \times 5$ MAP-Elites archive.  Archive size reports the number of
-occupied MAP-Elites cells at termination.}\label{tab:factor}
+LLM-only bypasses scoring, so gain is not comparable and marked
+``--''.  No-QD uses a greedy single-bin archive; Harmony-only uses a random
+proposer with the full $5 \times 5$ MAP-Elites archive.  Archive size reports
+the number of occupied MAP-Elites cells at termination.}\label{tab:factor}
 \small
 \begin{tabular}{llccc}
 \toprule
@@ -283,8 +283,10 @@ Domain & Config & Best Gain & Gens & Archive \\
 \end{table}
 
 Two findings emerge.  First, \textbf{Harmony-only outperforms No-QD on all
-five domains}, achieving 4--23\% higher best gain despite using a random
-proposer instead of an LLM.  This demonstrates that the MAP-Elites
+five domains} despite using a random proposer instead of an LLM.  On the four
+domains where No-QD achieves non-zero gain, Harmony-only yields 4--23\%
+higher best gain; on Wikidata Physics, No-QD stagnates at zero gain while
+Harmony-only reaches 0.002.  This demonstrates that the MAP-Elites
 quality-diversity archive is the primary driver of proposal quality: by
 maintaining diverse proposals across the simplicity--gain grid, the archive
 avoids the premature convergence observed in greedy selection (No-QD

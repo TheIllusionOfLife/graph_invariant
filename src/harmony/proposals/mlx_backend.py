@@ -51,7 +51,8 @@ def _load_mlx_model(model_id: str) -> tuple[Any, Any]:
 
 def clear_mlx_cache() -> None:
     """Clear the singleton model cache (for test teardown)."""
-    _MLX_CACHE.clear()
+    with _MLX_LOCK:
+        _MLX_CACHE.clear()
 
 
 def mlx_generate(

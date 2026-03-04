@@ -95,5 +95,7 @@ def generate_proposal_mlx(
         return {"response": text, "proposal_dict": proposal_dict}
     except LLMBackendError:
         raise
+    except ImportError:
+        raise
     except Exception as exc:
         raise LLMBackendError(str(exc)) from exc

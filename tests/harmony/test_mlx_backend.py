@@ -16,6 +16,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _clean_mlx_cache():
+    from harmony.proposals.mlx_backend import clear_mlx_cache
+
+    clear_mlx_cache()
+    yield
+    clear_mlx_cache()
+
+
 class TestGenerateProposalMlx:
     def test_returns_correct_shape(self):
         from harmony.proposals.mlx_backend import generate_proposal_mlx

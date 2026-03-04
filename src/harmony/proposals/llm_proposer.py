@@ -18,6 +18,7 @@ from typing import Any
 import requests
 
 from graph_invariant.llm_ollama import validate_ollama_url
+from harmony.config import HarmonyConfig
 from harmony.proposals.errors import LLMBackendError
 from harmony.types import EdgeType, KnowledgeGraph
 
@@ -262,7 +263,7 @@ def generate_proposal_payload(
     raise LLMBackendError("Max retries exceeded with no exception captured")
 
 
-def generate_proposal(prompt: str, cfg: Any, temperature: float) -> dict[str, Any]:
+def generate_proposal(prompt: str, cfg: HarmonyConfig, temperature: float) -> dict[str, Any]:
     """Dispatch to the configured LLM backend (ollama or mlx)."""
     if cfg.backend == "mlx":
         from harmony.proposals.mlx_backend import generate_proposal_mlx

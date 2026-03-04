@@ -14,22 +14,21 @@ programmatically from the KG builders.}\label{tab:reproducibility}
 \toprule
 Domain & Entities & Edges & Entity types & Edge types & Source \\
 \midrule
-Linear algebra     & 17  & 45  & 5 & --- & Hand-built \\
-Periodic table     & 22  & 58  & 4 & --- & Hand-built \\
-Astronomy          & 20  & 52  & 6 & --- & Hand-built \\
-Physics            & 18  & 48  & 5 & --- & Hand-built \\
-Materials science  & 19  & 50  & 5 & --- & Hand-built \\
-Wikidata Physics   & ---  & --- & --- & --- & Wikidata \\
-Wikidata Materials & ---  & --- & --- & --- & Wikidata \\
+Linear algebra     & 50  & 75  & 2 & 7 & Hand-built \\
+Periodic table     & 153 & 326 & 4 & 2 & Hand-built \\
+Astronomy          & 41  & 39  & 6 & 6 & Hand-built \\
+Physics            & 43  & 46  & 6 & 5 & Hand-built \\
+Materials science  & 49  & 53  & 6 & 5 & Hand-built \\
+Wikidata Physics   & 252 & 814 & 12 & 7 & Wikidata \\
+Wikidata Materials & 253 & 806 & 18 & 7 & Wikidata \\
 \bottomrule
 \end{tabular}
 \end{table*}
 
-\noindent Edge type counts and Wikidata domain statistics will be populated from
-\texttt{analysis/reproducibility\_table.py} after live experiment runs.  The
-dataset splitting protocol (Section~\ref{sec:experiments}) applies identically
-to all seven domains: 10\% hidden, then 80/10/10 train/val/test on the
-remaining 90\%.
+\noindent All statistics are computed programmatically from the KG builders
+via \texttt{analysis/reproducibility\_table.py}.  The dataset splitting protocol
+(Section~\ref{sec:experiments}) applies identically to all seven domains:
+10\% hidden, then 80/10/10 train/val/test on the remaining 90\%.
 
 \section{Ablation Details}\label{app:ablation}
 

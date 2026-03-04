@@ -109,7 +109,10 @@ def populate_table1(
             # Pattern: & {method} & --- & --- & &
             old_pattern = f"& {method}" + r"\s+& --- & ---"
             new_text = f"& {method:<15s} & {hits_str} & {mrr_str}"
-            content = re.sub(old_pattern, new_text, content, count=1)
+            # re.sub treats \p as backreference; bind via default arg
+            content = re.sub(
+                old_pattern, lambda _, t=new_text: t, content, count=1
+            )
 
         # Populate p-value and Cliff's delta for Harmony row
         if domain in stat_tests:
@@ -119,8 +122,14 @@ def populate_table1(
             if p_val is not None and cliff_d is not None:
                 # Replace --- & --- at end of Harmony row
                 old_harmony = r"(Harmony \(ours\)\s+& \$[^$]+\$ & \$[^$]+\$) & --- & ---"
-                new_harmony = rf"\1 & {_fmt_p(p_val)} & {_fmt_delta(cliff_d)}"
-                content = re.sub(old_harmony, new_harmony, content, count=1)
+                p_str = _fmt_p(p_val)
+                d_str = _fmt_delta(cliff_d)
+                content = re.sub(
+                    old_harmony,
+                    lambda m, p=p_str, d=d_str: f"{m.group(1)} & {p} & {d}",
+                    content,
+                    count=1,
+                )
 
     return content
 
@@ -160,7 +169,7 @@ def populate_backtest_table(
         # Replace the --- row for this domain
         old_row = re.escape(display) + r"\s+& --- & --- & --- & --- & --- & ---"
         new_row = f"{display:<17s} & {vals}"
-        content = re.sub(old_row, new_row, content, count=1)
+        content = re.sub(old_row, lambda _, r=new_row: r, content, count=1)
 
     return content
 
@@ -213,7 +222,7 @@ def populate_reproducibility_table(
             f"{display:<18s} & {entities:<3d} & {edges:<3d}"
             f" & {entity_types} & {edge_types} & {src_display}"
         )
-        content = re.sub(old_pattern, new_row, content, count=1)
+        content = re.sub(old_pattern, lambda _, r=new_row: r, content, count=1)
 
         # Handle Wikidata rows with all ---
         old_wiki = (
@@ -225,7 +234,7 @@ def populate_reproducibility_table(
             f"{display:<18s} & {entities:<3d} & {edges:<3d}"
             f" & {entity_types} & {edge_types} & Wikidata"
         )
-        content = re.sub(old_wiki, new_wiki, content, count=1)
+        content = re.sub(old_wiki, lambda _, w=new_wiki: w, content, count=1)
 
     return content
 

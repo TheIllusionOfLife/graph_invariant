@@ -10,6 +10,7 @@ dependencies = [
   "scipy>=1.15",
   "sympy>=1.13",
   "scikit-learn>=1.5",
+  "mlx-lm>=0.30.7",
 ]
 
 [project.scripts]

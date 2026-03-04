@@ -18,13 +18,13 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import requests
 
 from harmony.config import HarmonyConfig
 from harmony.map_elites import deserialize_archive, sample_diverse_exemplars, serialize_archive
+from harmony.proposals.errors import LLMBackendError
 from harmony.proposals.llm_proposer import (
     build_proposal_prompt,
-    generate_proposal_payload,  # imported here so tests can patch at harmony.harmony_loop
+    generate_proposal,  # imported here so tests can patch at harmony.harmony_loop
     island_strategy,
 )
 from harmony.proposals.pipeline import run_pipeline
@@ -110,15 +110,12 @@ def _run_island_generation(
         )
 
         try:
-            payload = generate_proposal_payload(
+            payload = generate_proposal(
                 prompt=prompt,
-                model=cfg.model_name,
+                cfg=cfg,
                 temperature=temp,
-                url=cfg.ollama_url,
-                allow_remote=cfg.allow_remote_ollama,
-                timeout_sec=cfg.llm_timeout_sec,
             )
-        except requests.exceptions.RequestException as exc:
+        except LLMBackendError as exc:
             logger.debug("Island %d LLM call failed: %s", island_id, exc)
             continue
 
@@ -153,15 +150,12 @@ def _run_island_generation(
                         constrained=True,  # always constrained for repairs
                     )
                     try:
-                        repair_payload = generate_proposal_payload(
+                        repair_payload = generate_proposal(
                             prompt=repair_prompt,
-                            model=cfg.model_name,
+                            cfg=cfg,
                             temperature=0.3,  # low temp for repair
-                            url=cfg.ollama_url,
-                            allow_remote=cfg.allow_remote_ollama,
-                            timeout_sec=cfg.llm_timeout_sec,
                         )
-                    except requests.exceptions.RequestException as exc:
+                    except LLMBackendError as exc:
                         logger.debug("Island %d repair LLM call failed: %s", island_id, exc)
                         continue
                     rd = repair_payload.get("proposal_dict")
@@ -279,6 +273,7 @@ def run_harmony_loop(
             proposals=all_new_proposals,
             seed=cfg.seed,
             archive_bins=cfg.map_elites_bins,
+            accept_all_valid=cfg.accept_all_valid,
         )
 
         # --- Update island context with best proposals ---

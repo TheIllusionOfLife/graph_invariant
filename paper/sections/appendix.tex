@@ -14,22 +14,21 @@ programmatically from the KG builders.}\label{tab:reproducibility}
 \toprule
 Domain & Entities & Edges & Entity types & Edge types & Source \\
 \midrule
-Linear algebra     & 17  & 45  & 5 & --- & Hand-built \\
-Periodic table     & 22  & 58  & 4 & --- & Hand-built \\
-Astronomy          & 20  & 52  & 6 & --- & Hand-built \\
-Physics            & 18  & 48  & 5 & --- & Hand-built \\
-Materials science  & 19  & 50  & 5 & --- & Hand-built \\
-Wikidata Physics   & ---  & --- & --- & --- & Wikidata \\
-Wikidata Materials & ---  & --- & --- & --- & Wikidata \\
+Linear algebra     & 50  & 75  & 2 & 7 & Hand-built \\
+Periodic table     & 153 & 326 & 4 & 2 & Hand-built \\
+Astronomy          & 41  & 39  & 6 & 6 & Hand-built \\
+Physics            & 43  & 46  & 6 & 5 & Hand-built \\
+Materials science  & 49  & 53  & 6 & 5 & Hand-built \\
+Wikidata Physics   & 252 & 814 & 12 & 7 & Wikidata \\
+Wikidata Materials & 253 & 806 & 18 & 7 & Wikidata \\
 \bottomrule
 \end{tabular}
 \end{table*}
 
-\noindent Edge type counts and Wikidata domain statistics will be populated from
-\texttt{analysis/reproducibility\_table.py} after live experiment runs.  The
-dataset splitting protocol (Section~\ref{sec:experiments}) applies identically
-to all seven domains: 10\% hidden, then 80/10/10 train/val/test on the
-remaining 90\%.
+\noindent All statistics are computed programmatically from the KG builders
+via \texttt{analysis/reproducibility\_table.py}.  The dataset splitting protocol
+(Section~\ref{sec:experiments}) applies identically to all seven domains:
+10\% hidden, then 80/10/10 train/val/test on the remaining 90\%.
 
 \section{Ablation Details}\label{app:ablation}
 
@@ -274,11 +273,12 @@ Value function
 
 \paragraph{Compute resources.}
 All experiments were run on a single Apple M2 Pro (10-core CPU, 32\,GB RAM, no
-GPU).  Each domain completes 20~generations in approximately 10~minutes of
-wall-clock time (including LLM inference via locally served Ollama).  The total
-compute for the seven reported domains (five hand-curated + two Wikidata) is
-under 2~CPU-hours for the main experiments.  Factor decomposition baselines
-(LLM-only, No-QD) require additional LLM calls ($\sim$4,600 total).
+GPU).  Main experiments use \texttt{gpt-oss:20b} via Ollama ($\sim$10~min per
+domain, 20~generations).  Factor decomposition baselines (LLM-only, No-QD) use
+\texttt{mlx-community/Qwen3.5-35B-A3B-4bit} via \texttt{mlx\_lm} at $\sim$46~tok/s,
+completing all three configurations across five domains in $\sim$2.5~hours.
+The total compute for the seven reported domains is under 2~CPU-hours for the
+main experiments; factor decomposition adds $\sim$2.5~CPU-hours.
 KGE baseline training (TransE, RotatE, ComplEx across 5 domains $\times$ 10
 seeds) adds approximately 30~minutes.  Statistical tests (bootstrap CI,
 permutation tests) add $<$10~minutes.

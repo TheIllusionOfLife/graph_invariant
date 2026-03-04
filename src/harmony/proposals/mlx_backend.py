@@ -1,0 +1,135 @@
+"""MLX LLM backend for Apple Silicon — singleton model cache + generate.
+
+Lazy-imports mlx_lm so Linux/no-GPU users never pay the import cost.
+"""
+
+from __future__ import annotations
+
+import logging
+import re
+import threading
+from typing import Any
+
+from harmony.proposals.errors import LLMBackendError
+from harmony.proposals.llm_proposer import _extract_proposal_dict
+
+logger = logging.getLogger(__name__)
+
+_MLX_CACHE: dict[str, tuple[Any, Any]] = {}
+_MLX_LOCK = threading.Lock()
+
+
+def _do_load_mlx_model(model_id: str) -> tuple[Any, Any]:
+    """Actually load the model+tokenizer (separated for testability).
+
+    Uses ``strict=False`` to skip vision_tower weights present in VLM
+    quantizations (e.g. Qwen3.5-35B-A3B-4bit) that are unused for text
+    generation.
+    """
+    try:
+        from mlx_lm.utils import _download, load_model, load_tokenizer
+    except ImportError as exc:
+        raise ImportError(
+            "mlx_lm is required for the MLX backend. Install with: uv pip install mlx-lm"
+        ) from exc
+
+    logger.info("Loading MLX model %s (this may take a moment)...", model_id)
+    model_path = _download(model_id)
+    model, _config = load_model(model_path, lazy=False, strict=False)
+    tokenizer = load_tokenizer(model_path)
+    logger.info("MLX model %s loaded.", model_id)
+    return model, tokenizer
+
+
+def _load_mlx_model(model_id: str) -> tuple[Any, Any]:
+    """Load model+tokenizer with singleton caching (thread-safe)."""
+    with _MLX_LOCK:
+        if model_id not in _MLX_CACHE:
+            _MLX_CACHE[model_id] = _do_load_mlx_model(model_id)
+        return _MLX_CACHE[model_id]
+
+
+def clear_mlx_cache() -> None:
+    """Clear the singleton model cache (for test teardown)."""
+    with _MLX_LOCK:
+        _MLX_CACHE.clear()
+
+
+def mlx_generate(
+    model: Any,
+    tokenizer: Any,
+    prompt: str,
+    max_tokens: int = 1024,
+    temperature: float = 0.7,
+    top_k: int = 50,
+    top_p: float = 0.9,
+) -> str:
+    """Thin wrapper around mlx_lm.generate (separated for testability).
+
+    Translates user-facing params (temperature, top_k, top_p) into the
+    ``make_sampler`` + ``generate`` API that mlx_lm expects.
+    """
+    from mlx_lm import generate as _mlx_generate
+    from mlx_lm.sample_utils import make_sampler
+
+    sampler = make_sampler(temp=temperature, top_k=top_k, top_p=top_p)
+    return _mlx_generate(model, tokenizer, prompt=prompt, max_tokens=max_tokens, sampler=sampler)
+
+
+def _strip_thinking(text: str) -> str:
+    """Remove <think>...</think> prefix from model output."""
+    return re.sub(r"<think>.*?</think>\s*", "", text, count=1, flags=re.DOTALL)
+
+
+def generate_proposal_mlx(
+    prompt: str,
+    model_id: str,
+    temperature: float = 0.7,
+    max_tokens: int = 1024,
+    top_k: int = 50,
+    top_p: float = 0.9,
+) -> dict[str, Any]:
+    """Generate a proposal via mlx_lm.
+
+    Returns dict with keys "response" (str) and "proposal_dict" (dict | None).
+    Wraps runtime errors in LLMBackendError.
+    """
+    try:
+        model, tokenizer = _load_mlx_model(model_id)
+
+        chat_kwargs: dict[str, Any] = {
+            "tokenize": False,
+            "add_generation_prompt": True,
+        }
+        # enable_thinking is Qwen-specific; gracefully degrade for other tokenizers
+        try:
+            chat_prompt = tokenizer.apply_chat_template(
+                [{"role": "user", "content": prompt}],
+                enable_thinking=False,
+                **chat_kwargs,
+            )
+        except TypeError:
+            chat_prompt = tokenizer.apply_chat_template(
+                [{"role": "user", "content": prompt}],
+                **chat_kwargs,
+            )
+
+        raw = mlx_generate(
+            model,
+            tokenizer,
+            prompt=chat_prompt,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_k=top_k,
+            top_p=top_p,
+        )
+
+        text = _strip_thinking(raw).strip()
+        proposal_dict = _extract_proposal_dict(text)
+        return {"response": text, "proposal_dict": proposal_dict}
+    except LLMBackendError:
+        raise
+    except ImportError:
+        raise
+    except Exception as exc:
+        raise LLMBackendError(str(exc)) from exc

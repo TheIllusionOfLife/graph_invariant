@@ -68,7 +68,7 @@ class TestRunHarmonyLoopSmoke:
 
         valid_json = json.dumps(_make_valid_proposal_dict())
 
-        with patch("harmony.harmony_loop.generate_proposal_payload") as mock_gen:
+        with patch("harmony.harmony_loop.generate_proposal") as mock_gen:
             mock_gen.return_value = {
                 "response": valid_json,
                 "proposal_dict": _make_valid_proposal_dict(),
@@ -81,7 +81,7 @@ class TestRunHarmonyLoopSmoke:
         cfg = _make_cfg(max_generations=2, population_size=1)
         kg = build_linear_algebra_kg()
 
-        with patch("harmony.harmony_loop.generate_proposal_payload") as mock_gen:
+        with patch("harmony.harmony_loop.generate_proposal") as mock_gen:
             mock_gen.return_value = {
                 "response": "{}",
                 "proposal_dict": _make_valid_proposal_dict(),
@@ -94,7 +94,7 @@ class TestRunHarmonyLoopSmoke:
         cfg = _make_cfg(max_generations=1, population_size=1)
         kg = build_linear_algebra_kg()
 
-        with patch("harmony.harmony_loop.generate_proposal_payload") as mock_gen:
+        with patch("harmony.harmony_loop.generate_proposal") as mock_gen:
             mock_gen.return_value = {
                 "response": "{}",
                 "proposal_dict": _make_valid_proposal_dict(),
@@ -121,7 +121,7 @@ class TestStagnationTriggersConstrainedMode:
         kg = build_linear_algebra_kg()
 
         # Always return garbage → all proposals invalid
-        with patch("harmony.harmony_loop.generate_proposal_payload") as mock_gen:
+        with patch("harmony.harmony_loop.generate_proposal") as mock_gen:
             mock_gen.return_value = {"response": "GARBAGE", "proposal_dict": None}
             state = run_harmony_loop(cfg, kg, output_dir=tmp_path)
 
@@ -140,7 +140,7 @@ class TestStagnationTriggersConstrainedMode:
         )
         kg = build_linear_algebra_kg()
 
-        with patch("harmony.harmony_loop.generate_proposal_payload") as mock_gen:
+        with patch("harmony.harmony_loop.generate_proposal") as mock_gen:
             mock_gen.return_value = {"response": "GARBAGE", "proposal_dict": None}
             state = run_harmony_loop(cfg, kg, output_dir=tmp_path)
 
@@ -167,7 +167,7 @@ class TestValidRateLogging:
             return {"response": "{}", "proposal_dict": next(proposals_cycle)}
 
         with caplog.at_level(logging.INFO, logger="harmony.harmony_loop"):
-            with patch("harmony.harmony_loop.generate_proposal_payload") as mock_gen:
+            with patch("harmony.harmony_loop.generate_proposal") as mock_gen:
                 mock_gen.side_effect = side_effect
                 run_harmony_loop(cfg, kg, output_dir=tmp_path)
 
@@ -186,7 +186,7 @@ class TestCheckpointWritten:
         cfg = _make_cfg(max_generations=2, population_size=1)
         kg = build_linear_algebra_kg()
 
-        with patch("harmony.harmony_loop.generate_proposal_payload") as mock_gen:
+        with patch("harmony.harmony_loop.generate_proposal") as mock_gen:
             mock_gen.return_value = {
                 "response": "{}",
                 "proposal_dict": _make_valid_proposal_dict(),
@@ -203,7 +203,7 @@ class TestCheckpointWritten:
         cfg = _make_cfg(max_generations=1, population_size=1)
         kg = build_linear_algebra_kg()
 
-        with patch("harmony.harmony_loop.generate_proposal_payload") as mock_gen:
+        with patch("harmony.harmony_loop.generate_proposal") as mock_gen:
             mock_gen.return_value = {
                 "response": "{}",
                 "proposal_dict": _make_valid_proposal_dict(),
@@ -226,7 +226,7 @@ class TestResume:
         cfg = _make_cfg(max_generations=3, population_size=1)
         kg = build_linear_algebra_kg()
 
-        with patch("harmony.harmony_loop.generate_proposal_payload") as mock_gen:
+        with patch("harmony.harmony_loop.generate_proposal") as mock_gen:
             mock_gen.return_value = {
                 "response": "{}",
                 "proposal_dict": _make_valid_proposal_dict(),
@@ -239,7 +239,7 @@ class TestResume:
         # Now resume with max_generations=5
         cfg2 = _make_cfg(max_generations=5, population_size=1)
         checkpoint_path = str(tmp_path / "checkpoint.json")
-        with patch("harmony.harmony_loop.generate_proposal_payload") as mock_gen:
+        with patch("harmony.harmony_loop.generate_proposal") as mock_gen:
             mock_gen.return_value = {
                 "response": "{}",
                 "proposal_dict": _make_valid_proposal_dict(),

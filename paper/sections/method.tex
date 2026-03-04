@@ -206,7 +206,8 @@ prompting.
 \paragraph{Migration.}
 Every $M = 10$ generations, the best proposal from each island migrates to the
 next island in a ring topology (island~$i \to$ island~$(i+1) \bmod 4$),
-replacing the worst candidate if the migrant has higher fitness.
+where it is prepended to the destination island's prompt-context buffer for the
+next generation.
 
 \paragraph{Generation loop.}
 Algorithm~\ref{alg:harmony} summarises a single generation.  The loop runs for
@@ -231,7 +232,7 @@ generation to enable resumption.
   \ENDIF
 \ENDFOR
 \IF{generation $\bmod\; M = 0$}
-  \STATE \textsc{Migrate}$(I_1, \ldots, I_4)$ \COMMENT{ring topology}
+  \STATE \textsc{MigrateTop1ToContext}$(I_1, \ldots, I_4)$ \COMMENT{ring topology}
 \ENDIF
 \end{algorithmic}
 \end{algorithm}

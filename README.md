@@ -3,8 +3,9 @@
 [![Python CI](https://github.com/yuyamukai/graph_invariant/actions/workflows/python-ci.yml/badge.svg)](https://github.com/yuyamukai/graph_invariant/actions/workflows/python-ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-LLM-driven graph invariant discovery for research workflows.
-This repository contains a Phase 1 implementation (data generation, candidate search/evaluation, novelty scoring, baselines, and reporting) with MAP-Elites diversity archive, bounds mode optimization, OOD validation, and self-correction.
+This repository currently contains two related research tracks:
+- `graph_invariant`: formula discovery over graph features (`src/graph_invariant/`).
+- `harmony`: theory discovery over typed knowledge graphs (`src/harmony/`), which matches the current manuscript in `paper/`.
 
 ## What This Project Does
 
@@ -176,8 +177,8 @@ Benchmark outputs:
 - Split policy: GitHub for lightweight paper package, Zenodo for raw experimental evidence.
 - Dataset DOI/record links and checksum manifests must be documented and cited from the paper.
 - Policy details: `docs/DATA_POLICY.md`
-- Current release handoff example: `docs/zenodo_release_neurips_day1_2026-02-22.md`
-- Current published dataset DOI: `10.5281/zenodo.18727765` (`https://zenodo.org/record/18727765`)
+- Graph-invariant release handoff example: `docs/zenodo_release_neurips_day1_2026-02-22.md`
+- Harmony release handoff example: `docs/zenodo_release_harmony_v1.md`
 
 ## Documentation Map
 
@@ -192,10 +193,10 @@ Benchmark outputs:
 
 ## Paper
 
-This repository accompanies the paper:
+The active manuscript source in `paper/` is:
 
-> **LLM-Driven Discovery of Interpretable Graph Invariants via Island-Model Evolution**
-> Yuya Mukai. 2026.
+> **Harmony-Driven Theory Discovery in Knowledge Graphs via LLM-Guided Island Search**
+> (anonymous submission format for double-blind review)
 
 The paper source is in `paper/` (NeurIPS format). Analysis scripts are in `analysis/`.
 Raw experiment datasets referenced by the paper should be archived on Zenodo and cited by DOI.
@@ -214,6 +215,14 @@ uv run python analysis/analyze_experiments.py \
   --output analysis/results/ \
   --appendix-tex-output paper/sections/appendix_tables_generated.tex
 uv run python analysis/generate_figures.py --data analysis/results/ --output paper/figures/
+```
+
+To audit bibliography sources via live DOI/URL checks:
+
+```bash
+uv run python scripts/audit_paper_sources.py \
+  --bib paper/references.bib \
+  --output docs/paper_source_audit.md
 ```
 
 ## License

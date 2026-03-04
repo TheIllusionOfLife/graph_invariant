@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import copy
 import logging
 from dataclasses import dataclass
 
 from harmony.map_elites import HarmonyMapElites, try_insert
-from harmony.metric.harmony import harmony_score
+from harmony.metric.harmony import value_of
 from harmony.proposals.types import Proposal, ProposalType, ValidationResult
 from harmony.proposals.validator import validate
 from harmony.types import EdgeType, Entity, KnowledgeGraph, TypedEdge
@@ -35,8 +34,12 @@ class PipelineResult:
 
 
 def _apply_mutation(kg: KnowledgeGraph, proposal: Proposal) -> KnowledgeGraph:
-    """Return a deep copy of kg with the proposal mutation applied."""
-    kg_copy = copy.deepcopy(kg)
+    """Return a copy of kg with the proposal mutation applied."""
+    kg_copy = KnowledgeGraph(
+        domain=kg.domain,
+        entities=dict(kg.entities),
+        edges=list(kg.edges),
+    )
 
     if proposal.proposal_type == ProposalType.ADD_EDGE:
         edge = TypedEdge(
@@ -71,16 +74,62 @@ def _apply_mutation(kg: KnowledgeGraph, proposal: Proposal) -> KnowledgeGraph:
     return kg_copy
 
 
+def _grounding_violations(proposal: Proposal, kg: KnowledgeGraph) -> list[str]:
+    """Return KG-grounding validation violations for a schema-valid proposal."""
+    violations: list[str] = []
+    if proposal.kg_domain != kg.domain:
+        violations.append(
+            f"'kg_domain' must match current KG domain '{kg.domain}', got '{proposal.kg_domain}'"
+        )
+
+    if proposal.proposal_type in (ProposalType.ADD_EDGE, ProposalType.REMOVE_EDGE):
+        if proposal.source_entity not in kg.entities:
+            violations.append(
+                f"unknown source_entity '{proposal.source_entity}' for domain '{kg.domain}'"
+            )
+        if proposal.target_entity not in kg.entities:
+            violations.append(
+                f"unknown target_entity '{proposal.target_entity}' for domain '{kg.domain}'"
+            )
+    elif proposal.proposal_type == ProposalType.ADD_ENTITY:
+        if proposal.entity_id in kg.entities:
+            violations.append(
+                f"entity_id '{proposal.entity_id}' already exists in domain '{kg.domain}'"
+            )
+    elif proposal.proposal_type == ProposalType.REMOVE_ENTITY:
+        if proposal.entity_id not in kg.entities:
+            violations.append(f"unknown entity_id '{proposal.entity_id}' for domain '{kg.domain}'")
+    return violations
+
+
+def _proposal_cost(kg: KnowledgeGraph, proposal: Proposal, cost_mode: str) -> float:
+    if cost_mode == "none":
+        return 0.0
+    if cost_mode != "normalized_mutation_size":
+        raise ValueError("cost_mode must be 'normalized_mutation_size' or 'none'")
+    if proposal.proposal_type in (ProposalType.ADD_EDGE, ProposalType.REMOVE_EDGE):
+        return 1.0 / max(1, kg.num_edges)
+    return 1.0 / max(1, kg.num_entities)
+
+
 def run_pipeline(
     kg: KnowledgeGraph,
     proposals: list[Proposal],
     seed: int = 42,
     archive_bins: int = 5,
     accept_all_valid: bool = False,
+    archive: HarmonyMapElites | None = None,
+    lambda_cost: float = 0.1,
+    cost_mode: str = "normalized_mutation_size",
+    alpha: float = 0.25,
+    beta: float = 0.25,
+    gamma: float = 0.25,
+    delta: float = 0.25,
+    epsilon: float = 0.0,
 ) -> PipelineResult:
     """Validate → apply mutation → score → archive each proposal.
 
-    harmony_gain = harmony_score(kg_after) − harmony_score(kg_before)
+    harmony_gain = value_of(kg_before, kg_after)
     simplicity   = 1 / (1 + len(claim) + len(justification))  ∈ (0, 1]
 
     Descriptor (simplicity, gain_norm) is inserted into the MAP-Elites archive,
@@ -93,25 +142,36 @@ def run_pipeline(
     """
     if not proposals:
         logger.info("Pipeline valid_rate=0.000 (0/0)")
-        empty_archive = HarmonyMapElites(num_bins=archive_bins)
-        return PipelineResult(results=[], valid_rate=0.0, archive=empty_archive)
+        current_archive = (
+            archive if archive is not None else HarmonyMapElites(num_bins=archive_bins)
+        )
+        return PipelineResult(results=[], valid_rate=0.0, archive=current_archive)
 
-    archive = HarmonyMapElites(num_bins=archive_bins)
-
-    if not accept_all_valid:
-        h_before = harmony_score(kg, seed=seed)
+    archive_obj = archive if archive is not None else HarmonyMapElites(num_bins=archive_bins)
 
     # First pass: validate and compute gains
     results: list[ProposalResult] = []
     valid_count = 0
 
     for proposal in proposals:
-        validation = validate(proposal)
-        if not validation.is_valid:
+        schema_validation = validate(proposal)
+        if not schema_validation.is_valid:
             results.append(
                 ProposalResult(
                     proposal=proposal,
-                    validation=validation,
+                    validation=schema_validation,
+                    harmony_gain=None,
+                    inserted_to_archive=False,
+                )
+            )
+            continue
+
+        grounding_violations = _grounding_violations(proposal, kg)
+        if grounding_violations:
+            results.append(
+                ProposalResult(
+                    proposal=proposal,
+                    validation=ValidationResult(is_valid=False, violations=grounding_violations),
                     harmony_gain=None,
                     inserted_to_archive=False,
                 )
@@ -125,7 +185,18 @@ def run_pipeline(
         else:
             try:
                 kg_after = _apply_mutation(kg, proposal)
-                gain = harmony_score(kg_after, seed=seed) - h_before
+                gain = value_of(
+                    kg_before=kg,
+                    kg_after=kg_after,
+                    alpha=alpha,
+                    beta=beta,
+                    gamma=gamma,
+                    delta=delta,
+                    epsilon=epsilon,
+                    lambda_cost=lambda_cost,
+                    cost=_proposal_cost(kg, proposal, cost_mode),
+                    seed=seed,
+                )
             except Exception as e:
                 logger.warning("Error processing valid proposal %s: %s", proposal.id, e)
                 gain = None
@@ -133,7 +204,7 @@ def run_pipeline(
         results.append(
             ProposalResult(
                 proposal=proposal,
-                validation=validation,
+                validation=ValidationResult(is_valid=True, violations=[]),
                 harmony_gain=gain,
                 inserted_to_archive=False,
             )
@@ -156,10 +227,10 @@ def run_pipeline(
             simplicity = 1.0 / (1.0 + claim_len)
             gain_norm = (result.harmony_gain - gain_min) / gain_range
             result.inserted_to_archive = try_insert(
-                archive,
+                archive_obj,
                 result.proposal,
                 fitness_signal=result.harmony_gain,
                 descriptor=(simplicity, gain_norm),
             )
 
-    return PipelineResult(results=results, valid_rate=valid_rate, archive=archive)
+    return PipelineResult(results=results, valid_rate=valid_rate, archive=archive_obj)

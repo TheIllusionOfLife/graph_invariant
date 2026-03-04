@@ -228,10 +228,11 @@ Wikidata Mat.     & 0.00 & 0.00 & 0.00 & 0.00 & 0.00 & 0.00 \\
 \end{table}
 
 All precision and recall values are zero, indicating that LLM-generated
-proposals do not exactly recover held-out edges.  This is consistent with the
-design intent: the LLM generates \emph{novel} theoretical relationships rather
-than memorising existing edges.  Backtesting thus confirms that Harmony gains
-come from structural improvements to the KG rather than trivial edge recovery.
+proposals do not exactly recover held-out edges.  This is compatible with the
+design intent (proposals need not copy existing triples), but it is also
+compatible with low edge-recovery utility under this strict exact-match
+criterion.  We therefore treat backtesting as a negative-control diagnostic
+rather than evidence of novelty by itself.
 
 \subsection{Factor Decomposition}
 

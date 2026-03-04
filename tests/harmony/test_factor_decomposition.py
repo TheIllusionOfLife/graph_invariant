@@ -117,16 +117,16 @@ class TestPipelineAcceptAllValid:
     """TDD: verify accept_all_valid skips harmony_score in pipeline."""
 
     def test_pipeline_accept_all_valid_skips_scoring(self, monkeypatch):
-        """When accept_all_valid=True, harmony_score is never called."""
+        """When accept_all_valid=True, value_of is never called."""
         from harmony.proposals import pipeline as pipeline_mod
         from harmony.proposals.pipeline import run_pipeline
         from harmony.proposals.types import Proposal, ProposalType
 
-        # If harmony_score is called, this will blow up
+        # If value_of is called, this will blow up.
         def _boom(*args, **kwargs):
-            raise AssertionError("harmony_score should not be called")
+            raise AssertionError("value_of should not be called")
 
-        monkeypatch.setattr(pipeline_mod, "harmony_score", _boom)
+        monkeypatch.setattr(pipeline_mod, "value_of", _boom)
 
         kg = _make_test_kg()
         proposal = Proposal(
@@ -134,7 +134,7 @@ class TestPipelineAcceptAllValid:
             proposal_type=ProposalType.ADD_EDGE,
             claim="Test claim for accept_all_valid pipeline.",
             justification="Testing that scoring is skipped entirely.",
-            falsification_condition="If harmony_score is called, the test fails.",
+            falsification_condition="If value_of is called, the test fails.",
             kg_domain="test",
             source_entity="e0",
             target_entity="e5",

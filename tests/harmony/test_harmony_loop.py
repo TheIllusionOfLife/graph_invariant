@@ -19,7 +19,7 @@ from unittest.mock import patch
 from harmony.config import HarmonyConfig
 from harmony.datasets.linear_algebra import build_linear_algebra_kg
 from harmony.harmony_loop import run_harmony_loop
-from harmony.state import HarmonySearchState
+from harmony.state import HarmonySearchState, save_state
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -247,3 +247,40 @@ class TestResume:
             state2 = run_harmony_loop(cfg2, kg, output_dir=tmp_path, resume=checkpoint_path)
 
         assert state2.generation == 5
+
+
+class TestMigration:
+    def test_migration_interval_moves_top_proposals(self, tmp_path: Path):
+        cfg = _make_cfg(
+            max_generations=1,
+            population_size=1,
+            migration_interval=1,
+            early_stop_patience=10,
+        )
+        kg = build_linear_algebra_kg()
+        state = HarmonySearchState(
+            experiment_id="resume-migration",
+            generation=0,
+            islands={
+                0: [{"id": "i0"}],
+                1: [{"id": "i1"}],
+                2: [{"id": "i2"}],
+                3: [{"id": "i3"}],
+            },
+            rng_seed=42,
+            island_prompt_mode={0: "free", 1: "free", 2: "free", 3: "free"},
+            island_stagnation={0: 0, 1: 0, 2: 0, 3: 0},
+            island_recent_failures={0: [], 1: [], 2: [], 3: []},
+            island_constrained_generations={0: 0, 1: 0, 2: 0, 3: 0},
+        )
+        checkpoint = tmp_path / "checkpoint.json"
+        save_state(state, checkpoint)
+
+        with patch("harmony.harmony_loop._run_island_generation") as mock_island_gen:
+            mock_island_gen.return_value = ([], 0)
+            migrated = run_harmony_loop(cfg, kg, output_dir=tmp_path, resume=str(checkpoint))
+
+        assert migrated.islands[0][0]["id"] == "i3"
+        assert migrated.islands[1][0]["id"] == "i0"
+        assert migrated.islands[2][0]["id"] == "i1"
+        assert migrated.islands[3][0]["id"] == "i2"

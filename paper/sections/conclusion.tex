@@ -14,15 +14,15 @@ with 10-seed cross-validation and four external KGE baselines reveals a nuanced
 picture.  The frequency heuristic achieves the highest Hits@10 overall,
 reflecting the strong inductive bias of edge-type distributions in small KGs.
 Among embedding-based methods, Harmony-guided proposals outperform
-DistMult-alone on Hits@10 and MRR in three of five domains, with the
+DistMult-alone on Hits@10 in three of five domains, with the
 strongest signal on the denser Wikidata Materials KG.  A regime
 characterisation analysis shows that Harmony's complementary value increases
 with graph density and edge-type diversity, suggesting that the framework is
 most beneficial for larger, structurally richer KGs.  Factor decomposition
-confirms that all three components---LLM proposer, Harmony scoring, and
-MAP-Elites diversity---contribute to proposal quality.  Backtesting against
-held-out edges provides external validity evidence independent of the training
-objective.
+shows strong contributions from Harmony scoring and MAP-Elites diversity, while
+further controlled experiments are needed to isolate the LLM proposer's
+independent contribution.  Backtesting against held-out edges serves as a
+conservative diagnostic independent of the training objective.
 
 Future work includes scaling to larger scientific KGs, extending the relation
 type vocabulary, integrating literature-retrieval-based plausibility scoring,

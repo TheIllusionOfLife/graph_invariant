@@ -17,9 +17,9 @@ the shared seven-relation type vocabulary (Section~\ref{sec:schema}).
     gravity) and their theoretical inter-relations.
   \item \textbf{Materials science}: material properties, compounds, and
     structure--property relationships.
-  \item \textbf{Wikidata Physics}: 253 entities and 800+ edges extracted from
+  \item \textbf{Wikidata Physics}: 252 entities and 800+ edges extracted from
     Wikidata covering physical concepts, laws, and phenomena.
-  \item \textbf{Wikidata Materials}: 283 entities and 900+ edges extracted from
+  \item \textbf{Wikidata Materials}: 253 entities and 800+ edges extracted from
     Wikidata covering materials, properties, and applications.
 \end{itemize}
 
@@ -56,7 +56,8 @@ embedding dimension ($d = 50$), and training protocol:
   \item \textbf{TransE} \citep{bordes2013transe}: translational distance model.
   \item \textbf{RotatE} \citep{sun2019rotate}: rotation-based model in complex
     space.
-  \item \textbf{ComplEx}: complex-valued bilinear model with Hermitian product.
+  \item \textbf{ComplEx} \citep{trouillon2016complex}: complex-valued bilinear
+    model with Hermitian product.
 \end{enumerate}
 
 \noindent To break evaluation circularity (DistMult appears in both the Harmony

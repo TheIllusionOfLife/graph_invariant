@@ -105,6 +105,18 @@ def _build_parser() -> argparse.ArgumentParser:
         default=False,
         help="No-QD baseline: single-bin archive (no MAP-Elites diversity).",
     )
+    parser.add_argument(
+        "--backend",
+        choices=["ollama", "mlx"],
+        default="ollama",
+        help="LLM backend: ollama (default) or mlx (Apple Silicon).",
+    )
+    parser.add_argument(
+        "--mlx-model-id",
+        default="mlx-community/Qwen3.5-35B-A3B-4bit",
+        metavar="ID",
+        help="MLX model ID (default: mlx-community/Qwen3.5-35B-A3B-4bit).",
+    )
     return parser
 
 
@@ -126,6 +138,8 @@ def main() -> None:
         accept_all_valid=args.accept_all_valid,
         greedy=args.greedy,
         map_elites_bins=1 if args.greedy else 5,
+        backend=args.backend,
+        mlx_model_id=args.mlx_model_id,
     )
 
     output_dir = Path(args.output_dir)

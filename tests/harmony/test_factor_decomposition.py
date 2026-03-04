@@ -221,6 +221,26 @@ class TestHarmonyLoopForwardsFlags:
         assert captured_kwargs[0]["accept_all_valid"] is True
 
 
+class TestBackendConfig:
+    def test_backend_default_is_ollama(self):
+        cfg = HarmonyConfig()
+        assert cfg.backend == "ollama"
+
+    def test_backend_mlx_accepted(self):
+        cfg = HarmonyConfig(backend="mlx")
+        assert cfg.backend == "mlx"
+
+    def test_backend_invalid_raises(self):
+        import pytest
+
+        with pytest.raises(ValueError, match="backend must be"):
+            HarmonyConfig(backend="invalid")
+
+    def test_mlx_model_id_default(self):
+        cfg = HarmonyConfig()
+        assert cfg.mlx_model_id == "mlx-community/Qwen3.5-35B-A3B-4bit"
+
+
 class TestCLIFlags:
     """TDD: verify CLI parses accept-all-valid and greedy flags."""
 

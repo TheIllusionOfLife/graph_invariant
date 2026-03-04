@@ -270,13 +270,15 @@ class TestGenerateProposalPayload:
     def test_raises_after_max_retries_exhausted(self):
         import requests as req_module
 
+        from harmony.proposals.errors import LLMBackendError
+
         with (
             patch("harmony.proposals.llm_proposer.validate_ollama_url") as mock_url,
             patch("requests.post", side_effect=req_module.exceptions.ConnectionError("refused")),
             patch("time.sleep"),
         ):
             mock_url.return_value = ("http://127.0.0.1:11434/api/generate", {})
-            with pytest.raises(req_module.exceptions.ConnectionError):
+            with pytest.raises(LLMBackendError):
                 generate_proposal_payload(
                     prompt="test",
                     model="mistral",
@@ -284,3 +286,36 @@ class TestGenerateProposalPayload:
                     url="http://localhost:11434/api/generate",
                     max_retries=2,
                 )
+
+
+# ---------------------------------------------------------------------------
+# generate_proposal dispatcher
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateProposalDispatcher:
+    def test_dispatches_to_ollama(self):
+        from harmony.config import HarmonyConfig
+        from harmony.proposals.llm_proposer import generate_proposal
+
+        cfg = HarmonyConfig(backend="ollama")
+
+        with patch("harmony.proposals.llm_proposer.generate_proposal_payload") as mock_ollama:
+            mock_ollama.return_value = {"response": "ok", "proposal_dict": None}
+            result = generate_proposal(prompt="test", cfg=cfg, temperature=0.5)
+
+        mock_ollama.assert_called_once()
+        assert result["response"] == "ok"
+
+    def test_dispatches_to_mlx(self):
+        from harmony.config import HarmonyConfig
+        from harmony.proposals.llm_proposer import generate_proposal
+
+        cfg = HarmonyConfig(backend="mlx")
+
+        with patch("harmony.proposals.mlx_backend.generate_proposal_mlx") as mock_mlx:
+            mock_mlx.return_value = {"response": "mlx ok", "proposal_dict": None}
+            result = generate_proposal(prompt="test", cfg=cfg, temperature=0.5)
+
+        mock_mlx.assert_called_once()
+        assert result["response"] == "mlx ok"

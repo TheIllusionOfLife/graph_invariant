@@ -50,6 +50,9 @@ class HarmonyConfig:
     # Factor decomposition flags
     accept_all_valid: bool = False  # LLM-only baseline: bypass Harmony scoring
     greedy: bool = False  # No-QD baseline: single-bin archive (no MAP-Elites)
+    # LLM backend
+    backend: str = "ollama"  # "ollama" or "mlx"
+    mlx_model_id: str = "mlx-community/Qwen3.5-35B-A3B-4bit"
     # Artifacts
     artifacts_dir: str = "artifacts/harmony"
     experiment_id: str | None = None
@@ -58,6 +61,8 @@ class HarmonyConfig:
     beta_grid: tuple[float, ...] = (0.1, 0.3)
 
     def __post_init__(self) -> None:
+        if self.backend not in ("ollama", "mlx"):
+            raise ValueError(f"backend must be 'ollama' or 'mlx', got {self.backend!r}")
         self.island_temperatures = tuple(float(x) for x in self.island_temperatures)
         if len(self.island_temperatures) < 1:
             raise ValueError("island_temperatures must contain at least 1 value")

@@ -96,6 +96,17 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=["llm_only", "no_qd", "harmony_only"],
         help="Factor configs to skip.",
     )
+    parser.add_argument(
+        "--backend",
+        choices=["ollama", "mlx"],
+        default="ollama",
+        help="LLM backend: ollama (default) or mlx (Apple Silicon).",
+    )
+    parser.add_argument(
+        "--mlx-model-id",
+        default="mlx-community/Qwen3.5-35B-A3B-4bit",
+        help="MLX model ID (default: mlx-community/Qwen3.5-35B-A3B-4bit).",
+    )
     return parser
 
 
@@ -106,6 +117,8 @@ def _run_harmony_loop_for_config(
     output_dir: Path,
     accept_all_valid: bool = False,
     greedy: bool = False,
+    backend: str = "ollama",
+    mlx_model_id: str = "mlx-community/Qwen3.5-35B-A3B-4bit",
 ) -> dict[str, object]:
     """Run harmony loop with given factor config."""
     from harmony.config import HarmonyConfig
@@ -120,6 +133,8 @@ def _run_harmony_loop_for_config(
         accept_all_valid=accept_all_valid,
         greedy=greedy,
         map_elites_bins=1 if greedy else 5,
+        backend=backend,
+        mlx_model_id=mlx_model_id,
     )
 
     state = run_harmony_loop(cfg, kg, output_dir=output_dir)
@@ -189,7 +204,11 @@ def _run_harmony_only(
     }
 
 
-def step_pilot(model: str) -> bool:
+def step_pilot(
+    model: str,
+    backend: str = "ollama",
+    mlx_model_id: str = "mlx-community/Qwen3.5-35B-A3B-4bit",
+) -> bool:
     """Run 3-gen pilot on linear_algebra to check valid_rate."""
     from harmony.config import HarmonyConfig
     from harmony.harmony_loop import run_harmony_loop
@@ -200,6 +219,8 @@ def step_pilot(model: str) -> bool:
         domain="linear_algebra",
         max_generations=3,
         model_name=model,
+        backend=backend,
+        mlx_model_id=mlx_model_id,
     )
     output_dir = Path("/tmp/harmony_pilot")
     run_harmony_loop(cfg, kg, output_dir=output_dir)
@@ -272,7 +293,7 @@ def main() -> None:
 
     # Pilot check
     if not args.skip_pilot:
-        if not step_pilot(args.model):
+        if not step_pilot(args.model, backend=args.backend, mlx_model_id=args.mlx_model_id):
             print("Pilot failed. Use --skip-pilot to bypass or change --model.")
             sys.exit(1)
 
@@ -288,6 +309,8 @@ def main() -> None:
                 generations=args.generations,
                 output_dir=out,
                 accept_all_valid=True,
+                backend=args.backend,
+                mlx_model_id=args.mlx_model_id,
             )
             print(f"    Done: {result}")
 
@@ -303,6 +326,8 @@ def main() -> None:
                 generations=args.generations,
                 output_dir=out,
                 greedy=True,
+                backend=args.backend,
+                mlx_model_id=args.mlx_model_id,
             )
             print(f"    Done: {result}")
 

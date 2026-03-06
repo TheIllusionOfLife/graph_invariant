@@ -1,0 +1,8 @@
+domain,entities,edges,entity_types,edge_types,source
+linear_algebra,50,75,2,7,hand-built
+periodic_table,153,326,4,2,hand-built
+astronomy,41,39,6,6,hand-built
+physics,43,46,6,5,hand-built
+materials,49,53,6,5,hand-built
+wikidata_physics,252,814,12,7,Wikidata
+wikidata_materials,253,806,18,7,Wikidata

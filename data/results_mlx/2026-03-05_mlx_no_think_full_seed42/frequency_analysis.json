@@ -1,0 +1,37 @@
+{
+  "astronomy": {
+    "edge_type_entropy": 1.95006375643621,
+    "sparsity": 0.9762195121951219,
+    "type_skewness": 18.0,
+    "p_max": 0.46153846153846156,
+    "theoretical_freq_advantage": 0.3186813186813187
+  },
+  "physics": {
+    "edge_type_entropy": 1.8081456808939365,
+    "sparsity": 0.9745293466223699,
+    "type_skewness": 25.0,
+    "p_max": 0.5434782608695652,
+    "theoretical_freq_advantage": 0.40062111801242234
+  },
+  "materials": {
+    "edge_type_entropy": 1.7815257432178007,
+    "sparsity": 0.9774659863945578,
+    "type_skewness": 23.0,
+    "p_max": 0.4339622641509434,
+    "theoretical_freq_advantage": 0.29110512129380056
+  },
+  "wikidata_physics": {
+    "edge_type_entropy": 2.0469891907625923,
+    "sparsity": 0.987130841712515,
+    "type_skewness": 82.0,
+    "p_max": 0.5036855036855037,
+    "theoretical_freq_advantage": 0.36082836082836084
+  },
+  "wikidata_materials": {
+    "edge_type_entropy": 1.9510796819492466,
+    "sparsity": 0.9873580525754438,
+    "type_skewness": 194.5,
+    "p_max": 0.4826302729528536,
+    "theoretical_freq_advantage": 0.33977313009571075
+  }
+}

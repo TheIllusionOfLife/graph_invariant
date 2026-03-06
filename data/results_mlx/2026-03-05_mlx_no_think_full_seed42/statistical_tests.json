@@ -1,0 +1,82 @@
+{
+  "astronomy": {
+    "hits10_bootstrap": {
+      "mean_diff": 0.044642857142857185,
+      "ci_low": -0.016071428571428514,
+      "ci_high": 0.1071874999999998,
+      "p_value": 0.158
+    },
+    "hits10_cliffs_delta": 0.0,
+    "mrr_bootstrap": {
+      "mean_diff": 0.024924434501633855,
+      "ci_low": -0.023557729522009758,
+      "ci_high": 0.06682956427754098,
+      "p_value": 0.261
+    },
+    "mrr_cliffs_delta": 0.12
+  },
+  "physics": {
+    "hits10_bootstrap": {
+      "mean_diff": -0.09666666666666664,
+      "ci_low": -0.18444444444444444,
+      "ci_high": -0.008888888888888868,
+      "p_value": 0.036
+    },
+    "hits10_cliffs_delta": -0.58,
+    "mrr_bootstrap": {
+      "mean_diff": -0.027233091148383497,
+      "ci_low": -0.061242337375004174,
+      "ci_high": 0.0051305380029980545,
+      "p_value": 0.123
+    },
+    "mrr_cliffs_delta": -0.2
+  },
+  "materials": {
+    "hits10_bootstrap": {
+      "mean_diff": -0.008181818181818205,
+      "ci_low": -0.1118636363636363,
+      "ci_high": 0.10727272727272723,
+      "p_value": 0.896
+    },
+    "hits10_cliffs_delta": -0.1,
+    "mrr_bootstrap": {
+      "mean_diff": -0.030230632854402927,
+      "ci_low": -0.07751498481116975,
+      "ci_high": 0.013134402167850898,
+      "p_value": 0.186
+    },
+    "mrr_cliffs_delta": -0.1
+  },
+  "wikidata_physics": {
+    "hits10_bootstrap": {
+      "mean_diff": 0.006418995682799372,
+      "ci_low": -0.018839184276300814,
+      "ci_high": 0.03102713398470044,
+      "p_value": 0.591
+    },
+    "hits10_cliffs_delta": 0.12,
+    "mrr_bootstrap": {
+      "mean_diff": -0.001645502588127881,
+      "ci_low": -0.010152108189798597,
+      "ci_high": 0.008297198305207436,
+      "p_value": 0.707
+    },
+    "mrr_cliffs_delta": -0.14
+  },
+  "wikidata_materials": {
+    "hits10_bootstrap": {
+      "mean_diff": -0.006318533854765732,
+      "ci_low": -0.04352858293075681,
+      "ci_high": 0.027727934974311773,
+      "p_value": 0.742
+    },
+    "hits10_cliffs_delta": -0.08,
+    "mrr_bootstrap": {
+      "mean_diff": -0.0013733113206261262,
+      "ci_low": -0.013723968828171661,
+      "ci_high": 0.011596771658889808,
+      "p_value": 0.838
+    },
+    "mrr_cliffs_delta": -0.12
+  }
+}

@@ -437,7 +437,12 @@ def build_appendix_payload(
 
     runtime_by_experiment: dict[str, list[float]] = defaultdict(list)
     completion_by_experiment: dict[str, dict[str, int]] = defaultdict(
-        lambda: {"total": 0, "completed": 0, "criteria_success": 0}
+        lambda: {
+            "total": 0,
+            "completed": 0,
+            "criteria_success": 0,
+            "criteria_success_available": False,
+        }
     )
     seed_notes: dict[str, str] = {}
     for matrix_root, summary in matrix_summaries.items():
@@ -457,7 +462,9 @@ def build_appendix_payload(
             completion_by_experiment[group_key]["total"] += 1
             if status == 0:
                 completion_by_experiment[group_key]["completed"] += 1
-            if bool(run.get("success", False)):
+            if "success" in run and run.get("success") is not None:
+                completion_by_experiment[group_key]["criteria_success_available"] = True
+            if run.get("success") is True:
                 completion_by_experiment[group_key]["criteria_success"] += 1
             duration = safe_float(run.get("duration_sec"))
             if duration is not None:
@@ -495,7 +502,9 @@ def build_appendix_payload(
             "duration_sec": mean_std_ci95(durations),
             "total_runs": counts["total"],
             "completed_runs": counts["completed"],
-            "criteria_success_runs": counts["criteria_success"],
+            "criteria_success_runs": (
+                counts["criteria_success"] if counts["criteria_success_available"] else None
+            ),
         }
 
     # --- Self-correction failure breakdown ---
@@ -509,10 +518,12 @@ def build_appendix_payload(
         if not isinstance(failure_cats, dict):
             continue
         sc_failure_breakdown[name] = {
-            "attempted": sc_stats.get("attempted_repairs", "N/A"),
-            "no_valid_train_predictions": failure_cats.get("no_valid_train_predictions", "N/A"),
-            "below_train_threshold": failure_cats.get("below_train_threshold", "N/A"),
-            "below_novelty_threshold": failure_cats.get("below_novelty_threshold", "N/A"),
+            "attempted": int(sc_stats.get("attempted_repairs", 0) or 0),
+            "no_valid_train_predictions": int(
+                failure_cats.get("no_valid_train_predictions", 0) or 0
+            ),
+            "below_train_threshold": int(failure_cats.get("below_train_threshold", 0) or 0),
+            "below_novelty_threshold": int(failure_cats.get("below_novelty_threshold", 0) or 0),
         }
 
     # --- Compute profile ---

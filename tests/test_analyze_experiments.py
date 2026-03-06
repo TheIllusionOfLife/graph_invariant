@@ -236,6 +236,30 @@ def test_load_event_log_missing_file(tmp_path, analyze_module):
     assert events == []
 
 
+def test_discover_matrix_summaries_includes_harmony_batch_logs(tmp_path, analyze_module):
+    batch_dir = tmp_path / "harmony_mlx_full" / "2026-03-05_mlx_no_think_full"
+    batch_dir.mkdir(parents=True)
+    (batch_dir / "master_run.log").write_text(
+        "\n".join(
+            [
+                "[2026-03-05 06:00:00 JST] RUN domain=astronomy seed=42",
+                "[2026-03-05 06:10:00 JST] DONE domain=astronomy seed=42",
+                "[2026-03-05 06:15:00 JST] RUN domain=physics seed=123",
+                "[2026-03-05 06:30:30 JST] FAIL domain=physics seed=123",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    summaries = analyze_module.discover_matrix_summaries(tmp_path)
+    payload = summaries["harmony_mlx_full/2026-03-05_mlx_no_think_full"]
+    assert payload["runs"] == [
+        {"experiment": "astronomy", "seed": 42, "status": 0, "duration_sec": 600.0},
+        {"experiment": "physics", "seed": 123, "status": 1, "duration_sec": 930.0},
+    ]
+
+
 # ── Analysis function tests ──────────────────────────────────────────
 
 
@@ -257,6 +281,28 @@ def test_extract_convergence_data_includes_coverage(artifacts_dir, analyze_modul
     convergence = analyze_module.extract_convergence_data(events)
     assert "map_elites_coverage" in convergence
     assert len(convergence["map_elites_coverage"]) == 5
+
+
+def test_build_appendix_payload_uses_zero_for_missing_sc_counts(analyze_module):
+    experiments = {
+        "exp": {
+            "summary": {
+                "self_correction_stats": {
+                    "enabled": True,
+                    "attempted_repairs": 2,
+                    "failure_categories": {},
+                }
+            }
+        }
+    }
+
+    payload = analyze_module.build_appendix_payload(experiments, {})
+    assert payload["sc_failure_breakdown"]["exp"] == {
+        "attempted": 2,
+        "no_valid_train_predictions": 0,
+        "below_train_threshold": 0,
+        "below_novelty_threshold": 0,
+    }
 
 
 def test_build_comparison_table(artifacts_dir, mock_phase1_summary, analyze_module):

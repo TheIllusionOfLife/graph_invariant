@@ -5751,7 +5751,63 @@
       "test_mean_gap": 1.6273956140347665
     }
   },
-  "appendix_runtime_summary": {},
+  "appendix_runtime_summary": {
+    "harmony_mlx_full/2026-03-05_mlx_no_think_full/astronomy": {
+      "duration_sec": {
+        "n": 10,
+        "mean": 1657.1,
+        "std": 386.27521852229205,
+        "ci95_half_width": 276.30544759023485
+      },
+      "total_runs": 10,
+      "completed_runs": 10,
+      "criteria_success_runs": null
+    },
+    "harmony_mlx_full/2026-03-05_mlx_no_think_full/materials": {
+      "duration_sec": {
+        "n": 10,
+        "mean": 1716.2,
+        "std": 421.4002583978536,
+        "ci95_half_width": 301.4306417499057
+      },
+      "total_runs": 10,
+      "completed_runs": 10,
+      "criteria_success_runs": null
+    },
+    "harmony_mlx_full/2026-03-05_mlx_no_think_full/physics": {
+      "duration_sec": {
+        "n": 10,
+        "mean": 1375.8,
+        "std": 227.10829526412675,
+        "ci95_half_width": 162.45220031061444
+      },
+      "total_runs": 10,
+      "completed_runs": 10,
+      "criteria_success_runs": null
+    },
+    "harmony_mlx_full/2026-03-05_mlx_no_think_full/wikidata_materials": {
+      "duration_sec": {
+        "n": 10,
+        "mean": 2038.4,
+        "std": 599.0453887459429,
+        "ci95_half_width": 428.50148372839976
+      },
+      "total_runs": 10,
+      "completed_runs": 10,
+      "criteria_success_runs": null
+    },
+    "harmony_mlx_full/2026-03-05_mlx_no_think_full/wikidata_physics": {
+      "duration_sec": {
+        "n": 10,
+        "mean": 1657.8,
+        "std": 290.4979632745584,
+        "ci95_half_width": 207.7952866707039
+      },
+      "total_runs": 10,
+      "completed_runs": 10,
+      "criteria_success_runs": null
+    }
+  },
   "sc_failure_breakdown": {
     "experiment_algebraic_connectivity": {
       "attempted": 75,
@@ -5786,60 +5842,60 @@
     "neurips_matrix_day1_2026-02-21/algebraic_connectivity_medium/seed_33": {
       "attempted": 22,
       "no_valid_train_predictions": 13,
-      "below_train_threshold": "N/A",
+      "below_train_threshold": 0,
       "below_novelty_threshold": 19
     },
     "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_11": {
       "attempted": 2,
-      "no_valid_train_predictions": "N/A",
+      "no_valid_train_predictions": 0,
       "below_train_threshold": 2,
       "below_novelty_threshold": 3
     },
     "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_22": {
       "attempted": 1,
-      "no_valid_train_predictions": "N/A",
+      "no_valid_train_predictions": 0,
       "below_train_threshold": 1,
       "below_novelty_threshold": 2
     },
     "neurips_matrix_day1_2026-02-21/benchmark_aspl_medium/seed_33": {
       "attempted": 3,
-      "no_valid_train_predictions": "N/A",
+      "no_valid_train_predictions": 0,
       "below_train_threshold": 1,
       "below_novelty_threshold": 5
     },
     "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_11": {
       "attempted": 1,
-      "no_valid_train_predictions": "N/A",
+      "no_valid_train_predictions": 0,
       "below_train_threshold": 4,
       "below_novelty_threshold": 2
     },
     "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_22": {
       "attempted": 1,
-      "no_valid_train_predictions": "N/A",
-      "below_train_threshold": "N/A",
+      "no_valid_train_predictions": 0,
+      "below_train_threshold": 0,
       "below_novelty_threshold": 2
     },
     "neurips_matrix_day1_2026-02-21/map_elites_aspl_medium/seed_33": {
       "attempted": 1,
-      "no_valid_train_predictions": "N/A",
-      "below_train_threshold": "N/A",
+      "no_valid_train_predictions": 0,
+      "below_train_threshold": 0,
       "below_novelty_threshold": 2
     },
     "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_11": {
       "attempted": 1,
-      "no_valid_train_predictions": "N/A",
+      "no_valid_train_predictions": 0,
       "below_train_threshold": 1,
       "below_novelty_threshold": 2
     },
     "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_22": {
       "attempted": 1,
-      "no_valid_train_predictions": "N/A",
-      "below_train_threshold": "N/A",
+      "no_valid_train_predictions": 0,
+      "below_train_threshold": 0,
       "below_novelty_threshold": 2
     },
     "neurips_matrix_day1_2026-02-21/small_data_aspl_train20_medium/seed_33": {
       "attempted": 1,
-      "no_valid_train_predictions": "N/A",
+      "no_valid_train_predictions": 0,
       "below_train_threshold": 1,
       "below_novelty_threshold": 2
     },

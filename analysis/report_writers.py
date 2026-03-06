@@ -189,6 +189,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
             completed = payload.get("completed_runs", 0)
             total = payload.get("total_runs", 0)
             criteria = payload.get("criteria_success_runs", 0)
+            criteria_text = str(criteria) if isinstance(criteria, int) else "N/A"
             lines.append(
                 "    {name} & {mean} & {std} & {completed}/{total} & {criteria} \\\\".format(
                     name=_escape_latex_text(name),
@@ -196,7 +197,7 @@ def write_appendix_tables_tex(appendix_payload: dict[str, Any], output_path: Pat
                     std=_fmt_tex_float(duration.get("std"), 2),
                     completed=completed,
                     total=total,
-                    criteria=criteria,
+                    criteria=criteria_text,
                 )
             )
     else:

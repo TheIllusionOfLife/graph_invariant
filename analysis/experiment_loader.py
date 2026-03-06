@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -170,7 +172,7 @@ def discover_experiments(artifacts_root: Path) -> dict[str, dict]:
 
 
 def discover_matrix_summaries(artifacts_root: Path) -> dict[str, dict[str, Any]]:
-    """Load matrix_summary.json files from artifacts_root/neurips_matrix*."""
+    """Load runtime summary payloads from matrix artifacts and Harmony batch logs."""
     root = Path(artifacts_root)
     discovered: dict[str, dict[str, Any]] = {}
     for matrix_root in sorted(root.glob("neurips_matrix*")):
@@ -183,4 +185,47 @@ def discover_matrix_summaries(artifacts_root: Path) -> dict[str, dict[str, Any]]
         if not payload:
             continue
         discovered[str(matrix_root.relative_to(root))] = payload
+
+    log_re = re.compile(
+        r"^\[(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) [A-Z]+\] "
+        r"(?P<action>RUN|DONE|FAIL) domain=(?P<domain>[A-Za-z0-9_]+) seed=(?P<seed>\d+)"
+    )
+    for batch_root in sorted(root.glob("harmony_mlx_full/*")):
+        if not batch_root.is_dir():
+            continue
+        master_log = batch_root / "master_run.log"
+        if not master_log.exists():
+            continue
+
+        active_runs: dict[tuple[str, int], datetime] = {}
+        runs: list[dict[str, Any]] = []
+        try:
+            for raw_line in master_log.read_text(encoding="utf-8").splitlines():
+                match = log_re.match(raw_line.strip())
+                if match is None:
+                    continue
+                timestamp = datetime.strptime(match.group("timestamp"), "%Y-%m-%d %H:%M:%S")
+                domain = match.group("domain")
+                seed = int(match.group("seed"))
+                key = (domain, seed)
+                action = match.group("action")
+                if action == "RUN":
+                    active_runs[key] = timestamp
+                    continue
+
+                start = active_runs.pop(key, None)
+                duration_sec = (timestamp - start).total_seconds() if start is not None else None
+                runs.append(
+                    {
+                        "experiment": domain,
+                        "seed": seed,
+                        "status": 0 if action == "DONE" else 1,
+                        "duration_sec": duration_sec,
+                    }
+                )
+        except OSError:
+            continue
+
+        if runs:
+            discovered[str(batch_root.relative_to(root))] = {"runs": runs}
     return discovered

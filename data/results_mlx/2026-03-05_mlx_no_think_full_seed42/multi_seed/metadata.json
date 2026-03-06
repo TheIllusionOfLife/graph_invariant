@@ -1,0 +1,22 @@
+{
+  "seeds": [
+    42,
+    123,
+    456,
+    789,
+    1024,
+    1337,
+    2048,
+    3141,
+    4096,
+    5000
+  ],
+  "n_seeds": 10,
+  "domains": [
+    "astronomy",
+    "physics",
+    "materials",
+    "wikidata_physics",
+    "wikidata_materials"
+  ]
+}

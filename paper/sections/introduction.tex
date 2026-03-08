@@ -31,14 +31,11 @@ knowledge graph:
     indicating learnable relational patterns.
 \end{enumerate}
 
-A large language model (LLM) proposes candidate mutations---adding edges or
-entities---each accompanied by a natural-language claim, justification, and
-falsification condition.  Proposals are validated, scored by the Harmony gain
-they produce, and archived in a MAP-Elites \citep{mouret2015mapelites}
-quality-diversity grid.  An island-model \citep{whitley1997island} search with
-four islands, each assigned an exploration strategy from a cyclic schedule of
-refinement, combination, and novelty (with refinement appearing twice), runs
-concurrently with periodic migration to balance exploitation and exploration.
+An LLM proposes candidate mutations---adding edges or entities---each
+accompanied by a claim, justification, and falsification condition.  Proposals
+are scored by Harmony gain and archived in a MAP-Elites
+\citep{mouret2015mapelites} quality-diversity grid across an island-model
+\citep{whitley1997island} search topology (Section~\ref{sec:search}).
 
 \paragraph{Contributions.}
 \begin{enumerate}[nosep]

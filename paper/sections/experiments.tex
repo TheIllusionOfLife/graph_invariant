@@ -2,35 +2,13 @@
 
 \subsection{Knowledge Graph Domains}
 
-We evaluate on seven KGs spanning scientific disciplines: five hand-curated from
-textbook knowledge and two automatically extracted from Wikidata.  All KGs use
-the shared seven-relation type vocabulary (Section~\ref{sec:schema}).
-
-\begin{itemize}[nosep]
-  \item \textbf{Linear algebra}: entities including matrix, vector, eigenvalue,
-    determinant, rank, and their algebraic dependency and derivation edges
-    (see Table~\ref{tab:reproducibility} for exact counts).
-  \item \textbf{Periodic table}: chemical elements, periods, groups, and
-    categories with trends, group membership, and reactivity relations
-    (Table~\ref{tab:reproducibility}).
-  \item \textbf{Astronomy}: celestial objects (star, planet, black hole, nebula)
-    and astrophysical processes.
-  \item \textbf{Physics}: fundamental concepts (force, energy, momentum,
-    gravity) and their theoretical inter-relations.
-  \item \textbf{Materials science}: material properties, compounds, and
-    structure--property relationships.
-  \item \textbf{Wikidata Physics}: 252 entities and 800+ edges extracted from
-    Wikidata covering physical concepts, laws, and phenomena.
-  \item \textbf{Wikidata Materials}: 253 entities and 800+ edges extracted from
-    Wikidata covering materials, properties, and applications.
-\end{itemize}
-
-The first two domains serve as \emph{calibration} targets (known structure for
-gate validation); the remaining five are \emph{discovery} targets.  The Wikidata
-domains provide larger, independently sourced KGs that test scalability beyond
-hand-curated data.  Table~\ref{tab:reproducibility} in the appendix provides
-full dataset statistics including entity counts, edge counts, type counts, and
-data sources for all seven domains.
+We evaluate on seven KGs: five hand-curated (linear algebra, periodic table,
+astronomy, physics, materials science) and two Wikidata-sourced (Wikidata
+Physics, Wikidata Materials).  The hand-curated KGs range from 41--153
+entities; Wikidata KGs have 252--253 entities and 800+ edges.  All use the
+shared seven-relation type vocabulary (Section~\ref{sec:schema}).  Full
+statistics are in Table~\ref{tab:reproducibility}.  The first two domains
+serve as calibration targets; the remaining five are discovery targets.
 
 \subsection{Dataset Splitting}
 
@@ -40,7 +18,6 @@ withheld from all metric computations and proposal generation.  The remaining
 effective proportions of approximately 72/9/9/10 over all edges).  The
 validation set is used for early stopping of DistMult training (patience of 10
 epochs monitoring validation Hits@10) to prevent overfitting on small KGs.
-This provides an unbiased evaluation of generativity on unseen edges.
 
 \subsection{Baselines}
 
@@ -49,76 +26,35 @@ additional KGE models.  All embedding-based methods use the same edge splits,
 embedding dimension ($d = 50$), and training protocol:
 
 \begin{enumerate}[nosep]
-  \item \textbf{Random}: propose edges between random entity pairs with random
-    relation types.
-  \item \textbf{Frequency}: propose the most frequent relation type between the
-    most-connected entity pairs.
-  \item \textbf{DistMult-alone}: use DistMult's own top-ranked predictions
-    without Harmony scoring or LLM involvement.
-  \item \textbf{TransE} \citep{bordes2013transe}: translational distance model.
-  \item \textbf{RotatE} \citep{sun2019rotate}: rotation-based model in complex
-    space.
-  \item \textbf{ComplEx} \citep{trouillon2016complex}: complex-valued bilinear
-    model with Hermitian product.
+  \item \textbf{Random}: random entity pairs with random relation types.
+  \item \textbf{Frequency}: most frequent relation type between most-connected
+    entity pairs.
+  \item \textbf{DistMult-alone}: DistMult's own top-ranked predictions without
+    Harmony scoring.
+  \item \textbf{TransE}, \textbf{RotatE}, \textbf{ComplEx}: translational,
+    rotation-based, and complex-valued KGE models respectively.
 \end{enumerate}
 
-\noindent To break evaluation circularity (DistMult appears in both the Harmony
-objective and evaluation), we additionally report \textbf{Harmony-3}: Harmony
-scoring with $\delta = 0$ (no generativity), using only compressibility,
-coherence, and symmetry.  This demonstrates whether the structural components
-alone provide useful signal independent of DistMult.
-
-\subsection{Factor Decomposition}
-
-To isolate the contributions of the LLM proposer, Harmony scoring, and the
-MAP-Elites quality-diversity archive, we run three ablated configurations:
-
-\begin{enumerate}[nosep]
-  \item \textbf{LLM-only}: the LLM proposer generates proposals, but Harmony
-    scoring is bypassed---all valid proposals are accepted into the archive.
-  \item \textbf{Harmony-only}: a random proposer generates edges (no LLM), and
-    Harmony scoring selects among them.
-  \item \textbf{No-QD}: the full LLM + Harmony pipeline, but with a greedy
-    single-bin archive instead of the $5 \times 5$ MAP-Elites grid.
-\end{enumerate}
+\noindent We additionally report \textbf{Harmony-3} ($\delta = 0$, no
+generativity) to address evaluation circularity; it matches DistMult-alone
+on all domains, confirming that generativity drives any observed difference.
+We also run three ablated configurations (LLM-only, Harmony-only, No-QD) to
+isolate component contributions (Appendix~\ref{app:factor-detail}).
 
 \subsection{Evaluation Protocol}
 
 \paragraph{Quantitative metrics.}
-We report Hits@10, Hits@3, Hits@1, and Mean Reciprocal Rank (MRR):
-\begin{equation}\label{eq:mrr}
-  \text{MRR} = \frac{1}{|Q|} \sum_{i=1}^{|Q|} \frac{1}{\text{rank}_i},
-\end{equation}
-where $Q$ is the set of masked test edges and $\text{rank}_i$ is the rank of
-the true target entity among all candidates.  Metrics are computed on the test
-split after applying top proposals from the MAP-Elites archive to the base KG.
-All main results (Table~\ref{tab:metrics}) are averaged over 10 random seeds
-($s \in \{42, 123, 456, 789, 1024, 1337, 2048, 3141, 4096, 5000\}$) for
-dataset splitting, model initialisation, and edge masking.  LLM proposals are
-generated by \texttt{gpt-oss:20b}, a dense 20B-parameter open-source model
-locally served via Ollama with deterministic temperature settings per island.
-The model is a Llama-architecture derivative fine-tuned for instruction following;
-all inference runs on a single Apple M2 Pro CPU without GPU acceleration.
-Factor decomposition experiments (Section~\ref{sec:results}) use
-\texttt{mlx-community/Qwen3.5-35B-A3B-4bit} served via \texttt{mlx\_lm} at
-$\sim$46~tokens/s on the same hardware.
+We report Hits@10 and Mean Reciprocal Rank
+(MRR $= \frac{1}{|Q|}\sum_i 1/\text{rank}_i$) on the test split after
+applying top proposals from the MAP-Elites archive to the base KG.  All main
+results (Table~\ref{tab:metrics}) are averaged over 10 random seeds.  LLM
+proposals are generated by \texttt{gpt-oss:20b}, a dense 20B-parameter
+open-source model locally served via Ollama.  Factor decomposition experiments
+use \texttt{mlx-community/Qwen3.5-35B-A3B-4bit} via \texttt{mlx\_lm} at
+$\sim$46~tokens/s.  All inference runs on a single Apple M2 Pro CPU.
 
-\paragraph{Calibration gate.}
-Before running discovery experiments, we verify on the two calibration domains
-(linear algebra, periodic table) that: (i)~Harmony mean $\geq 10\%$ above the
-frequency baseline, and (ii)~the bootstrap 95\% CI lower bound exceeds the
-frequency mean, across six pre-registered weight configurations ($\alpha \in
-\{0.3, 0.5, 0.7\}$, $\beta \in \{0.1, 0.3\}$, $\gamma = \delta = 0.25$; each
-vector is renormalised to sum to~1 before scoring).
-
-\paragraph{Backtesting.}
-For each domain, we evaluate top-$N$ archive proposals against the 10\%
-held-out hidden edges, reporting Precision@$N$ and Recall@$N$ ($N \in
-\{5, 10, 20\}$).  A proposal matches a hidden edge if its source entity, target
-entity, and edge type exactly match a withheld triple.  This provides external
-validity evidence independent of the DistMult training objective.
-
-\paragraph{Archive diversity.}
-We report MAP-Elites coverage (fraction of occupied cells in the $5 \times 5$
-grid), best and mean fitness, and qualitative inspection of proposals across
-behavioural descriptor bins.
+\paragraph{Additional protocols.}
+The calibration gate protocol (Appendix~\ref{app:calibration-gate}),
+backtesting protocol (Appendix~\ref{app:backtesting}), and archive diversity
+protocol (Appendix~\ref{app:validity-coverage}) provide complementary
+validation beyond link prediction metrics.

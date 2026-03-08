@@ -1,4 +1,4 @@
-# NeurIPS 2025 Peer Review (Third Revision)
+# NeurIPS 2026 Peer Review (Third Revision)
 
 ## Paper: "Harmony-Driven Theory Discovery in Knowledge Graphs via LLM-Guided Island Search"
 

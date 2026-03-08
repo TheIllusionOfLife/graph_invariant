@@ -2,7 +2,12 @@
 """LLM-judge automated evaluation of top archive proposals.
 
 Scores top-5 proposals per domain on four dimensions using Claude Opus 4.6
-as an automated evaluator with two prompt variants for robustness.
+as the default automated evaluator with two prompt variants for robustness.
+
+Note on artifact provenance: the scores reported in the paper
+(data/results/llm_rubric_scores.json) were generated via Gemini 2.5 Pro
+using Gemini CLI (single prompt variant). This script uses Claude as the
+default for programmatic re-runs; results may differ across models.
 
 Rubric dimensions (1–5 scale each):
   - Plausibility: scientific plausibility of the claim

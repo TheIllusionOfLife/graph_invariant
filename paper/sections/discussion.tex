@@ -99,8 +99,11 @@ hand-curated KGs (41--49 entities, 39--53 edges), total wall time is $\sim$10
 minutes per domain on a single CPU.  The Wikidata domains (252--253 entities,
 806--814 edges) complete in $\sim$27 minutes per seed (Table~\ref{tab:appendix_mlx_runtime}).
 Scaling to medium-size KGs ($\sim$1{,}000 entities) increases DistMult training
-time linearly with $|E|$ but does not change the LLM call count, making the
-framework practical without GPU hardware.
+time linearly with $|E|$ but does not change the LLM call count.  However,
+constrained prompting (Section~\ref{sec:search}) enumerates all valid entity
+IDs in the prompt, so prompt token volume---and consequently LLM latency---grows
+with $|V|$; mitigations include chunked entity sampling or index-based lookups.
+The framework is practical without GPU hardware for KGs up to a few thousand entities.
 
 \paragraph{Broader impacts.}
 This work aims to accelerate scientific theory discovery by automating the

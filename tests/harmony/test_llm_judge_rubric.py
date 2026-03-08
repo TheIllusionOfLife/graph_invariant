@@ -201,3 +201,62 @@ class TestAggregateScores:
 
         with pytest.raises(ValueError):
             aggregate_scores([])
+
+
+# ---------------------------------------------------------------------------
+# build_rubric_prompt — field coverage and sanitization
+# ---------------------------------------------------------------------------
+
+
+class TestBuildRubricPromptFields:
+    def test_all_proposal_fields_appear_in_prompt(self) -> None:
+        """Every proposal field used in the prompt template must be present."""
+        from llm_judge_rubric import build_rubric_prompt
+
+        proposal = {
+            "claim": "Unique claim text XYZ",
+            "justification": "Unique justification text ABC",
+            "falsification_condition": "Unique falsification DEF",
+            "kg_domain": "astronomy",
+            "edge_type": "explains",
+            "source_entity": "src_entity_GHI",
+            "target_entity": "tgt_entity_JKL",
+        }
+        prompt = build_rubric_prompt(proposal, variant="detailed")
+        assert "Unique claim text XYZ" in prompt
+        assert "Unique justification text ABC" in prompt
+        assert "Unique falsification DEF" in prompt
+        assert "astronomy" in prompt
+        assert "explains" in prompt
+        assert "src_entity_GHI" in prompt
+        assert "tgt_entity_JKL" in prompt
+
+    def test_sanitize_field_strips_xml_tags(self) -> None:
+        """_sanitize_field must strip XML-like tags and truncate to max_len."""
+        from llm_judge_rubric import _sanitize_field
+
+        raw = "<b>Bold</b> and <script>evil()</script> text"
+        result = _sanitize_field(raw)
+        assert "<b>" not in result
+        assert "<script>" not in result
+        assert "Bold" in result
+        assert "evil()" in result
+
+    def test_sanitize_field_truncates(self) -> None:
+        from llm_judge_rubric import _sanitize_field
+
+        long_text = "a" * 600
+        result = _sanitize_field(long_text, max_len=100)
+        assert len(result) <= 100
+
+    def test_xml_tags_stripped_from_prompt(self) -> None:
+        """Proposal fields with injected XML tags must not appear raw in prompt."""
+        from llm_judge_rubric import build_rubric_prompt
+
+        proposal = {
+            **SAMPLE_PROPOSAL,
+            "claim": "<inject>malicious</inject> claim",
+        }
+        prompt = build_rubric_prompt(proposal, variant="concise")
+        assert "<inject>" not in prompt
+        assert "malicious" in prompt  # content preserved, tags stripped

@@ -340,7 +340,6 @@ name = "graph-invariant"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "anthropic" },
     { name = "mlx-lm" },
     { name = "networkx" },
     { name = "numpy" },
@@ -357,6 +356,7 @@ pysr = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "anthropic" },
     { name = "matplotlib" },
     { name = "pandas" },
     { name = "pytest" },
@@ -366,7 +366,6 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "anthropic", specifier = ">=0.84.0" },
     { name = "mlx-lm", specifier = ">=0.30.7" },
     { name = "networkx", specifier = ">=3.4" },
     { name = "numpy", specifier = ">=2.2" },
@@ -380,6 +379,7 @@ provides-extras = ["pysr"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "anthropic", specifier = ">=0.84.0" },
     { name = "matplotlib", specifier = ">=3.9" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "pytest", specifier = ">=8.3" },

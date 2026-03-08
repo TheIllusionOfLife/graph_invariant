@@ -24,6 +24,20 @@ import statistics
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
+# Module-level constants shared across table builders
+# ---------------------------------------------------------------------------
+
+DOMAIN_LABELS: dict[str, str] = {
+    "astronomy": "Astronomy",
+    "physics": "Physics",
+    "materials": "Materials",
+    "wikidata_physics": "Wikidata Physics",
+    "wikidata_materials": "Wikidata Materials",
+}
+DOMAIN_ORDER: list[str] = list(DOMAIN_LABELS.keys())
+
+
+# ---------------------------------------------------------------------------
 # Data extraction functions (unit-testable, no LaTeX)
 # ---------------------------------------------------------------------------
 
@@ -77,14 +91,6 @@ def build_factor_decomp_table(csv_path: Path | str) -> str:
         "full": "Full (LLM+Harmony+MAP-Elites)",
     }
     CONFIG_ORDER = ["llm_only", "no_qd", "harmony_only", "full"]
-    DOMAIN_LABELS = {
-        "astronomy": "Astronomy",
-        "physics": "Physics",
-        "materials": "Materials",
-        "wikidata_physics": "Wikidata Physics",
-        "wikidata_materials": "Wikidata Materials",
-    }
-    DOMAIN_ORDER = list(DOMAIN_LABELS.keys())
 
     # Read all rows
     rows: list[dict] = []
@@ -166,15 +172,6 @@ def build_statistical_tests_table(json_path: Path | str) -> str:
     if not json_path.exists():
         raise FileNotFoundError(json_path)
 
-    DOMAIN_LABELS = {
-        "astronomy": "Astronomy",
-        "physics": "Physics",
-        "materials": "Materials",
-        "wikidata_physics": "Wikidata Physics",
-        "wikidata_materials": "Wikidata Materials",
-    }
-    DOMAIN_ORDER = list(DOMAIN_LABELS.keys())
-
     data = json.loads(json_path.read_text())
 
     lines: list[str] = []
@@ -231,14 +228,6 @@ def build_runtime_table(
         return None
 
     mlx_base_dir = Path(mlx_base_dir)
-    DOMAIN_LABELS = {
-        "astronomy": "Astronomy",
-        "physics": "Physics",
-        "materials": "Materials",
-        "wikidata_physics": "Wikidata Physics",
-        "wikidata_materials": "Wikidata Materials",
-    }
-    DOMAIN_ORDER = list(DOMAIN_LABELS.keys())
 
     rows: list[tuple[str, dict]] = []
     for dom in DOMAIN_ORDER:

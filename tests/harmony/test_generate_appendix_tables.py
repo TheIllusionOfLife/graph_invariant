@@ -12,7 +12,6 @@ from __future__ import annotations
 import csv
 import json
 import sys
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -158,7 +157,12 @@ class TestBuildStatisticalTestsTable:
     def _write_json(self, path: Path) -> None:
         data = {
             "astronomy": {
-                "hits10_bootstrap": {"mean_diff": 0.0, "ci_low": 0.0, "ci_high": 0.0, "p_value": 1.0},
+                "hits10_bootstrap": {
+                    "mean_diff": 0.0,
+                    "ci_low": 0.0,
+                    "ci_high": 0.0,
+                    "p_value": 1.0,
+                },
                 "hits10_cliffs_delta": 0.0,
             },
             "wikidata_materials": {
@@ -229,7 +233,12 @@ class TestGenerateAppendixTablesOutput:
 
         json_path = tmp_path / "statistical_tests.json"
         json_path.write_text(
-            json.dumps({"astronomy": {"hits10_bootstrap": {"p_value": 1.0}, "hits10_cliffs_delta": 0.0}})
+            json.dumps({
+                "astronomy": {
+                    "hits10_bootstrap": {"p_value": 1.0},
+                    "hits10_cliffs_delta": 0.0,
+                }
+            })
         )
 
         out_path = tmp_path / "appendix_tables_generated.tex"
@@ -258,7 +267,12 @@ class TestGenerateAppendixTablesOutput:
 
         json_path = tmp_path / "statistical_tests.json"
         json_path.write_text(
-            json.dumps({"astronomy": {"hits10_bootstrap": {"p_value": 1.0}, "hits10_cliffs_delta": 0.0}})
+            json.dumps({
+                "astronomy": {
+                    "hits10_bootstrap": {"p_value": 1.0},
+                    "hits10_cliffs_delta": 0.0,
+                }
+            })
         )
 
         out_path = tmp_path / "out.tex"

@@ -166,9 +166,6 @@ def compute_agreement(
     -------
     Float in [0, 1] — fraction of dimensions where |a - b| <= tolerance.
     """
-    matches = sum(
-        1 for d in DIMENSIONS if abs(scores_a[d] - scores_b[d]) <= tolerance
-    )
     # Scale to [0, 1] based on range: agreement of 0 when all differ by max (4)
     # and 1 when all match exactly.
     # Use fraction-of-dimensions-matching as simple agreement metric.

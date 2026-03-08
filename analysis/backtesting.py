@@ -175,10 +175,22 @@ def soft_backtest_proposals(
     return SoftBacktestResult(
         n_proposals=len(proposals_ranked),
         n_hidden=len(hidden_edges),
-        soft_precision_at_5=_soft_precision_at_n(proposals_ranked, hidden_source_type, hidden_type_target, 5),
-        soft_precision_at_10=_soft_precision_at_n(proposals_ranked, hidden_source_type, hidden_type_target, 10),
-        soft_precision_at_20=_soft_precision_at_n(proposals_ranked, hidden_source_type, hidden_type_target, 20),
-        soft_recall_at_5=_soft_recall_at_n(proposals_ranked, hidden_edges, hidden_source_type, hidden_type_target, 5),
-        soft_recall_at_10=_soft_recall_at_n(proposals_ranked, hidden_edges, hidden_source_type, hidden_type_target, 10),
-        soft_recall_at_20=_soft_recall_at_n(proposals_ranked, hidden_edges, hidden_source_type, hidden_type_target, 20),
+        soft_precision_at_5=_soft_precision_at_n(
+            proposals_ranked, hidden_source_type, hidden_type_target, 5
+        ),
+        soft_precision_at_10=_soft_precision_at_n(
+            proposals_ranked, hidden_source_type, hidden_type_target, 10
+        ),
+        soft_precision_at_20=_soft_precision_at_n(
+            proposals_ranked, hidden_source_type, hidden_type_target, 20
+        ),
+        soft_recall_at_5=_soft_recall_at_n(
+            proposals_ranked, hidden_edges, hidden_source_type, hidden_type_target, 5
+        ),
+        soft_recall_at_10=_soft_recall_at_n(
+            proposals_ranked, hidden_edges, hidden_source_type, hidden_type_target, 10
+        ),
+        soft_recall_at_20=_soft_recall_at_n(
+            proposals_ranked, hidden_edges, hidden_source_type, hidden_type_target, 20
+        ),
     )

@@ -26,8 +26,8 @@ Repository-specific instructions for coding agents and contributors.
   - Override model: `MODEL=gemma3:4b bash scripts/run_all_experiments.sh`
 - Compile paper: `cd paper && tectonic -r 2 main.tex`
 - Run analysis pipeline:
-  - `uv run python analysis/analyze_experiments.py --artifacts-root artifacts/ --output analysis/results/`
-  - `uv run python analysis/generate_figures.py --data analysis/results/ --output paper/figures/`
+  - `uv run python analysis/generate_appendix_tables.py` (appendix tables: runtime, factor decomp, stat tests)
+  - `uv run python analysis/generate_harmony_figures.py --astronomy artifacts/harmony/astronomy --physics artifacts/harmony/physics --materials artifacts/harmony/materials --wikidata_physics artifacts/harmony/wikidata_physics --wikidata_materials artifacts/harmony/wikidata_materials --metrics-csv artifacts/harmony/metrics_table.csv` (NeurIPS figures)
 
 ## Code Style and Architecture Rules
 

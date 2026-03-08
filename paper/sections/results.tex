@@ -339,13 +339,19 @@ structure that the random proposer cannot provide.
 \subsection{Harmony--Downstream Correlation}\label{sec:correlation}
 
 A key question is whether improvements in Harmony component scores translate to
-link prediction gains.  For each domain, we compute the Spearman rank
-correlation between per-proposal component deltas
-($\Delta\text{Compress}$, $\Delta\text{Cohere}$, $\Delta\text{Symm}$,
-$\Delta\text{Gener}$) and the corresponding $\Delta\text{Hits@10}$.  This
-analysis will reveal which Harmony components are most predictive of downstream
-performance and identify domains where the metric--performance disconnect is
-largest.
+link prediction gains.  Computing per-proposal Spearman rank correlations
+between component deltas ($\Delta\text{Compress}$, $\Delta\text{Cohere}$,
+$\Delta\text{Symm}$, $\Delta\text{Gener}$) and $\Delta\text{Hits@10}$ would
+require logging per-proposal component scores alongside evaluation results.
+Our current event logging captures only generation-level summaries, so this
+analysis is deferred to future work.
+
+The discussion (Section~\ref{sec:discussion}) situates this gap: where
+Harmony components show weak downstream correlation, this would indicate a
+disconnect between structural quality signals and link-prediction performance,
+motivating future metric refinement.  We view characterising this disconnect
+as an important research question that our framework enables but that requires
+instrumented per-proposal evaluation pipelines to answer rigorously.
 
 \subsection{Regime Characterisation}\label{sec:regime}
 

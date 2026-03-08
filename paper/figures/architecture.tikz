@@ -39,21 +39,18 @@
 %% ---- Arrows: islands → LLM Proposer ----
 \draw[main arrow] (i1.south) -- (llm.north);
 \draw[main arrow] (i2.west)  -- +(-1.8,0) |- (llm.east);
-\draw[main arrow] (i3.north) -- (score.south);
+\draw[main arrow] (i3.north) -- (llm.south);
 \draw[main arrow] (i4.east)  -- +(1.8,0)  |- (llm.west);
 
 %% ---- Central pipeline flow ----
 \draw[main arrow] (llm)   -- (score);
 \draw[main arrow] (score) -- (0, 1.4);   % score → archive top
 
-%% ---- Migration: archive → islands (dashed) ----
-% Left and right via horizontal spurs
-\draw[dashed arrow] (-1.4, 0.9) -- (-2.5, 0.9) |- (i4.south);
-\draw[dashed arrow] ( 1.4, 0.9) -- ( 2.5, 0.9) |- (i2.south);
-% Up via left-offset spur → island 1
-\draw[dashed arrow] (-1.0, 1.4) -- (-1.0, 2.2) -- (-1.6, 2.2) |- (i1.west);
-% Down via right-offset spur → island 3
-\draw[dashed arrow] ( 1.0, 0.4) -- ( 1.0,-0.2) -- ( 1.6,-0.2) |- (i3.east);
+%% ---- Migration: ring topology island i → island (i+1) mod 4 (dashed) ----
+\draw[dashed arrow] (i1.east)  -- +(0.8,0) |- (i2.north);
+\draw[dashed arrow] (i2.south) -- +(0,-0.6) -| (i3.east);
+\draw[dashed arrow] (i3.west)  -- +(-0.8,0) |- (i4.south);
+\draw[dashed arrow] (i4.north) -- +(0,0.6)  -| (i1.west);
 
 % Migration label
 \node[font=\tiny, align=center] at (-3.5, 0.0)

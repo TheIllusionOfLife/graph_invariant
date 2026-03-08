@@ -270,10 +270,14 @@ class TestGenerateAppendixTablesOutput:
 
         build_runtime_table(tmp_path)
 
-        warning_msgs = [str(w.message) for w in recwarn.list]
-        assert any("EXPECTED_SEEDS" in m or "incomplete" in m.lower() for m in warning_msgs), (
-            f"Expected incomplete-seeds warning; got: {warning_msgs}"
+        runtime_warnings = [w for w in recwarn.list if issubclass(w.category, RuntimeWarning)]
+        assert len(runtime_warnings) == 1, (
+            f"Expected exactly 1 RuntimeWarning; got {len(runtime_warnings)}: "
+            f"{[str(w.message) for w in runtime_warnings]}"
         )
+        msg = str(runtime_warnings[0].message)
+        assert "incomplete seeds 3/10" in msg, f"Unexpected warning message: {msg}"
+        assert "EXPECTED_SEEDS=10" in msg, f"Unexpected warning message: {msg}"
 
     def test_output_file_created(self, tmp_path: Path) -> None:
         from generate_appendix_tables import generate_appendix_tables

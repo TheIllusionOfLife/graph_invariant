@@ -146,9 +146,9 @@ where it is prepended to the destination island's prompt-context buffer for the
 next generation.
 
 \paragraph{Generation loop.}
-Algorithm~\ref{alg:harmony} summarises a single generation.  The loop runs for
-$T_{\max} = 20$ generations per experiment, checkpointing state after each
-generation to enable resumption.
+Algorithm~\ref{alg:harmony} summarises a single generation
+(Figure~\ref{fig:architecture}).  The loop runs for $T_{\max} = 20$ generations
+per experiment, checkpointing state after each generation to enable resumption.
 
 \begin{algorithm}[t]
 \caption{Harmony search --- one generation}\label{alg:harmony}
@@ -181,7 +181,7 @@ generation to enable resumption.
     strategy schedule (Refine $\to$ Combine $\to$ Refine $\to$ Novel).  Proposals
     are scored by the Harmony metric and archived in a MAP-Elites quality-diversity
     grid ($5 \times 5$, axes = simplicity bin $\times$ Harmony-gain bin).  Periodic
-    migration (every $M=10$ generations) seeds each island from elite archive
-    entries via a ring topology.}
+    migration (every $M=10$ generations) transfers each island's best proposal
+    to the next island in a ring topology ($i \to (i{+}1) \bmod 4$).}
   \label{fig:architecture}
 \end{figure}

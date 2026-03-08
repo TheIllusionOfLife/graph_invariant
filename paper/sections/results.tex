@@ -372,6 +372,55 @@ sparser hand-curated domains, consistent with the observation that triangle
 density increases with graph size.  Full results are in
 Appendix~\ref{app:wikidata-ablation}.
 
+\subsection{Automated Proposal Quality Assessment}
+
+Table~\ref{tab:rubric} reports automated quality scores for top-5 proposals per
+domain, scored on four dimensions (1--5 scale: 1=poor, 5=excellent) using
+Gemini 2.5 Pro as an automated evaluator.  This follows the LLM-as-judge
+paradigm~\citep{zheng2023judging}: automated scoring is scalable, reproducible,
+and consistent within a single model, though it does not replace human expert
+evaluation with inter-annotator agreement.
+
+\begin{table}[t]
+\centering
+\caption{Automated proposal quality scores: mean per domain across top-5
+proposals (scored by Gemini~2.5~Pro; 1--5 scale).  Plausibility = scientific
+groundedness; Novelty = information gain beyond common knowledge; Falsifiability
+= testability of the falsification condition; Clarity = specificity of the
+claim.}\label{tab:rubric}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Domain & Plausibility & Novelty & Falsifiability & Clarity \\
+\midrule
+Astronomy         & 4.0 & 2.8 & 5.0 & 5.0 \\
+Physics           & 2.6 & 3.0 & 3.8 & 3.6 \\
+Materials         & 3.6 & 2.4 & 5.0 & 5.0 \\
+Wikidata Physics  & 3.4 & 3.2 & 4.0 & 4.8 \\
+Wikidata Materials & 4.4 & 2.6 & 4.6 & 4.8 \\
+\midrule
+Overall (mean)    & 3.6 & 2.8 & 4.5 & 4.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Across domains, falsifiability (4.5) and clarity (4.6) are consistently high,
+confirming that the structured proposal schema (Section~\ref{sec:proposals})
+reliably produces testable, specific claims.  Plausibility is highest for
+Wikidata Materials (4.4) and Astronomy (4.0), where domain knowledge is more
+concrete; Physics scores lower (2.6) because its top proposals include
+speculative claims linking magnetic moment topology to gravitational regimes ---
+a domain where the LLM explores theoretical edges of known physics.  Novelty
+is moderate across domains (2.4--3.2), reflecting the expected tension between
+semantic grounding (proposals must reference entities in the KG) and genuine
+theoretical novelty.
+
+\noindent\textbf{Disclosure}: Scores are from a single LLM judge (Gemini 2.5
+Pro) with no inter-annotator agreement measurement.  Human expert evaluation
+with domain specialists and measured Cohen's $\kappa$ is deferred to future
+work.  The rubric prompt is included in Appendix~\ref{app:rubric-prompt} for
+reproducibility.
+
 \subsection{Qualitative Examples}
 
 Table~\ref{tab:examples} shows representative proposals from the astronomy

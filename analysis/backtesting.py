@@ -96,6 +96,19 @@ def _soft_matches(
     return (src, et) in hidden_set_source_type or (et, tgt) in hidden_set_type_target
 
 
+def _top_n_unique(proposals: list[tuple[str, str, str]], n: int) -> list[tuple[str, str, str]]:
+    """Return the first n deduplicated proposals (preserving rank order)."""
+    seen: set[tuple[str, str, str]] = set()
+    result: list[tuple[str, str, str]] = []
+    for p in proposals:
+        if p not in seen:
+            seen.add(p)
+            result.append(p)
+            if len(result) == n:
+                break
+    return result
+
+
 def _soft_precision_at_n(
     proposals: list[tuple[str, str, str]],
     hidden_source_type: set[tuple[str, str]],
@@ -104,14 +117,7 @@ def _soft_precision_at_n(
 ) -> float:
     if not proposals or n <= 0:
         return 0.0
-    seen: set[tuple[str, str, str]] = set()
-    unique_top: list[tuple[str, str, str]] = []
-    for p in proposals:
-        if p not in seen:
-            seen.add(p)
-            unique_top.append(p)
-            if len(unique_top) == n:
-                break
+    unique_top = _top_n_unique(proposals, n)
     if not unique_top:
         return 0.0
     hits = sum(1 for p in unique_top if _soft_matches(p, hidden_source_type, hidden_type_target))
@@ -121,27 +127,19 @@ def _soft_precision_at_n(
 def _soft_recall_at_n(
     proposals: list[tuple[str, str, str]],
     hidden_edges: list[tuple[str, str, str]],
-    hidden_source_type: set[tuple[str, str]],
-    hidden_type_target: set[tuple[str, str]],
     n: int,
 ) -> float:
+    """Fraction of hidden edges soft-matched by the top-n proposals (O(N+M))."""
     if not hidden_edges or not proposals or n <= 0:
         return 0.0
-    seen: set[tuple[str, str, str]] = set()
-    unique_top: list[tuple[str, str, str]] = []
-    for p in proposals:
-        if p not in seen:
-            seen.add(p)
-            unique_top.append(p)
-            if len(unique_top) == n:
-                break
-    # For each hidden edge, check if any top-N proposal soft-matches it
-    covered = 0
-    for s, t, et in hidden_edges:
-        for p_src, p_tgt, p_et in unique_top:
-            if (p_src == s and p_et == et) or (p_et == et and p_tgt == t):
-                covered += 1
-                break
+    unique_top = _top_n_unique(proposals, n)
+    if not unique_top:
+        return 0.0
+    prop_source_type: set[tuple[str, str]] = {(src, et) for src, _tgt, et in unique_top}
+    prop_type_target: set[tuple[str, str]] = {(et, tgt) for _src, tgt, et in unique_top}
+    covered = sum(
+        1 for s, t, et in hidden_edges if (s, et) in prop_source_type or (et, t) in prop_type_target
+    )
     return float(covered) / len(hidden_edges)
 
 
@@ -184,13 +182,7 @@ def soft_backtest_proposals(
         soft_precision_at_20=_soft_precision_at_n(
             proposals_ranked, hidden_source_type, hidden_type_target, 20
         ),
-        soft_recall_at_5=_soft_recall_at_n(
-            proposals_ranked, hidden_edges, hidden_source_type, hidden_type_target, 5
-        ),
-        soft_recall_at_10=_soft_recall_at_n(
-            proposals_ranked, hidden_edges, hidden_source_type, hidden_type_target, 10
-        ),
-        soft_recall_at_20=_soft_recall_at_n(
-            proposals_ranked, hidden_edges, hidden_source_type, hidden_type_target, 20
-        ),
+        soft_recall_at_5=_soft_recall_at_n(proposals_ranked, hidden_edges, 5),
+        soft_recall_at_10=_soft_recall_at_n(proposals_ranked, hidden_edges, 10),
+        soft_recall_at_20=_soft_recall_at_n(proposals_ranked, hidden_edges, 20),
     )

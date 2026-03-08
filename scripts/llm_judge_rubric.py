@@ -80,11 +80,12 @@ def build_rubric_prompt(proposal: dict, variant: str) -> str:
     return f"""You are an expert scientific knowledge evaluator assessing theory proposals for
 knowledge graphs. Evaluate the following proposal from the {domain} domain.
 
-PROPOSAL:
-  Claim: {claim}
-  Justification: {justification}
-  Falsification condition: {falsification}
-  KG mutation: {edge_type}({source} → {target})
+<proposal>
+  <claim>{claim}</claim>
+  <justification>{justification}</justification>
+  <falsification_condition>{falsification}</falsification_condition>
+  <kg_mutation>{edge_type}({source} → {target})</kg_mutation>
+</proposal>
 
 RUBRIC:
 {rubric}
@@ -137,9 +138,7 @@ def parse_rubric_scores(response: str) -> dict[str, int]:
     for dim in DIMENSIONS:
         val = int(data[dim])
         if not (SCORE_MIN <= val <= SCORE_MAX):
-            raise ValueError(
-                f"Score for '{dim}' is {val}, must be in [{SCORE_MIN}, {SCORE_MAX}]"
-            )
+            raise ValueError(f"Score for '{dim}' is {val}, must be in [{SCORE_MIN}, {SCORE_MAX}]")
         data[dim] = val
 
     return {d: data[d] for d in DIMENSIONS}
@@ -166,14 +165,8 @@ def compute_agreement(
     -------
     Float in [0, 1] — fraction of dimensions where |a - b| <= tolerance.
     """
-    # Scale to [0, 1] based on range: agreement of 0 when all differ by max (4)
-    # and 1 when all match exactly.
-    # Use fraction-of-dimensions-matching as simple agreement metric.
-    total_diff = sum(abs(scores_a[d] - scores_b[d]) for d in DIMENSIONS)
-    max_diff = (SCORE_MAX - SCORE_MIN) * len(DIMENSIONS)  # = 4 * 4 = 16
-    if max_diff == 0:
-        return 1.0
-    return 1.0 - (total_diff / max_diff)
+    n_match = sum(1 for d in DIMENSIONS if abs(scores_a[d] - scores_b[d]) <= tolerance)
+    return float(n_match) / len(DIMENSIONS)
 
 
 # ---------------------------------------------------------------------------
@@ -199,10 +192,7 @@ def aggregate_scores(entries: list[dict[str, float]]) -> dict[str, float]:
     if not entries:
         raise ValueError("entries must be non-empty")
 
-    return {
-        dim: statistics.mean(e[dim] for e in entries)
-        for dim in DIMENSIONS
-    }
+    return {dim: statistics.mean(e[dim] for e in entries) for dim in DIMENSIONS}
 
 
 # ---------------------------------------------------------------------------
@@ -261,14 +251,16 @@ def evaluate_domain_proposals(
         # Average the two variants for the final score
         avg_scores = {d: (scores_a[d] + scores_b[d]) / 2.0 for d in DIMENSIONS}
 
-        proposal_scores.append({
-            "proposal_id": prop.get("id", "unknown"),
-            "claim": prop.get("claim", "")[:120],
-            "scores_detailed": scores_a,
-            "scores_concise": scores_b,
-            "scores_avg": avg_scores,
-            "inter_prompt_agreement": agreement,
-        })
+        proposal_scores.append(
+            {
+                "proposal_id": prop.get("id", "unknown"),
+                "claim": prop.get("claim", "")[:120],
+                "scores_detailed": scores_a,
+                "scores_concise": scores_b,
+                "scores_avg": avg_scores,
+                "inter_prompt_agreement": agreement,
+            }
+        )
 
     if not proposal_scores:
         return {"domain": domain, "proposal_scores": [], "mean_scores": {}, "agreement_rate": 0.0}
@@ -336,9 +328,7 @@ def main() -> None:
         print(f"\n[{domain}] Loading top-{args.top_n} proposals...")
         proposals = load_top_proposals(domain, args.mlx_base, top_n=args.top_n)
         print(f"  Found {len(proposals)} proposals. Evaluating...")
-        result = evaluate_domain_proposals(
-            proposals, domain, model=args.model, top_n=args.top_n
-        )
+        result = evaluate_domain_proposals(proposals, domain, model=args.model, top_n=args.top_n)
         results[domain] = result
         ms = result.get("mean_scores", {})
         if ms:

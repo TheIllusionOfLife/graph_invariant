@@ -233,12 +233,14 @@ class TestGenerateAppendixTablesOutput:
 
         json_path = tmp_path / "statistical_tests.json"
         json_path.write_text(
-            json.dumps({
-                "astronomy": {
-                    "hits10_bootstrap": {"p_value": 1.0},
-                    "hits10_cliffs_delta": 0.0,
+            json.dumps(
+                {
+                    "astronomy": {
+                        "hits10_bootstrap": {"p_value": 1.0},
+                        "hits10_cliffs_delta": 0.0,
+                    }
                 }
-            })
+            )
         )
 
         out_path = tmp_path / "appendix_tables_generated.tex"
@@ -267,12 +269,14 @@ class TestGenerateAppendixTablesOutput:
 
         json_path = tmp_path / "statistical_tests.json"
         json_path.write_text(
-            json.dumps({
-                "astronomy": {
-                    "hits10_bootstrap": {"p_value": 1.0},
-                    "hits10_cliffs_delta": 0.0,
+            json.dumps(
+                {
+                    "astronomy": {
+                        "hits10_bootstrap": {"p_value": 1.0},
+                        "hits10_cliffs_delta": 0.0,
+                    }
                 }
-            })
+            )
         )
 
         out_path = tmp_path / "out.tex"

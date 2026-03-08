@@ -144,9 +144,7 @@ def build_factor_decomp_table(csv_path: Path | str) -> str:
             archive = row.get("archive_size", "")
 
             domain_col = f"\\multirow{{{n_configs}}}{{*}}{{{dom_label}}}" if first else ""
-            lines.append(
-                f"    {domain_col} & {label} & {gain_str} & {gens} & {archive} \\\\"
-            )
+            lines.append(f"    {domain_col} & {label} & {gain_str} & {gens} & {archive} \\\\")
             first = False
         lines.append(r"    \midrule")
 
@@ -199,7 +197,7 @@ def build_statistical_tests_table(json_path: Path | str) -> str:
         if dom not in data:
             continue
         entry = data[dom]
-        dom_label = DOMAIN_LABELS.get(dom, dom)
+        dom_label = DOMAIN_LABELS.get(dom, dom.replace("_", r"\_"))
         bs = entry.get("hits10_bootstrap", {})
         mean_diff = bs.get("mean_diff", 0.0)
         ci_low = bs.get("ci_low", 0.0)
@@ -269,14 +267,12 @@ def build_runtime_table(
     lines.append(r"    Domain & Mean (s) & Std (s) & Seeds & Mean (min) \\")
     lines.append(r"    \midrule")
     for dom, stats in rows:
-        label = DOMAIN_LABELS.get(dom, dom)
+        label = DOMAIN_LABELS.get(dom, dom.replace("_", r"\_"))
         mean_s = stats["mean_sec"]
         std_s = stats["std_sec"]
         n = stats["n"]
         mean_min = mean_s / 60.0
-        lines.append(
-            f"    {label} & {mean_s:.1f} & {std_s:.1f} & {n}/{n} & {mean_min:.1f} \\\\"
-        )
+        lines.append(f"    {label} & {mean_s:.1f} & {std_s:.1f} & {n}/{n} & {mean_min:.1f} \\\\")
     lines.append(r"    \bottomrule")
     lines.append(r"  \end{tabular}")
     lines.append(r"\end{table}")

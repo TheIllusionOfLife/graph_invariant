@@ -208,7 +208,7 @@ presented as complementary analysis.
 \subsection{Backtesting Against Hidden Edges}
 
 Table~\ref{tab:backtest} reports backtesting results under two criteria against
-10\%-held-out hidden edges (50 proposals pooled across 10 seeds per domain from
+10\%-held-out hidden edges (up to 50 proposals pooled across 10 seeds per domain from
 the MLX batch run).  \emph{Exact match}: all three of source, target, and edge
 type must match a hidden triple.  \emph{Soft match}: at least one of
 (source,\,edge\_type) or (edge\_type,\,target) matches a hidden edge, testing
@@ -246,9 +246,9 @@ share a (source,\,edge\_type) or (edge\_type,\,target) pair with a held-out
 edge.  On Astronomy, 25\% of held-out edges are ``soft-covered'' by top-20
 proposals.  Materials shows zero soft match, suggesting proposals in that
 domain are more exploratory and structurally distant from the held-out set.
-These results support the interpretation that Harmony-guided proposals are
-not random noise but are oriented toward structurally adjacent knowledge, even
-when they do not reproduce exact triples.
+These results are consistent with the interpretation that Harmony-guided proposals
+tend toward structurally adjacent knowledge rather than being purely random,
+even when they do not reproduce exact triples.
 
 \subsection{Factor Decomposition}
 

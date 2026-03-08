@@ -126,9 +126,11 @@ class TestParseRubricScores:
     def test_handles_json_in_markdown_block(self) -> None:
         from llm_judge_rubric import parse_rubric_scores
 
-        response = "```json\n" + json.dumps(
-            {"plausibility": 4, "novelty": 3, "falsifiability": 5, "clarity": 4}
-        ) + "\n```"
+        response = (
+            "```json\n"
+            + json.dumps({"plausibility": 4, "novelty": 3, "falsifiability": 5, "clarity": 4})
+            + "\n```"
+        )
         result = parse_rubric_scores(response)
         assert result["plausibility"] == 4
 

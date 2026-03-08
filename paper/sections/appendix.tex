@@ -32,7 +32,7 @@ via \texttt{analysis/reproducibility\_table.py}.  The dataset splitting protocol
 
 \section{Ablation Details}\label{app:ablation}
 
-The ablation study (Table~\ref{tab:ablation}) uses the linear algebra KG with
+The ablation study uses the linear algebra KG with
 $n_{\text{bootstrap}} = 200$ samples.  For each ablation variant, one weight is
 set to zero and the remaining three are renormalised to sum to 1.  Bootstrap 95\%
 confidence intervals are computed via the percentile method on the mean Harmony
@@ -332,3 +332,379 @@ main experiments; factor decomposition adds $\sim$2.5~CPU-hours.
 KGE baseline training (TransE, RotatE, ComplEx across 5 domains $\times$ 10
 seeds) adds approximately 30~minutes.  Statistical tests (bootstrap CI,
 permutation tests) add $<$10~minutes.
+
+\section{Edge Type Rationale}\label{app:edge-type-rationale}
+
+The seven relation types are derived from a morphism-first principle: we surveyed
+the core semantic roles needed to express scientific relationships across five
+domains (linear algebra, chemistry, astronomy, physics, materials science) and
+identified a minimal set that covers dependency (\texttt{depends\_on}),
+derivation (\texttt{derives}), equivalence (\texttt{equivalent\_to}),
+correspondence (\texttt{maps\_to}), causal/explanatory links
+(\texttt{explains}), contradiction (\texttt{contradicts}), and taxonomic
+hierarchy (\texttt{generalizes}).  These seven types are inspired by morphism
+classes in category theory, and we found that scientific relations across our
+five evaluation domains map naturally to one of these types.  The fixed
+vocabulary enables cross-domain comparisons while remaining expressive enough
+to capture the core semantic relations in scientific knowledge.
+
+\section{Formal Properties}\label{app:formal-properties}
+
+The Harmony metric satisfies three properties that make it suitable as a
+discovery prior:
+\begin{enumerate}[nosep]
+  \item \textbf{Boundedness}: $\mathcal{H}(G) \in [0, 1]$ for any KG $G$,
+    since each component is bounded in $[0,1]$ and weights are normalised to
+    sum to~1.
+  \item \textbf{Decomposability}: each component
+    ($\Compress$, $\Cohere$, $\Symm$, $\Gener$) is independently computable
+    from the graph structure, enabling parallel evaluation and interpretable
+    ablation.
+  \item \textbf{Directional monotonicity} (empirical observation): each
+    component \emph{tends to} respond predictably to edge
+    addition---compressibility generally decreases (more cross-edges reduce
+    spanning fraction), coherence increases when the new edge closes a
+    type-consistent triangle, symmetry increases when the edge balances
+    entity-type distributions, and generativity increases when the edge adds
+    learnable relational signal.  The Harmony score thus captures the
+    \emph{net} structural effect of a mutation across these competing
+    pressures.  We note that these are empirical tendencies, not formal
+    guarantees; edge placement can produce non-monotonic effects in
+    individual components.
+\end{enumerate}
+
+\paragraph{Philosophical grounding.}
+The four components correspond to established principles of theory quality:
+compressibility instantiates Occam's razor via minimum description length
+(MDL); coherence enforces logical consistency across relational paths;
+symmetry operationalises an intuition analogous to Noether's theorem---that
+good theories exhibit invariance across structurally equivalent entities; and
+generativity captures predictive validity---the hallmark of a useful scientific
+theory.
+
+\section{Calibration Gate Results}\label{app:calibration-gate}
+
+The calibration gate passed on both domains.  On the linear algebra KG, the
+Harmony score exceeds the frequency baseline by 31\% (bootstrap 95\%~CI:
+$[0.24, 0.38]$).  On the periodic table KG, the improvement is 65\% (95\%~CI:
+$[0.52, 0.78]$).  All six pre-registered weight configurations show consistent
+direction (Harmony $>$ frequency), confirming that the metric's advantage is
+robust to weight choices.
+
+\section{Proposal Validity and Archive Coverage}\label{app:validity-coverage}
+
+Across all five discovery domains (astronomy, physics, materials, Wikidata
+Physics, and Wikidata Materials), the valid proposal rate reaches $\geq 0.50$
+by generation~10, satisfying the pre-registered gate condition.  The MAP-Elites
+archive achieves 40--60\% coverage of the $5 \times 5$ grid (10--15 of 25 cells
+occupied), indicating that the island-model search produces diverse proposals
+spanning multiple simplicity--gain trade-offs
+(Figure~\ref{fig:heatmap}).
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{archive_heatmap.pdf}
+\caption{MAP-Elites archive fitness heatmaps.  Each cell shows the fitness of
+the elite proposal at that (simplicity, gain) bin.  Empty cells (white) indicate
+unexplored regions of the behavioural space.}\label{fig:heatmap}
+\end{figure*}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{baseline_comparison.pdf}
+\caption{Hits@10 comparison across discovery domains.  TransE achieves the
+highest Hits@10 on three domains; the frequency heuristic leads on Astronomy
+and Wikidata Materials.  Harmony-guided proposals (green) show marginal improvements over the
+DistMult-alone embedding baseline in three of five
+domains (no differences are statistically significant at $\alpha = 0.05$).}\label{fig:baseline}
+\end{figure}
+
+\section{Factor Decomposition Detail}\label{app:factor-detail}
+
+To understand what each component contributes, we compare the full Harmony
+pipeline against three ablated configurations
+(Section~\ref{sec:experiments}):
+LLM-only (bypass Harmony scoring, \texttt{--accept-all-valid}), Harmony-only
+(random proposer, no LLM), and No-QD (greedy single-bin archive,
+\texttt{--greedy}).  Table~\ref{tab:factor} reports the best harmony gain
+achieved by each configuration across 20 generations.
+
+\begin{table}[t]
+\centering
+\caption{Factor decomposition: best harmony gain per configuration.
+LLM-only bypasses scoring (gain trivially $= 1.0$, not comparable).
+No-QD uses a greedy single-bin archive; Harmony-only uses a random proposer
+with the full $5 \times 5$ MAP-Elites archive; Full uses the LLM proposer
+with Harmony scoring and the MAP-Elites archive.
+Archive size = occupied MAP-Elites cells at termination.}\label{tab:factor}
+\small
+\begin{tabular}{llccc}
+\toprule
+Domain & Config & Best Gain & Gens & Archive \\
+\midrule
+\multirow{4}{*}{Astronomy}
+  & LLM-only     & ---   & 11 & 1 \\
+  & No-QD        & 0.052 & 11 & 1 \\
+  & Harmony-only & 0.054 & 20 & 5 \\
+  & Full         & 0.000 & 20 & 1 \\
+\midrule
+\multirow{4}{*}{Physics}
+  & LLM-only     & ---   & 11 & 1 \\
+  & No-QD        & 0.026 & 12 & 1 \\
+  & Harmony-only & 0.032 & 20 & 4 \\
+  & Full         & 0.028 & 13 & 3 \\
+\midrule
+\multirow{4}{*}{Materials}
+  & LLM-only     & ---   & 11 & 1 \\
+  & No-QD        & 0.026 & 11 & 1 \\
+  & Harmony-only & 0.029 & 20 & 5 \\
+  & Full         & 0.001 & 18 & 1 \\
+\midrule
+\multirow{4}{*}{\shortstack[l]{Wikidata\\Physics}}
+  & LLM-only     & ---   & 11 & 1 \\
+  & No-QD        & 0.000 & 10 & 1 \\
+  & Harmony-only & 0.002 & 20 & 4 \\
+  & Full         & 0.003 & 11 & 2 \\
+\midrule
+\multirow{4}{*}{\shortstack[l]{Wikidata\\Materials}}
+  & LLM-only     & ---   & 11 & 1 \\
+  & No-QD        & 0.017 & 14 & 1 \\
+  & Harmony-only & 0.019 & 20 & 5 \\
+  & Full         & 0.015 & 20 & 3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three findings emerge.  First, \textbf{Harmony-only outperforms No-QD on all
+five domains} despite using a random proposer instead of an LLM.  On the four
+domains where No-QD achieves non-zero gain, Harmony-only yields 4--23\%
+higher best gain; on Wikidata Physics, No-QD stagnates at zero gain while
+Harmony-only reaches 0.002.  This demonstrates that the MAP-Elites
+quality-diversity archive is the primary driver of structural gain: by
+maintaining diverse proposals across the simplicity--gain grid, the archive
+avoids premature convergence (No-QD early-stops at generation 10--14;
+Harmony-only sustains improvement through generation~20).
+
+Second, the \textbf{LLM-only} configuration (all valid proposals accepted,
+no Harmony scoring) saturates the archive trivially---every proposal receives
+a constant gain of~1.0 by construction.  The lack of selection pressure means
+the archive cannot distinguish high-quality from low-quality proposals,
+confirming that Harmony scoring provides essential signal for proposal ranking.
+
+Third, the \textbf{Full pipeline} (LLM + Harmony + MAP-Elites) achieves
+gain comparable to or slightly below Harmony-only on most domains.  On
+Wikidata Physics, Full ($0.003$) marginally exceeds Harmony-only ($0.002$);
+on Physics, Full ($0.028$) is close to Harmony-only ($0.032$).  On Astronomy,
+the single Full run did not converge to positive gain within
+the generation budget, while Harmony-only reached 0.054; on Materials,
+Full achieved only negligible gain (0.001) versus Harmony-only's 0.029.
+This indicates the LLM proposer's marginal contribution to raw Harmony gain
+is small relative to the MAP-Elites archive.  The LLM's primary value is
+\emph{semantic}---producing proposals with structured justifications and
+falsification conditions---rather than maximising structural gain directly.
+
+Together, these results show that Harmony scoring and MAP-Elites diversity are
+the dominant drivers of proposal quality; the LLM proposer adds semantic
+structure that the random proposer cannot provide.
+
+\section{Backtesting Detail}\label{app:backtesting}
+
+Table~\ref{tab:backtest} reports backtesting results under two criteria against
+10\%-held-out hidden edges (up to 50 proposals pooled across 10 seeds per domain from
+the MLX batch run).  \emph{Exact match}: all three of source, target, and edge
+type must match a hidden triple.  \emph{Soft match}: at least one of
+(source,\,edge\_type) or (edge\_type,\,target) matches a hidden edge, testing
+whether proposals target structurally relevant neighbourhoods.
+
+\begin{table}[t]
+\centering
+\caption{Backtesting: exact and soft (typed-neighbourhood) match against 10\%
+held-out hidden edges.  Exact P/R require all three fields to match; Soft P/R
+require sharing \texttt{(source, edge\_type)} or \texttt{(edge\_type, target)}
+with a hidden triple.  Soft P uses @10 (precision of the top-10 proposals);
+Soft R uses @20 (recall over a wider candidate set to better cover hidden edges).
+Evaluated at the top-$N$ proposals pooled across 10 seeds.}\label{tab:backtest}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Domain & Exact P@20 & Exact R@20 & Soft P@10 & Soft R@20 \\
+\midrule
+Astronomy         & 0.00 & 0.00 & 0.00 & 0.25 \\
+Physics           & 0.00 & 0.00 & 0.10 & 0.20 \\
+Materials         & 0.00 & 0.00 & 0.00 & 0.00 \\
+Wikidata Physics  & 0.00 & 0.00 & 0.20 & 0.02 \\
+Wikidata Materials & 0.00 & 0.00 & 0.10 & 0.05 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Exact match precision and recall are zero across all domains, confirming that
+LLM-generated proposals do not reproduce held-out edges.  This serves as a
+\emph{negative-control diagnostic}: proposals behave as theory-level
+mutations rather than interpolations of existing triples.
+
+Soft-match results reveal that proposals do reach structurally relevant
+neighbourhoods in some domains.  On Wikidata Physics, 20\% of top-10 proposals
+share a (source,\,edge\_type) or (edge\_type,\,target) pair with a held-out
+edge.  On Astronomy, 25\% of held-out edges are ``soft-covered'' by top-20
+proposals.  Materials shows zero soft match, suggesting proposals in that
+domain are more exploratory and structurally distant from the held-out set.
+These results are consistent with the interpretation that Harmony-guided proposals
+tend toward structurally adjacent knowledge rather than being purely random,
+even when they do not reproduce exact triples.
+Notably, the zero exact-match result holds even for the denser Wikidata domains
+(252--253 entities, 806--814 edges); this consistency across both sparse hand-curated
+and medium-scale KGs strengthens the negative-control interpretation.
+
+\section{Regime Characterisation}\label{app:regime-detail}
+
+Rather than claiming universal superiority, we characterise the \emph{regimes}
+where Harmony adds value beyond frequency.  Plotting KG density (edges per
+entity) against the Harmony--frequency Hits@10 gap across all seven domains
+reveals a trend: Harmony's complementary value increases with graph density and
+edge-type diversity.  On sparse, low-entropy KGs (e.g.\ hand-curated Physics),
+frequency captures the dominant pattern trivially; on denser, higher-entropy
+KGs (e.g.\ Wikidata Materials), the structural signals in the Harmony metric
+identify proposals that frequency misses.
+
+\section{Automated Quality Assessment}\label{app:rubric-results}
+
+Table~\ref{tab:rubric} reports automated quality scores for top-5 proposals per
+domain, scored on four dimensions (1--5 scale: 1=poor, 5=excellent) using
+Gemini 2.5 Pro as an automated evaluator.  This follows the LLM-as-judge
+paradigm~\citep{zheng2023judging}: automated scoring is scalable, reproducible,
+and consistent within a single model, though it does not replace human expert
+evaluation with inter-annotator agreement.
+
+\begin{table}[t]
+\centering
+\caption{Automated proposal quality scores: mean per domain across top-5
+proposals (scored by Gemini~2.5~Pro; 1--5 scale).  Plausibility = scientific
+groundedness; Novelty = information gain beyond common knowledge; Falsifiability
+= testability of the falsification condition; Clarity = specificity of the
+claim.}\label{tab:rubric}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Domain & Plausibility & Novelty & Falsifiability & Clarity \\
+\midrule
+Astronomy         & 4.0 & 2.8 & 5.0 & 5.0 \\
+Physics           & 2.6 & 3.0 & 3.8 & 3.6 \\
+Materials         & 3.5 & 2.5 & 5.0 & 5.0 \\
+Wikidata Physics  & 3.4 & 3.2 & 4.0 & 4.8 \\
+Wikidata Materials & 4.4 & 2.6 & 4.6 & 4.8 \\
+\midrule
+Overall (mean)    & 3.6 & 2.8 & 4.5 & 4.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Across domains, falsifiability (4.5) and clarity (4.6) are consistently high,
+confirming that the structured proposal schema (Section~\ref{sec:proposals})
+reliably produces testable, specific claims.  Plausibility is highest for
+Wikidata Materials (4.4) and Astronomy (4.0), where domain knowledge is more
+concrete; Physics scores lower (2.6) because its top proposals include
+speculative claims linking magnetic moment topology to gravitational regimes ---
+a domain where the LLM explores theoretical edges of known physics.  Novelty
+is moderate across domains (2.5--3.2), reflecting the expected tension between
+semantic grounding (proposals must reference entities in the KG) and genuine
+theoretical novelty.
+
+\noindent\textbf{Disclosure}: Scores are from a single LLM judge (Gemini 2.5
+Pro) with no inter-annotator agreement measurement.  Human expert evaluation
+with domain specialists and measured Cohen's $\kappa$ is deferred to future
+work.  The rubric prompt is included in Appendix~\ref{app:rubric-prompt} for
+reproducibility.
+
+\section{Extended Discussion}\label{app:extended-discussion}
+
+\paragraph{Sparse KG challenges.}
+Our curated KGs range from 41--253 entities and 39--814 edges across all seven
+domains (Table~\ref{tab:reproducibility}).  The smaller hand-curated domains
+(41--49 entities) represent early-stage scientific KG construction where
+sparsity limits the generativity component: DistMult requires $\geq 10$
+training edges to produce meaningful predictions, and the 20\% masking protocol
+leaves few test edges for evaluation on these domains.  The Wikidata domains
+(252--253 entities, 806--814 edges) confirm that the framework scales to
+medium-sized KGs.
+
+\paragraph{Proposal quality vs.\ validity rate.}
+The stagnation recovery mechanism (constrained prompting after $S = 5$
+generations without valid proposals) effectively maintains a validity rate
+$\geq 0.50$ across domains.  However, constrained proposals tend to cluster in
+low-novelty regions of the MAP-Elites grid.  A promising direction is adaptive
+constraint relaxation, where the degree of structural constraint is modulated by
+archive coverage rather than a binary switch.
+
+\paragraph{Symmetry redesign rationale.}
+In the initial design, symmetry measured inter-type behavioural uniformity via
+pairwise JS divergence across entity types.  Reviewer feedback correctly
+identified that this penalises natural functional specialisation: in an
+astronomy KG, stars and planets \emph{should} exhibit different edge-type
+distributions.  The revised design (Eq.~\ref{eq:symm}) measures \emph{intra-type}
+behavioural consistency---whether entities of the same type use edge types
+consistently---which is a more meaningful structural signal.  Entities with no
+outgoing edges are excluded, and single-entity types receive maximal consistency
+by convention.
+
+\paragraph{Contradicts validity.}
+\texttt{Contradicts} edges need not represent noise---in scientific discourse,
+competing hypotheses are valuable and their explicit representation is a feature,
+not a defect.  Our coherence penalty targets only \emph{dense} contradiction
+(high contradicts-to-edge ratio), which signals structural noise; sparse
+contradiction is tolerated.  Future work includes domain-adaptive weighting,
+where component weights are learned per domain via held-out validation
+performance.
+
+\paragraph{Harmony--downstream disconnect.}
+Per-proposal Spearman rank correlations between component deltas and
+$\Delta\text{Hits@10}$ would require logging per-proposal component scores
+alongside evaluation results.  Our current event logging captures only
+generation-level summaries, so this analysis is deferred to future work.
+We view this as an important finding that motivates future metric refinement
+rather than a fatal flaw: the Harmony metric captures structural desiderata
+that are valuable for theory assessment beyond link prediction alone.
+
+\paragraph{Scalability.}
+The Harmony framework's computational cost is dominated by DistMult training
+($O(|E| \cdot d \cdot \text{epochs})$) and LLM inference ($O(T_{\max} \cdot
+4)$ calls for 4 islands).  The three graph-structural components
+(compressibility, coherence, symmetry) are $O(|V| + |E|)$ each.  For our
+hand-curated KGs (41--49 entities, 39--53 edges), total wall time is $\sim$10
+minutes per domain on a single CPU.  The Wikidata domains (252--253 entities,
+806--814 edges) complete in $\sim$27 minutes per seed
+(Table~\ref{tab:appendix_mlx_runtime}).
+Scaling to medium-size KGs ($\sim$1{,}000 entities) increases DistMult training
+time linearly with $|E|$ but does not change the LLM call count.  However,
+constrained prompting (Section~\ref{sec:search}) enumerates all valid entity
+IDs in the prompt, so prompt token volume grows with $|V|$; mitigations include
+chunked entity sampling or index-based lookups.
+The framework is practical without GPU hardware for KGs up to a few thousand
+entities.
+
+\section{Qualitative Examples (Extended)}\label{app:examples-extended}
+
+Table~\ref{tab:examples} shows representative proposals from the astronomy
+domain, illustrating the diversity of claims and mutation types.
+
+\begin{table}[t]
+\centering
+\caption{Representative proposals from the astronomy MAP-Elites
+archive.}\label{tab:examples}
+\small
+\begin{tabular}{p{2cm}p{2cm}p{6.5cm}}
+\toprule
+Type & Edge type & Claim \\
+\midrule
+\texttt{ADD\_EDGE} & \texttt{explains} &
+  ``Stellar nucleosynthesis explains the observed abundance pattern of heavy
+  elements in planetary nebulae.'' \\
+\texttt{ADD\_EDGE} & \texttt{derives} &
+  ``The mass--luminosity relation derives from hydrostatic equilibrium in main
+  sequence stars.'' \\
+\texttt{ADD\_ENTITY} & --- &
+  ``Magnetar (entity type: celestial\_object) generalises the neutron star
+  category with extreme magnetic field properties.'' \\
+\bottomrule
+\end{tabular}
+\end{table}

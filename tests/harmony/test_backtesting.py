@@ -108,3 +108,79 @@ class TestBacktestProposals:
         assert result.precision_at_5 == pytest.approx(0.0)
         assert result.recall_at_5 == pytest.approx(0.0)
         assert len(result.matched_triples) == 0
+
+
+class TestSoftBacktestProposals:
+    def test_returns_soft_backtest_result(self):
+        from backtesting import SoftBacktestResult, soft_backtest_proposals
+
+        result = soft_backtest_proposals(
+            [("a", "b", "DEPENDS_ON")],
+            [("a", "c", "DEPENDS_ON")],  # same (source, edge_type) → source-type match
+        )
+        assert isinstance(result, SoftBacktestResult)
+
+    def test_result_has_expected_fields(self):
+        from backtesting import soft_backtest_proposals
+
+        result = soft_backtest_proposals(
+            [("a", "b", "DEPENDS_ON")],
+            [("a", "c", "DEPENDS_ON")],
+        )
+        for attr in [
+            "n_proposals",
+            "n_hidden",
+            "soft_precision_at_5",
+            "soft_precision_at_10",
+            "soft_precision_at_20",
+            "soft_recall_at_5",
+            "soft_recall_at_10",
+            "soft_recall_at_20",
+        ]:
+            assert hasattr(result, attr), f"Missing field: {attr}"
+
+    def test_source_type_match(self):
+        """Proposal shares (source, edge_type) with hidden → soft hit."""
+        from backtesting import soft_backtest_proposals
+
+        proposals = [("a", "b", "DEPENDS_ON")]
+        hidden = [("a", "x", "DEPENDS_ON")]  # same source + edge_type, different target
+        result = soft_backtest_proposals(proposals, hidden)
+        assert result.soft_precision_at_5 == pytest.approx(1.0)
+        assert result.soft_recall_at_5 == pytest.approx(1.0)
+
+    def test_type_target_match(self):
+        """Proposal shares (edge_type, target) with hidden → soft hit."""
+        from backtesting import soft_backtest_proposals
+
+        proposals = [("x", "b", "DERIVES")]
+        hidden = [("y", "b", "DERIVES")]  # same edge_type + target, different source
+        result = soft_backtest_proposals(proposals, hidden)
+        assert result.soft_precision_at_5 == pytest.approx(1.0)
+        assert result.soft_recall_at_5 == pytest.approx(1.0)
+
+    def test_no_soft_match(self):
+        """Completely different (source, edge_type, target) → zero."""
+        from backtesting import soft_backtest_proposals
+
+        proposals = [("a", "b", "DEPENDS_ON")]
+        hidden = [("x", "y", "EXPLAINS")]
+        result = soft_backtest_proposals(proposals, hidden)
+        assert result.soft_precision_at_5 == pytest.approx(0.0)
+        assert result.soft_recall_at_5 == pytest.approx(0.0)
+
+    def test_empty_proposals(self):
+        from backtesting import soft_backtest_proposals
+
+        result = soft_backtest_proposals([], [("a", "b", "DEPENDS_ON")])
+        assert result.n_proposals == 0
+        assert result.soft_precision_at_5 == pytest.approx(0.0)
+        assert result.soft_recall_at_5 == pytest.approx(0.0)
+
+    def test_empty_hidden(self):
+        from backtesting import soft_backtest_proposals
+
+        result = soft_backtest_proposals([("a", "b", "DEPENDS_ON")], [])
+        assert result.n_hidden == 0
+        assert result.soft_precision_at_5 == pytest.approx(0.0)
+        assert result.soft_recall_at_5 == pytest.approx(0.0)

@@ -1,6 +1,6 @@
 {
   "astronomy": {
-    "n_proposals": 0,
+    "n_proposals": 50,
     "n_hidden": 4,
     "precision_at_5": 0.0,
     "precision_at_10": 0.0,
@@ -8,10 +8,17 @@
     "recall_at_5": 0.0,
     "recall_at_10": 0.0,
     "recall_at_20": 0.0,
-    "n_matched": 0
+    "n_matched": 0,
+    "soft_precision_at_5": 0.0,
+    "soft_precision_at_10": 0.0,
+    "soft_precision_at_20": 0.05,
+    "soft_recall_at_5": 0.0,
+    "soft_recall_at_10": 0.0,
+    "soft_recall_at_20": 0.25,
+    "note": "MLX full run (10 seeds, seed=42 hidden set); soft match = shared (source,edge_type) or (edge_type,target)"
   },
   "physics": {
-    "n_proposals": 2,
+    "n_proposals": 49,
     "n_hidden": 5,
     "precision_at_5": 0.0,
     "precision_at_10": 0.0,
@@ -19,10 +26,17 @@
     "recall_at_5": 0.0,
     "recall_at_10": 0.0,
     "recall_at_20": 0.0,
-    "n_matched": 0
+    "n_matched": 0,
+    "soft_precision_at_5": 0.0,
+    "soft_precision_at_10": 0.10,
+    "soft_precision_at_20": 0.05,
+    "soft_recall_at_5": 0.0,
+    "soft_recall_at_10": 0.20,
+    "soft_recall_at_20": 0.20,
+    "note": "MLX full run (10 seeds, seed=42 hidden set)"
   },
   "materials": {
-    "n_proposals": 1,
+    "n_proposals": 48,
     "n_hidden": 5,
     "precision_at_5": 0.0,
     "precision_at_10": 0.0,
@@ -30,10 +44,17 @@
     "recall_at_5": 0.0,
     "recall_at_10": 0.0,
     "recall_at_20": 0.0,
-    "n_matched": 0
+    "n_matched": 0,
+    "soft_precision_at_5": 0.0,
+    "soft_precision_at_10": 0.0,
+    "soft_precision_at_20": 0.0,
+    "soft_recall_at_5": 0.0,
+    "soft_recall_at_10": 0.0,
+    "soft_recall_at_20": 0.0,
+    "note": "MLX full run (10 seeds, seed=42 hidden set)"
   },
   "wikidata_physics": {
-    "n_proposals": 1,
+    "n_proposals": 49,
     "n_hidden": 81,
     "precision_at_5": 0.0,
     "precision_at_10": 0.0,
@@ -41,10 +62,17 @@
     "recall_at_5": 0.0,
     "recall_at_10": 0.0,
     "recall_at_20": 0.0,
-    "n_matched": 0
+    "n_matched": 0,
+    "soft_precision_at_5": 0.0,
+    "soft_precision_at_10": 0.20,
+    "soft_precision_at_20": 0.10,
+    "soft_recall_at_5": 0.0,
+    "soft_recall_at_10": 0.02,
+    "soft_recall_at_20": 0.02,
+    "note": "MLX full run (10 seeds, seed=42 hidden set)"
   },
   "wikidata_materials": {
-    "n_proposals": 2,
+    "n_proposals": 50,
     "n_hidden": 81,
     "precision_at_5": 0.0,
     "precision_at_10": 0.0,
@@ -52,6 +80,13 @@
     "recall_at_5": 0.0,
     "recall_at_10": 0.0,
     "recall_at_20": 0.0,
-    "n_matched": 0
+    "n_matched": 0,
+    "soft_precision_at_5": 0.20,
+    "soft_precision_at_10": 0.10,
+    "soft_precision_at_20": 0.20,
+    "soft_recall_at_5": 0.01,
+    "soft_recall_at_10": 0.01,
+    "soft_recall_at_20": 0.05,
+    "note": "MLX full run (10 seeds, seed=42 hidden set)"
   }
 }

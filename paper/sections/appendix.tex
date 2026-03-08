@@ -163,13 +163,14 @@ proposals.
 
 \section{Code and Data Availability}\label{app:code-data}
 
-Source code and all experimental artifacts are publicly available:
+Code and data are withheld for double-blind review and will be released upon acceptance:
 \begin{itemize}[nosep]
-  \item \textbf{Code repository}: anonymised for review; will be released upon
-    acceptance.
-  \item \textbf{Data archive}: Zenodo anonymized draft record
-    (\texttt{https://zenodo.org/deposit/18795697}),
-    containing all KG datasets, checkpoints, and generated proposals.
+  \item \textbf{Code repository}: \texttt{[REDACTED FOR BLIND REVIEW]} ---
+    full implementation of the Harmony metric, island-model search loop,
+    MAP-Elites archive, and KG dataset builders.
+  \item \textbf{Data archive}: \texttt{[REDACTED FOR BLIND REVIEW]} ---
+    all KG datasets, per-domain checkpoints, generated proposals, and
+    analysis artifacts.
 \end{itemize}
 
 \section{Statistical Methods}\label{sec:stat-methods}
@@ -233,6 +234,45 @@ tables are generated directly from analysis artifacts to avoid manual
 transcription errors.
 
 \input{sections/appendix_tables_generated}
+
+\section{LLM Judge Evaluation Prompt}\label{app:rubric-prompt}
+
+The following prompt (``detailed'' variant from \texttt{scripts/llm\_judge\_rubric.py})
+was used to score each proposal on four dimensions (1--5 scale).  Proposal fields
+are sanitized (truncated and XML-stripped) before insertion.  The paper reports
+scores generated via Gemini~2.5~Pro (Gemini CLI); \texttt{llm\_judge\_rubric.py}
+defaults to Claude for programmatic re-runs.
+
+\begin{quote}\small\ttfamily
+You are an expert scientific knowledge evaluator assessing theory proposals for\\
+knowledge graphs. Evaluate the following proposal from the \{domain\} domain.\\[4pt]
+
+<proposal>\\
+\quad <claim>\{claim\}</claim>\\
+\quad <justification>\{justification\}</justification>\\
+\quad <falsification\_condition>\{falsification\}</falsification\_condition>\\
+\quad <kg\_mutation>\{edge\_type\}(\{source\} $\to$ \{target\})</kg\_mutation>\\
+</proposal>\\[4pt]
+
+RUBRIC:\\
+Plausibility (1-5): Is the claim scientifically plausible given known domain knowledge?\\
+\quad 1=implausible/contradicts established knowledge, 3=uncertain/speculative, 5=well-grounded\\[2pt]
+Novelty (1-5): Does the claim add genuinely new information beyond the existing KG?\\
+\quad 1=trivially obvious/redundant, 3=moderately novel, 5=genuinely surprising and new\\[2pt]
+Falsifiability (1-5): Is the falsification condition concrete and experimentally testable?\\
+\quad 1=unfalsifiable/vague, 3=partially testable, 5=precisely operationalised\\[2pt]
+Clarity (1-5): Is the claim stated clearly and specifically enough to be actionable?\\
+\quad 1=vague/ambiguous, 3=partially clear, 5=precise and unambiguous\\[4pt]
+
+Respond with ONLY a valid JSON object in this exact format:\\
+\{``plausibility'': <1-5>, ``novelty'': <1-5>, ``falsifiability'': <1-5>, ``clarity'': <1-5>\}\\[2pt]
+No explanation, no markdown, no other text --- just the JSON object.
+\end{quote}
+
+\noindent Evaluation script: \texttt{scripts/llm\_judge\_rubric.py}.
+Results stored in \texttt{data/results/llm\_rubric\_scores.json}.
+Top-5 proposals per domain were ranked by MAP-Elites archive fitness from
+the MLX batch run (10 seeds, \texttt{mlx-community/Qwen3.5-35B-A3B-4bit}).
 
 \section{Hyperparameter Settings}\label{app:hyperparams}
 

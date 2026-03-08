@@ -1,0 +1,93 @@
+{
+  "evaluator": "gemini-2.5-pro (Gemini CLI)",
+  "note": "Single-model evaluation using Gemini CLI; single prompt variant (inter-prompt agreement N/A). Top-5 proposals per domain ranked by archive fitness from MLX batch run (10 seeds). Dimensions rated 1-5: 1=poor, 3=moderate, 5=excellent.",
+  "astronomy": {
+    "n_evaluated": 5,
+    "mean_scores": {
+      "plausibility": 4.0,
+      "novelty": 2.8,
+      "falsifiability": 5.0,
+      "clarity": 5.0
+    },
+    "proposal_scores": [
+      {"claim": "The formation of lava worlds in the hot desert region directly depends on the presence of nearby giant planets...", "scores": {"plausibility": 4, "novelty": 3, "falsifiability": 5, "clarity": 5}},
+      {"claim": "Disk migration mechanisms significantly influence the final orbital eccentricity of hot jupiter planets.", "scores": {"plausibility": 5, "novelty": 2, "falsifiability": 5, "clarity": 5}},
+      {"claim": "The existence of hot Jupiters directly implies a transient early-state thermal instability in their host stars.", "scores": {"plausibility": 2, "novelty": 4, "falsifiability": 5, "clarity": 5}},
+      {"claim": "Hot Jupiter formation via disk migration strictly requires a massive core formed by core accretion.", "scores": {"plausibility": 5, "novelty": 2, "falsifiability": 5, "clarity": 5}},
+      {"claim": "The internal heat flux of lava worlds acts as a primary regulator for their orbital decay rates.", "scores": {"plausibility": 4, "novelty": 3, "falsifiability": 5, "clarity": 5}}
+    ]
+  },
+  "physics": {
+    "n_evaluated": 5,
+    "mean_scores": {
+      "plausibility": 2.6,
+      "novelty": 3.0,
+      "falsifiability": 3.8,
+      "clarity": 3.6
+    },
+    "proposal_scores": [
+      {"claim": "Gravitational regime depends on the topological properties of magnetic moments in high energy limits.", "scores": {"plausibility": 2, "novelty": 4, "falsifiability": 3, "clarity": 3}},
+      {"claim": "Spontaneous symmetry breaking DERIVES from entropy in systems approaching absolute zero.", "scores": {"plausibility": 1, "novelty": 4, "falsifiability": 4, "clarity": 4}},
+      {"claim": "Magnetic moment maps to high energy regime as a proxy for quantum spin fluctuations.", "scores": {"plausibility": 3, "novelty": 2, "falsifiability": 4, "clarity": 3}},
+      {"claim": "The gravitational regime in high energy regime contexts depends on the topological configuration of magnetic moments.", "scores": {"plausibility": 2, "novelty": 4, "falsifiability": 3, "clarity": 3}},
+      {"claim": "Low temperature regime EXPLAINS the emergence of macroscopic quantum coherence in condensed matter.", "scores": {"plausibility": 5, "novelty": 1, "falsifiability": 5, "clarity": 5}}
+    ]
+  },
+  "materials": {
+    "n_evaluated": 4,
+    "mean_scores": {
+      "plausibility": 3.5,
+      "novelty": 2.5,
+      "falsifiability": 5.0,
+      "clarity": 5.0
+    },
+    "proposal_scores": [
+      {"claim": "The density of structural defects in a material generally limits the maximum achievable optical transparency.", "scores": {"plausibility": 5, "novelty": 2, "falsifiability": 5, "clarity": 5}},
+      {"claim": "The presence of an amorphous phase generally decreases its electrical conductivity compared to its crystalline counterpart.", "scores": {"plausibility": 4, "novelty": 2, "falsifiability": 5, "clarity": 5}},
+      {"claim": "The band gap magnitude EXPLAINS the absence of ferroelectric phase behavior in high-gap insulators.", "scores": {"plausibility": 2, "novelty": 3, "falsifiability": 5, "clarity": 5}},
+      {"claim": "High-density fcc structure configurations in pure metals generally EXPLAINS elevated thermal conductivity.", "scores": {"plausibility": 3, "novelty": 3, "falsifiability": 5, "clarity": 5}}
+    ]
+  },
+  "wikidata_physics": {
+    "n_evaluated": 5,
+    "mean_scores": {
+      "plausibility": 3.4,
+      "novelty": 3.2,
+      "falsifiability": 4.0,
+      "clarity": 4.8
+    },
+    "proposal_scores": [
+      {"claim": "The concept of blackbody radiation EXPLAINS the physical mechanism of thermal emission spectra in astrophysical objects.", "scores": {"plausibility": 5, "novelty": 1, "falsifiability": 5, "clarity": 5}},
+      {"claim": "Quantum field fluctuations at the Planck scale GENERALLY modify the causal structure of spacetime near black hole event horizons.", "scores": {"plausibility": 3, "novelty": 4, "falsifiability": 3, "clarity": 4}},
+      {"claim": "The concept of blackbody radiation should EXPLAIN the physical mechanism behind the BCS gap equation.", "scores": {"plausibility": 1, "novelty": 5, "falsifiability": 4, "clarity": 5}},
+      {"claim": "Schwarzschild radius CONVERGES to a thermodynamic limit where event horizon area equals information entropy capacity.", "scores": {"plausibility": 5, "novelty": 2, "falsifiability": 3, "clarity": 5}},
+      {"claim": "Angular momentum creates a topological constraint that fundamentally limits the maximum coherence length of quantum systems.", "scores": {"plausibility": 3, "novelty": 4, "falsifiability": 5, "clarity": 5}}
+    ]
+  },
+  "wikidata_materials": {
+    "n_evaluated": 5,
+    "mean_scores": {
+      "plausibility": 4.4,
+      "novelty": 2.6,
+      "falsifiability": 4.6,
+      "clarity": 4.8
+    },
+    "proposal_scores": [
+      {"claim": "The plastic deformation behavior of aluminum alloys in additive manufacturing is mapped to the mobility of dislocations at lattice interfaces.", "scores": {"plausibility": 5, "novelty": 2, "falsifiability": 5, "clarity": 5}},
+      {"claim": "The final crystalline grain size of quenched steel is inversely proportional to the initial austenite grain boundary energy.", "scores": {"plausibility": 5, "novelty": 3, "falsifiability": 5, "clarity": 5}},
+      {"claim": "A distinct spectral correlation exists between a material's band gap and the frequency distribution of defect migration events.", "scores": {"plausibility": 2, "novelty": 4, "falsifiability": 3, "clarity": 4}},
+      {"claim": "Final martensite grain size is inversely proportional to the initial austenite grain boundary energy.", "scores": {"plausibility": 5, "novelty": 3, "falsifiability": 5, "clarity": 5}},
+      {"claim": "The stability of retained austenite at ambient temperature is directly determined by the prior thermal history during quenching.", "scores": {"plausibility": 5, "novelty": 1, "falsifiability": 5, "clarity": 5}}
+    ]
+  },
+  "_overall": {
+    "n_proposals": 24,
+    "note": "Mean of per-domain means (4 unique proposals for Materials after deduplication).",
+    "mean_scores": {
+      "plausibility": 3.58,
+      "novelty": 2.82,
+      "falsifiability": 4.48,
+      "clarity": 4.64
+    }
+  }
+}

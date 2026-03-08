@@ -74,7 +74,8 @@ Path-semantic consistency measured via two signals:
 The first term counts triangles $(a \to b, b \to c, a \to c)$ where the closing
 edge type $r_{ac}$ matches either hop type (lenient multi-edge policy).  The
 second term penalises \texttt{contradicts} edges, which signal structural noise
-when dense.
+when dense.  When the graph contains no closed triangles, triangle coherence
+is $1.0$ by convention (vacuously coherent: no triangle-type disagreements exist).
 
 \paragraph{Symmetry.}
 Intra-type behavioural consistency via Jensen--Shannon (JS) divergence.  For
@@ -121,9 +122,14 @@ the value of $\Delta$ is:
   V(\Delta) = \mathcal{H}(G \oplus \Delta) - \mathcal{H}(G) - \lambda \cdot \Cost(\Delta),
 \end{equation}
 where $G \oplus \Delta$ denotes the graph after applying $\Delta$, and
-$\Cost(\Delta)$ is a normalised structural cost (e.g.\ number of added edges
-divided by $|E|$).  The penalty weight $\lambda = 0.1$ discourages trivially
-large proposals.
+$\Cost(\Delta)$ is a normalised mutation size defined per mutation type:
+\begin{itemize}[nosep]
+  \item \texttt{ADD\_EDGE} / \texttt{REMOVE\_EDGE}: $\Cost = 1 / \max(|E|, 1)$
+    (one edge mutation, normalised by current edge count).
+  \item \texttt{ADD\_ENTITY} / \texttt{REMOVE\_ENTITY}: $\Cost = 1 / \max(|V|, 1)$
+    (one entity mutation, normalised by current entity count).
+\end{itemize}
+The penalty weight $\lambda = 0.1$ discourages trivially large proposals.
 
 \paragraph{Formal properties.}
 The Harmony metric satisfies three properties that make it suitable as a

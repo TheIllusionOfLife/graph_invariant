@@ -14,3 +14,8 @@ harmony_only,physics,20,0.03185433456263731,4
 harmony_only,materials,20,0.029149639056102905,5
 harmony_only,wikidata_physics,20,0.0021348271472243496,4
 harmony_only,wikidata_materials,20,0.01856903436973356,5
+full,astronomy,20,0.0,1
+full,physics,13,0.02777777777777779,3
+full,materials,18,0.0010275116606724977,1
+full,wikidata_physics,11,0.0030864197530864335,2
+full,wikidata_materials,20,0.015421300138606986,3

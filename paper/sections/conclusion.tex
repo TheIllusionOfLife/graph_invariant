@@ -13,8 +13,9 @@ Evaluation across seven KG domains (five hand-curated, two Wikidata-sourced)
 with 10-seed cross-validation and four external KGE baselines reveals a nuanced
 picture.  The frequency heuristic achieves the highest Hits@10 overall,
 reflecting the strong inductive bias of edge-type distributions in small KGs.
-Among embedding-based methods, Harmony-guided proposals outperform
-DistMult-alone on Hits@10 in three of five domains, with the
+Among embedding-based methods, Harmony-guided proposals show directional
+improvements over DistMult-alone on Hits@10 in three of five domains
+(not reaching statistical significance at $\alpha = 0.05$), with the
 strongest signal on the denser Wikidata Materials KG.  A regime
 characterisation analysis shows that Harmony's complementary value increases
 with graph density and edge-type diversity, suggesting that the framework is

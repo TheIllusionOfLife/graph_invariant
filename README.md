@@ -210,11 +210,22 @@ cd paper && tectonic -r 2 main.tex
 To regenerate analysis and figures from experiment artifacts:
 
 ```bash
-uv run python analysis/analyze_experiments.py \
-  --artifacts-root artifacts/ \
-  --output analysis/results/ \
-  --appendix-tex-output paper/sections/appendix_tables_generated.tex
-uv run python analysis/generate_figures.py --data analysis/results/ --output paper/figures/
+# Regenerate appendix tables (runtime, factor decomposition, statistical tests)
+uv run python analysis/generate_appendix_tables.py \
+  --factor-csv data/results/factor_decomposition.csv \
+  --stat-tests data/results/statistical_tests.json \
+  --mlx-base <path/to/mlx/batch/run> \
+  --output paper/sections/appendix_tables_generated.tex
+
+# Regenerate NeurIPS figures (convergence, heatmap, baseline comparison, ablation)
+uv run python analysis/generate_harmony_figures.py \
+  --astronomy   artifacts/harmony/astronomy \
+  --physics     artifacts/harmony/physics \
+  --materials   artifacts/harmony/materials \
+  --wikidata_physics   artifacts/harmony/wikidata_physics \
+  --wikidata_materials artifacts/harmony/wikidata_materials \
+  --metrics-csv artifacts/harmony/metrics_table.csv \
+  --figures-dir paper/figures/
 ```
 
 To audit bibliography sources via live DOI/URL checks:

@@ -262,53 +262,58 @@ achieved by each configuration across 20 generations.
 \begin{table}[t]
 \centering
 \caption{Factor decomposition: best harmony gain per configuration.
-LLM-only bypasses scoring, so gain is not comparable and marked
-``--''.  No-QD uses a greedy single-bin archive; Harmony-only uses a random
-proposer with the full $5 \times 5$ MAP-Elites archive.  Archive size reports
-the number of occupied MAP-Elites cells at termination.}\label{tab:factor}
+LLM-only bypasses scoring (gain trivially $= 1.0$, not comparable).
+No-QD uses a greedy single-bin archive; Harmony-only uses a random proposer
+with the full $5 \times 5$ MAP-Elites archive; Full uses the LLM proposer
+with Harmony scoring and the MAP-Elites archive.
+Archive size = occupied MAP-Elites cells at termination.}\label{tab:factor}
 \small
 \begin{tabular}{llccc}
 \toprule
 Domain & Config & Best Gain & Gens & Archive \\
 \midrule
-\multirow{3}{*}{Astronomy}
+\multirow{4}{*}{Astronomy}
   & LLM-only     & ---   & 11 & 1 \\
   & No-QD        & 0.052 & 11 & 1 \\
   & Harmony-only & 0.054 & 20 & 5 \\
+  & Full         & 0.000 & 20 & 1 \\
 \midrule
-\multirow{3}{*}{Physics}
+\multirow{4}{*}{Physics}
   & LLM-only     & ---   & 11 & 1 \\
   & No-QD        & 0.026 & 12 & 1 \\
   & Harmony-only & 0.032 & 20 & 4 \\
+  & Full         & 0.028 & 13 & 3 \\
 \midrule
-\multirow{3}{*}{Materials}
+\multirow{4}{*}{Materials}
   & LLM-only     & ---   & 11 & 1 \\
   & No-QD        & 0.026 & 11 & 1 \\
   & Harmony-only & 0.029 & 20 & 5 \\
+  & Full         & 0.001 & 18 & 1 \\
 \midrule
-\multirow{3}{*}{\shortstack[l]{Wikidata\\Physics}}
+\multirow{4}{*}{\shortstack[l]{Wikidata\\Physics}}
   & LLM-only     & ---   & 11 & 1 \\
   & No-QD        & 0.000 & 10 & 1 \\
   & Harmony-only & 0.002 & 20 & 4 \\
+  & Full         & 0.003 & 11 & 2 \\
 \midrule
-\multirow{3}{*}{\shortstack[l]{Wikidata\\Materials}}
+\multirow{4}{*}{\shortstack[l]{Wikidata\\Materials}}
   & LLM-only     & ---   & 11 & 1 \\
   & No-QD        & 0.017 & 14 & 1 \\
   & Harmony-only & 0.019 & 20 & 5 \\
+  & Full         & 0.015 & 20 & 3 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Two findings emerge.  First, \textbf{Harmony-only outperforms No-QD on all
+Three findings emerge.  First, \textbf{Harmony-only outperforms No-QD on all
 five domains} despite using a random proposer instead of an LLM.  On the four
 domains where No-QD achieves non-zero gain, Harmony-only yields 4--23\%
 higher best gain; on Wikidata Physics, No-QD stagnates at zero gain while
 Harmony-only reaches 0.002.  This demonstrates that the MAP-Elites
-quality-diversity archive is the primary driver of proposal quality: by
+quality-diversity archive is the primary driver of structural gain: by
 maintaining diverse proposals across the simplicity--gain grid, the archive
-avoids the premature convergence observed in greedy selection (No-QD
-early-stops at generation 10--14; Harmony-only sustains improvement through
-generation~20).
+avoids premature convergence (No-QD early-stops at generation 10--14;
+Harmony-only sustains improvement through generation~20).
 
 Second, the \textbf{LLM-only} configuration (all valid proposals accepted,
 no Harmony scoring) saturates the archive trivially---every proposal receives
@@ -316,9 +321,20 @@ a constant gain of~1.0 by construction.  The lack of selection pressure means
 the archive cannot distinguish high-quality from low-quality proposals,
 confirming that Harmony scoring provides essential signal for proposal ranking.
 
-Together, these results show that neither the LLM proposer alone nor greedy
-selection suffices: the combination of Harmony scoring and MAP-Elites
-diversity is necessary to achieve the best proposal quality.
+Third, the \textbf{Full pipeline} (LLM + Harmony + MAP-Elites) achieves
+gain comparable to or slightly below Harmony-only on most domains.  On
+Wikidata Physics, Full ($0.003$) marginally exceeds Harmony-only ($0.002$);
+on Physics, Full ($0.028$) is close to Harmony-only ($0.032$).  On Astronomy
+and Materials, the single Full run did not converge to positive gain within
+the generation budget, while Harmony-only did.  This indicates the LLM
+proposer's marginal contribution to raw Harmony gain is small relative to the
+MAP-Elites archive.  The LLM's primary value is \emph{semantic}---producing
+proposals with structured justifications and falsification conditions---rather
+than maximising structural gain directly.
+
+Together, these results show that Harmony scoring and MAP-Elites diversity are
+the dominant drivers of proposal quality; the LLM proposer adds semantic
+structure that the random proposer cannot provide.
 
 \subsection{Harmony--Downstream Correlation}\label{sec:correlation}
 

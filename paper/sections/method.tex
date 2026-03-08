@@ -15,19 +15,10 @@ Each edge $(u, v, r) \in E$ carries one of seven semantic relation types:
 \texttt{maps\_to}, \texttt{explains}, \texttt{contradicts}, and
 \texttt{generalizes}.
 
-\paragraph{Edge type rationale.}
-The seven relation types are derived from a morphism-first principle: we surveyed
-the core semantic roles needed to express scientific relationships across five
-domains (linear algebra, chemistry, astronomy, physics, materials science) and
-identified a minimal set that covers dependency (\texttt{depends\_on}),
-derivation (\texttt{derives}), equivalence (\texttt{equivalent\_to}),
-correspondence (\texttt{maps\_to}), causal/explanatory links
-(\texttt{explains}), contradiction (\texttt{contradicts}), and taxonomic
-hierarchy (\texttt{generalizes}).  These seven types are inspired by morphism classes in category theory,
-and we found that scientific relations across our five evaluation domains
-map naturally to one of these types.  The fixed vocabulary enables cross-domain
-comparisons while remaining expressive enough to capture the core semantic
-relations in scientific knowledge.
+The seven relation types cover dependency, derivation, equivalence,
+correspondence, explanation, contradiction, and hierarchy---a minimal set
+inspired by morphism classes in category theory
+(Appendix~\ref{app:edge-type-rationale}).
 
 \subsection{Harmony Metric}\label{sec:metric}
 
@@ -47,73 +38,46 @@ Default weights are uniform over the four core components
 ($\alpha = \beta = \gamma = \delta = 0.25$, $\varepsilon = 0$); the
 frequency component $\Freq(G)$ is the Hits@$K$ of the frequency heuristic
 (predicting the most common edge type between entity pairs) and is included
-only when $\varepsilon > 0$ for hybrid analysis (Section~\ref{sec:freq-analysis}).
+only when $\varepsilon > 0$ for hybrid analysis (Appendix~\ref{app:freq}).
 
 \paragraph{Compressibility.}
-An MDL proxy measuring how structured the edge-type distribution is:
+An MDL proxy combining edge-type entropy and spanning structure:
 \begin{equation}\label{eq:compress}
   \Compress(G) = \frac{1}{2}\!\left(
     1 - \frac{H(\mathbf{p})}{\log_2 7}
     + \frac{|\text{spanning edges}|}{|E|}
   \right),
 \end{equation}
-where $H(\mathbf{p}) = -\sum_i p_i \log_2 p_i$ is the Shannon entropy of the
-edge-type frequency vector $\mathbf{p}$ (normalised by $\log_2 7$ for the seven
-relation types), and the spanning fraction counts BFS spanning-tree edges over
-an undirected view of $G$.  A tree-like KG with uniform edge types scores near
-1.0; a dense multigraph with maximal type entropy scores near~0.
+where $H(\mathbf{p})$ is the Shannon entropy of the edge-type distribution
+and the spanning fraction counts BFS spanning-tree edges over an undirected
+view of~$G$.
 
 \paragraph{Coherence.}
-Path-semantic consistency measured via two signals:
+Path-semantic consistency via triangle type-agreement and contradiction rate:
 \begin{equation}\label{eq:cohere}
   \Cohere(G) = \frac{1}{2}\!\left(
     \frac{|\{(a,b,c) : r_{ac} \in \{r_{ab}, r_{bc}\}\}|}{|\text{triangles}|}
     + 1 - \frac{|\{e : r_e = \texttt{contradicts}\}|}{|E|}
   \right).
 \end{equation}
-The first term counts triangles $(a \to b, b \to c, a \to c)$ where the closing
-edge type $r_{ac}$ matches either hop type (lenient multi-edge policy).  The
-second term penalises \texttt{contradicts} edges, which signal structural noise
-when dense.  When the graph contains no closed triangles, triangle coherence
-is $1.0$ by convention (vacuously coherent: no triangle-type disagreements exist).
 
 \paragraph{Symmetry.}
-Intra-type behavioural consistency via Jensen--Shannon (JS) divergence.  For
-each entity type $\tau$ with $n_\tau$ entities, define $\mathbf{q}_v \in
-\Delta^6$ as the outgoing edge-type distribution of entity $v$ (normalised over
-the seven relation types), and let $\bar{\mathbf{q}}_\tau =
-\frac{1}{n_\tau}\sum_{v \in \tau} \mathbf{q}_v$ be the centroid distribution
-for type~$\tau$.  The within-type consistency is:
-\begin{equation}\label{eq:within}
-  \text{consistency}(\tau) = 1 - \frac{1}{n_\tau} \sum_{v \in \tau}
-    \text{JS}(\mathbf{q}_v, \bar{\mathbf{q}}_\tau),
-\end{equation}
-where $\text{JS}(\cdot, \cdot) = \sqrt{\text{JSD}(\cdot \| \cdot)}$ is the
-Jensen--Shannon distance (base~2 logarithm), bounded in $[0,1]$.  The symmetry
-score is the entity-count-weighted mean across types:
+Intra-type behavioural consistency via Jensen--Shannon divergence.  For each
+entity type $\tau$, let $\mathbf{q}_v \in \Delta^6$ be entity $v$'s outgoing
+edge-type distribution:
 \begin{equation}\label{eq:symm}
-  \Symm(G) = \frac{\sum_\tau n_\tau \cdot \text{consistency}(\tau)}
+  \Symm(G) = \frac{\sum_\tau n_\tau \cdot \bigl(1 - \frac{1}{n_\tau}
+    \sum_{v \in \tau} \text{JS}(\mathbf{q}_v, \bar{\mathbf{q}}_\tau)\bigr)}
     {\sum_\tau n_\tau}.
 \end{equation}
-When a type has a single entity, $\text{consistency}(\tau) = 1$ (vacuous
-consistency).  Entities with no outgoing edges are excluded from the
-computation.  This design measures whether entities of the same type use edge
-types consistently, rather than penalising natural functional specialisation
-across types (e.g.\ stars vs.\ planets in astronomy).
 
 \paragraph{Generativity.}
-Link-prediction learnability via a DistMult model \citep{yang2015distmult}:
+Link-prediction learnability via DistMult \citep{yang2015distmult} on 20\%
+masked edges:
 \begin{equation}\label{eq:gener}
   \Gener(G) = \Hits@K\bigl(\text{DistMult}, G_{\text{mask}}\bigr),
 \end{equation}
-where $G_{\text{mask}}$ denotes the graph after uniformly masking 20\% of edges.
-The DistMult scoring function is $\text{score}(s, r, t) = (\mathbf{e}_s \odot
-\mathbf{r}) \cdot \mathbf{e}_t$, with entity embeddings
-$\mathbf{E} \in \mathbb{R}^{|V| \times 50}$ and relation embeddings
-$\mathbf{R} \in \mathbb{R}^{7 \times 50}$, trained for 100 epochs with
-max-margin loss (margin~=~1.0, 5~negative samples per triple, learning
-rate~0.01).  $\Hits@K$ is the fraction of masked edges whose true target appears
-in the top-$K$ predictions ($K = 10$ by default).
+with $d{=}50$ embeddings, 100 training epochs, and $K{=}10$.
 
 \paragraph{Proposal value function.}
 Given a base graph $G$ and a proposed mutation $\Delta$ (new edges/entities),
@@ -122,46 +86,12 @@ the value of $\Delta$ is:
   V(\Delta) = \mathcal{H}(G \oplus \Delta) - \mathcal{H}(G) - \lambda \cdot \Cost(\Delta),
 \end{equation}
 where $G \oplus \Delta$ denotes the graph after applying $\Delta$, and
-$\Cost(\Delta)$ is a normalised mutation size defined per mutation type:
-\begin{itemize}[nosep]
-  \item \texttt{ADD\_EDGE} / \texttt{REMOVE\_EDGE}: $\Cost = 1 / \max(|E|, 1)$
-    (one edge mutation, normalised by current edge count).
-  \item \texttt{ADD\_ENTITY} / \texttt{REMOVE\_ENTITY}: $\Cost = 1 / \max(|V|, 1)$
-    (one entity mutation, normalised by current entity count).
-\end{itemize}
+$\Cost(\Delta) = 1/\max(|E|,1)$ for edge mutations,
+$1/\max(|V|,1)$ for entity mutations.
 The penalty weight $\lambda = 0.1$ discourages trivially large proposals.
-
-\paragraph{Formal properties.}
-The Harmony metric satisfies three properties that make it suitable as a
-discovery prior:
-\begin{enumerate}[nosep]
-  \item \textbf{Boundedness}: $\mathcal{H}(G) \in [0, 1]$ for any KG $G$,
-    since each component is bounded in $[0,1]$ and weights are normalised to
-    sum to~1.
-  \item \textbf{Decomposability}: each component
-    ($\Compress$, $\Cohere$, $\Symm$, $\Gener$) is independently computable
-    from the graph structure, enabling parallel evaluation and interpretable
-    ablation.
-  \item \textbf{Directional monotonicity} (empirical observation): each
-    component \emph{tends to} respond predictably to edge
-    addition---compressibility generally decreases (more cross-edges reduce
-    spanning fraction), coherence increases when the new edge closes a
-    type-consistent triangle, symmetry increases when the edge balances
-    entity-type distributions, and generativity increases when the edge adds
-    learnable relational signal.  The Harmony score thus captures the
-    \emph{net} structural effect of a mutation across these competing
-    pressures.  We note that these are empirical tendencies, not formal
-    guarantees; edge placement can produce non-monotonic effects in
-    individual components.
-\end{enumerate}
-
-\paragraph{Philosophical grounding.}
-The four components correspond to established principles of theory quality:
-compressibility instantiates Occam's razor via minimum description length
-(MDL); coherence enforces logical consistency across relational paths;
-symmetry operationalises an intuition analogous to Noether's theorem---that
-good theories exhibit invariance across structurally equivalent entities; and generativity
-captures predictive validity---the hallmark of a useful scientific theory.
+The Harmony score is bounded in $[0,1]$, decomposes into independently
+computable components, and exhibits empirical directional monotonicity
+(Appendix~\ref{app:formal-properties}).
 
 \subsection{Proposal Schema and Validation}\label{sec:proposals}
 
@@ -216,9 +146,9 @@ where it is prepended to the destination island's prompt-context buffer for the
 next generation.
 
 \paragraph{Generation loop.}
-Algorithm~\ref{alg:harmony} summarises a single generation.  The loop runs for
-$T_{\max} = 20$ generations per experiment, checkpointing state after each
-generation to enable resumption.
+Algorithm~\ref{alg:harmony} summarises a single generation
+(Figure~\ref{fig:architecture}).  The loop runs for $T_{\max} = 20$ generations
+per experiment, checkpointing state after each generation to enable resumption.
 
 \begin{algorithm}[t]
 \caption{Harmony search --- one generation}\label{alg:harmony}
@@ -242,3 +172,16 @@ generation to enable resumption.
 \ENDIF
 \end{algorithmic}
 \end{algorithm}
+
+\begin{figure}[t]
+  \centering
+  \input{figures/architecture.tikz}
+  \caption{Overview of the Harmony island-model search framework.  Four islands
+    run concurrently, each proposing KG mutations via an LLM following a cyclic
+    strategy schedule (Refine $\to$ Combine $\to$ Refine $\to$ Novel).  Proposals
+    are scored by the Harmony metric and archived in a MAP-Elites quality-diversity
+    grid ($5 \times 5$, axes = simplicity bin $\times$ Harmony-gain bin).  Periodic
+    migration (every $M=10$ generations) transfers each island's best proposal
+    to the next island in a ring topology ($i \to (i{+}1) \bmod 4$).}
+  \label{fig:architecture}
+\end{figure}

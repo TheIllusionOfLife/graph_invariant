@@ -21,6 +21,7 @@ import csv
 import json
 import re
 import statistics
+import warnings
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -238,6 +239,15 @@ def build_runtime_table(
 
     if not rows:
         return None
+
+    for dom, stats in rows:
+        if stats["n"] < EXPECTED_SEEDS:
+            warnings.warn(
+                f"Domain '{dom}': incomplete seeds {stats['n']}/{EXPECTED_SEEDS} "
+                f"(EXPECTED_SEEDS={EXPECTED_SEEDS}); runtime table may be unrepresentative.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
 
     lines: list[str] = []
     lines.append(r"\subsection{MLX Batch Runtime Summary}")

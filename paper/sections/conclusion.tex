@@ -1,31 +1,19 @@
 \section{Conclusion}\label{sec:conclusion}
 
 We presented Harmony, a framework for automated theory discovery in scientific
-knowledge graphs.  The four-component Harmony metric---compressibility,
-coherence, symmetry (redesigned as intra-type behavioural consistency), and
-generativity---provides a principled, domain-agnostic quality signal for scoring
-KG mutations, with an optional frequency component for hybrid analysis.  An LLM
-proposer generates structured, falsifiable theory-level claims, which are
-validated and archived in a MAP-Elites quality-diversity grid across an
-island-model search topology.
+knowledge graphs combining a four-component quality metric with LLM-guided
+proposal generation and MAP-Elites archiving across an island-model search
+topology.
 
-Evaluation across seven KG domains (five hand-curated, two Wikidata-sourced)
-with 10-seed cross-validation and four external KGE baselines reveals a nuanced
-picture.  The frequency heuristic achieves the highest Hits@10 overall,
-reflecting the strong inductive bias of edge-type distributions in small KGs.
-Among embedding-based methods, Harmony-guided proposals show directional
-improvements over DistMult-alone on Hits@10 in three of five domains
-(not reaching statistical significance at $\alpha = 0.05$), with the
-strongest signal on the denser Wikidata Materials KG.  A regime
-characterisation analysis shows that Harmony's complementary value increases
-with graph density and edge-type diversity, suggesting that the framework is
-most beneficial for larger, structurally richer KGs.  Factor decomposition
-shows strong contributions from Harmony scoring and MAP-Elites diversity, while
-further controlled experiments are needed to isolate the LLM proposer's
-independent contribution.  Backtesting against held-out edges serves as a
-conservative diagnostic independent of the training objective.
+Evaluation across seven KG domains with 10-seed cross-validation and four
+external KGE baselines shows that Harmony-guided proposals achieve directional
+improvements over DistMult-alone on Hits@10 in three of five domains, though
+differences do not reach statistical significance.  The frequency heuristic
+remains highly competitive on small KGs.  Factor decomposition identifies the
+MAP-Elites archive as the dominant driver of structural gain, while the LLM
+proposer's primary contribution is semantic---producing justified, falsifiable
+theory-level claims.
 
-Future work includes scaling to larger scientific KGs, extending the relation
-type vocabulary, integrating literature-retrieval-based plausibility scoring,
-domain-adaptive component weighting, and exploring multi-LLM ensembles across
-islands for improved diversity.
+Future work includes scaling to larger scientific KGs, domain-adaptive
+component weighting, multi-LLM ensembles across islands, and human expert
+evaluation with measured inter-annotator agreement.

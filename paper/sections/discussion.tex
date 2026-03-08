@@ -1,109 +1,33 @@
 \section{Discussion}\label{sec:discussion}
 
 \paragraph{Compressibility--generativity tension.}
-Adding edges to a KG typically \emph{reduces} compressibility (the BFS spanning
-fraction drops as cross-edges are introduced) while potentially \emph{improving}
-generativity (more training signal for DistMult).  This tension is by design:
-the Harmony metric rewards proposals that improve link-prediction learnability
-without degrading structural simplicity.  The value function
-(Eq.~\ref{eq:value}) with $\lambda > 0$ further penalises large mutations,
-ensuring that only targeted, structurally justified proposals achieve high
-scores.
+Adding edges typically \emph{reduces} compressibility (the BFS spanning
+fraction drops) while potentially \emph{improving} generativity (more training
+signal for DistMult).  This tension is by design: the Harmony metric rewards
+proposals that improve learnability without degrading structural simplicity.
+The value function (Eq.~\ref{eq:value}) with $\lambda > 0$ further penalises
+large mutations.
 
-\paragraph{Sparse KG challenges.}
-Our curated KGs range from 41--253 entities and 39--814 edges across all seven
-domains (Table~\ref{tab:reproducibility}).  The smaller hand-curated domains
-(41--49 entities) represent early-stage scientific KG construction where
-sparsity limits the generativity component: DistMult requires $\geq 10$
-training edges to produce meaningful predictions, and the 20\% masking protocol
-leaves few test edges for evaluation on these domains.  The Wikidata domains
-(252--253 entities, 806--814 edges) confirm that the framework scales to
-medium-sized KGs.
-
-\paragraph{Proposal quality vs.\ validity rate.}
-The stagnation recovery mechanism (constrained prompting after $S = 5$
-generations without valid proposals) effectively maintains a validity rate
-$\geq 0.50$ across domains.  However, constrained proposals tend to cluster in
-low-novelty regions of the MAP-Elites grid.  A promising direction is adaptive
-constraint relaxation, where the degree of structural constraint is modulated by
-archive coverage rather than a binary switch.
-
-\paragraph{Symmetry redesign rationale.}
-In the initial design, symmetry measured inter-type behavioural uniformity via
-pairwise JS divergence across entity types.  Reviewer feedback correctly
-identified that this penalises natural functional specialisation: in an
-astronomy KG, stars and planets \emph{should} exhibit different edge-type
-distributions.  The revised design (Eq.~\ref{eq:symm}) measures \emph{intra-type}
-behavioural consistency---whether entities of the same type use edge types
-consistently---which is a more meaningful structural signal.  Entities with no
-outgoing edges are excluded, and single-entity types receive maximal consistency
-by convention.
-
-\paragraph{Contradicts validity.}
-\texttt{Contradicts} edges need not represent noise---in scientific discourse,
-competing hypotheses are valuable and their explicit representation is a feature,
-not a defect.  Our coherence penalty targets only \emph{dense} contradiction
-(high contradicts-to-edge ratio), which signals structural noise; sparse
-contradiction is tolerated.  Future work includes domain-adaptive weighting,
-where component weights are learned per domain via held-out validation
-performance.
-
-\paragraph{Frequency dominance and hybrid analysis.}
-The frequency heuristic is highly competitive and achieves the highest Hits@10
-on two of five domains (Section~\ref{sec:freq-analysis}).  This is not surprising: in small KGs with
-peaked edge-type distributions, predicting the dominant type is a strong
-baseline.  Rather than viewing this as a failure, we characterise the
-\emph{regime} where Harmony adds complementary value
-(Section~\ref{sec:regime}).  The optional $\varepsilon$ hybrid parameter
-(Eq.~\ref{eq:harmony}) enables principled combination when appropriate, though
-we emphasise that pure Harmony ($\varepsilon = 0$) remains the primary
-contribution.
-
-\paragraph{Harmony--downstream disconnect.}
-The correlation analysis (Section~\ref{sec:correlation}) examines which Harmony
-components predict downstream Hits@10 improvements.  Where components show weak
-correlation, this indicates a gap between the structural quality signal and
-link-prediction performance.  We view this as an important finding that
-motivates future metric refinement rather than a fatal flaw: the Harmony metric
-captures structural desiderata (simplicity, consistency, predictability) that
-are valuable for theory assessment beyond link prediction alone.
+\paragraph{Frequency dominance.}
+The frequency heuristic is highly competitive, leading on two of five domains.
+This is expected in small KGs with peaked edge-type distributions; we
+characterise the regime where Harmony adds complementary value
+(Appendix~\ref{app:regime-detail}).
 
 \paragraph{Per-domain failure analysis.}
-On the Physics domain, Harmony-guided proposals underperform DistMult-alone.
-Failure mode analysis reveals that the LLM tends to propose edges between
-highly connected hub entities (force, energy) rather than peripheral concepts,
-producing proposals that are valid but redundant with existing structure.  This
-suggests that domain-specific prompting strategies or proposal diversity
-mechanisms may be needed for hub-dominated KGs.
+On Physics, Harmony underperforms DistMult-alone.  The LLM tends to propose
+edges between highly connected hub entities (force, energy) rather than
+peripheral concepts, producing valid but redundant proposals.  This suggests
+domain-specific prompting strategies may be needed for hub-dominated KGs.
 
 \paragraph{LLM dependence and safety.}
-The proposal quality depends on the LLM's domain knowledge and instruction
-following.  Our experiments use a single model (\texttt{gpt-oss:20b}, a dense
-20B-parameter open-source model); ensembling across model families could improve
-diversity and robustness.  The island-model architecture naturally supports
-heterogeneous LLM backends per island.  To mitigate the risk of LLM-generated
-misinformation entering scientific workflows, proposals enter a \emph{staging
-layer}: they are scored by the Harmony metric and archived, but never
-automatically integrated into the base KG.  Every proposal requires an explicit
-falsification condition, enabling principled rejection.  We recommend
-domain-expert validation as a mandatory step in any deployment; backtesting
-(Section~\ref{sec:results}) serves as a negative-control diagnostic confirming
-proposals do not simply recover existing edges, but does not replace human judgement.
-
-\paragraph{Scalability.}
-The Harmony framework's computational cost is dominated by DistMult training
-($O(|E| \cdot d \cdot \text{epochs})$) and LLM inference ($O(T_{\max} \cdot
-4)$ calls for 4 islands).  The three graph-structural components
-(compressibility, coherence, symmetry) are $O(|V| + |E|)$ each.  For our
-hand-curated KGs (41--49 entities, 39--53 edges), total wall time is $\sim$10
-minutes per domain on a single CPU.  The Wikidata domains (252--253 entities,
-806--814 edges) complete in $\sim$27 minutes per seed (Table~\ref{tab:appendix_mlx_runtime}).
-Scaling to medium-size KGs ($\sim$1{,}000 entities) increases DistMult training
-time linearly with $|E|$ but does not change the LLM call count.  However,
-constrained prompting (Section~\ref{sec:search}) enumerates all valid entity
-IDs in the prompt, so prompt token volume---and consequently LLM latency---grows
-with $|V|$; mitigations include chunked entity sampling or index-based lookups.
-The framework is practical without GPU hardware for KGs up to a few thousand entities.
+Our experiments use a single model (\texttt{gpt-oss:20b}); ensembling across
+model families could improve diversity.  To mitigate LLM-generated
+misinformation, proposals enter a staging layer: they are scored and archived
+but never automatically integrated into the base KG.  Every proposal requires
+a falsification condition, enabling principled rejection.
+Total compute is ${\sim}10$~min/domain on a single CPU
+(Appendix~\ref{app:hyperparams}).
 
 \paragraph{Broader impacts.}
 This work aims to accelerate scientific theory discovery by automating the
@@ -119,22 +43,18 @@ as established.  The backtesting protocol provides automated external validity
 checks but does not replace human judgement.
 
 \paragraph{Limitations.}
-(i)~The seven-relation type vocabulary, while sufficient for our seven domains,
-may be too coarse for highly specialised fields (e.g.\ organic chemistry
-reaction types).
-(ii)~The Harmony metric treats all edge types equally in the compressibility
-and coherence components; domain-specific type hierarchies could improve these
-signals.
-(iii)~Although we report mean $\pm$ std across 10 seeds with paired bootstrap
-CIs and Cliff's delta effect sizes, the observed differences between Harmony
-and DistMult-alone are small relative to cross-seed variance on smaller KGs;
-larger-scale experiments with more generations or larger KGs may be needed to
-establish stronger statistical significance.
+(i)~The seven-relation type vocabulary may be too coarse for highly specialised
+fields.
+(ii)~The Harmony metric treats all edge types equally in compressibility and
+coherence; domain-specific type hierarchies could improve these signals.
+(iii)~Observed differences between Harmony and DistMult-alone are small
+relative to cross-seed variance; larger-scale experiments may be needed for
+stronger statistical significance.
 (iv)~The frequency heuristic outperforms all embedding-based methods on
-Hits@10 across all domains; the regime characterisation
-(Section~\ref{sec:regime}) identifies conditions under which Harmony adds
-complementary value, but does not demonstrate universal superiority.
-(v)~Evaluation circularity between DistMult in the generativity component and
-DistMult in the evaluation protocol is partially addressed by Harmony-3
-($\delta = 0$) and external KGE baselines (TransE, RotatE, ComplEx), but the
-primary Harmony configuration still includes DistMult in the objective.
+Hits@10; the regime characterisation identifies conditions where Harmony adds
+value but does not demonstrate universal superiority.
+(v)~Evaluation circularity is partially addressed by Harmony-3 and external
+KGE baselines, but the primary configuration still includes DistMult.
+(vi)~Additional analysis---sparse KG challenges, proposal quality vs.\
+validity rate, symmetry redesign rationale, and Harmony--downstream
+correlation---is in Appendix~\ref{app:extended-discussion}.

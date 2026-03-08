@@ -60,7 +60,7 @@ we emphasise that pure Harmony ($\varepsilon = 0$) remains the primary
 contribution.
 
 \paragraph{Harmony--downstream disconnect.}
-The correlation analysis (Section~\ref{sec:correlation}) examines which Harmony
+The correlation analysis (Section~\ref{sec:correlation}) would examine which Harmony
 components predict downstream Hits@10 improvements.  Where components show weak
 correlation, this indicates a gap between the structural quality signal and
 link-prediction performance.  We view this as an important finding that
@@ -138,3 +138,6 @@ complementary value, but does not demonstrate universal superiority.
 DistMult in the evaluation protocol is partially addressed by Harmony-3
 ($\delta = 0$) and external KGE baselines (TransE, RotatE, ComplEx), but the
 primary Harmony configuration still includes DistMult in the objective.
+(vi)~The Harmony--downstream Spearman correlation analysis
+(Section~\ref{sec:correlation}) requires per-proposal component-delta logs not
+currently captured by the event logger; this is a planned extension.

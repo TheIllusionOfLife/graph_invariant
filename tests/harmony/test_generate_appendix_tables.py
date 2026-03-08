@@ -256,6 +256,25 @@ class TestGenerateAppendixTablesOutput:
         for term in stale_terms:
             assert term not in content, f"Stale term '{term}' found in output"
 
+    def test_build_runtime_table_warns_incomplete_seeds(
+        self, tmp_path: Path, recwarn: pytest.WarningsChecker
+    ) -> None:
+        from generate_appendix_tables import build_runtime_table
+
+        # Build a domain dir with only 3 seed logs (< EXPECTED_SEEDS = 10)
+        domain_dir = tmp_path / "astronomy"
+        for i in range(3):
+            seed_dir = domain_dir / f"seed_{i}"
+            seed_dir.mkdir(parents=True)
+            _write_run_log(seed_dir / "run.log", float(1000 + i * 100))
+
+        build_runtime_table(tmp_path)
+
+        warning_msgs = [str(w.message) for w in recwarn.list]
+        assert any("EXPECTED_SEEDS" in m or "incomplete" in m.lower() for m in warning_msgs), (
+            f"Expected incomplete-seeds warning; got: {warning_msgs}"
+        )
+
     def test_output_file_created(self, tmp_path: Path) -> None:
         from generate_appendix_tables import generate_appendix_tables
 

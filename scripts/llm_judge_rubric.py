@@ -214,7 +214,13 @@ def aggregate_scores(entries: list[dict[str, float]]) -> dict[str, float]:
 
 def _call_claude(prompt: str, model: str = "claude-opus-4-6") -> str:
     """Call Claude API and return the response text."""
-    import anthropic
+    try:
+        import anthropic
+    except ImportError as exc:
+        raise RuntimeError(
+            "_call_claude requires the 'anthropic' package. "
+            "Install it with: uv add --group dev anthropic"
+        ) from exc
 
     client = anthropic.Anthropic()
     message = client.messages.create(

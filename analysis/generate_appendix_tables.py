@@ -35,6 +35,7 @@ DOMAIN_LABELS: dict[str, str] = {
     "wikidata_materials": "Wikidata Materials",
 }
 DOMAIN_ORDER: list[str] = list(DOMAIN_LABELS.keys())
+EXPECTED_SEEDS: int = 10  # seeds per domain in the standard MLX batch run
 
 
 # ---------------------------------------------------------------------------
@@ -260,7 +261,8 @@ def build_runtime_table(
         std_s = stats["std_sec"]
         n = stats["n"]
         mean_min = mean_s / 60.0
-        lines.append(f"    {label} & {mean_s:.1f} & {std_s:.1f} & {n}/{n} & {mean_min:.1f} \\\\")
+        seed_col = f"{n}/{EXPECTED_SEEDS}"
+        lines.append(f"    {label} & {mean_s:.1f} & {std_s:.1f} & {seed_col} & {mean_min:.1f} \\\\")
     lines.append(r"    \bottomrule")
     lines.append(r"  \end{tabular}")
     lines.append(r"\end{table}")

@@ -214,7 +214,7 @@ To regenerate analysis and figures from experiment artifacts:
 uv run python analysis/generate_appendix_tables.py \
   --factor-csv data/results/factor_decomposition.csv \
   --stat-tests data/results/statistical_tests.json \
-  --mlx-base artifacts/harmony_mlx_full/2026-03-05_mlx_no_think_full \
+  --mlx-base <path/to/mlx/batch/run> \
   --output paper/sections/appendix_tables_generated.tex
 
 # Regenerate NeurIPS figures (convergence, heatmap, baseline comparison, ablation)

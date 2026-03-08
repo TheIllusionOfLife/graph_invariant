@@ -52,6 +52,13 @@ Falsifiability (testability of falsification condition), Clarity (specificity).
 """.strip()
 
 
+def _sanitize_field(text: str, max_len: int = 500) -> str:
+    """Truncate and strip XML-like tags from a proposal field before prompt insertion."""
+    text = str(text)[:max_len]
+    text = re.sub(r"<[^>]*>", "", text)
+    return text.strip()
+
+
 def build_rubric_prompt(proposal: dict, variant: str) -> str:
     """Build evaluation prompt for a proposal.
 
@@ -69,13 +76,13 @@ def build_rubric_prompt(proposal: dict, variant: str) -> str:
 
     rubric = _DETAILED_RUBRIC if variant == "detailed" else _CONCISE_RUBRIC
 
-    claim = proposal.get("claim", "")
-    justification = proposal.get("justification", "")
-    falsification = proposal.get("falsification_condition", "")
-    domain = proposal.get("kg_domain", "unknown")
-    edge_type = proposal.get("edge_type", "")
-    source = proposal.get("source_entity", "")
-    target = proposal.get("target_entity", "")
+    claim = _sanitize_field(proposal.get("claim", ""), max_len=300)
+    justification = _sanitize_field(proposal.get("justification", ""), max_len=500)
+    falsification = _sanitize_field(proposal.get("falsification_condition", ""), max_len=300)
+    domain = _sanitize_field(proposal.get("kg_domain", "unknown"), max_len=50)
+    edge_type = _sanitize_field(proposal.get("edge_type", ""), max_len=50)
+    source = _sanitize_field(proposal.get("source_entity", ""), max_len=100)
+    target = _sanitize_field(proposal.get("target_entity", ""), max_len=100)
 
     return f"""You are an expert scientific knowledge evaluator assessing theory proposals for
 knowledge graphs. Evaluate the following proposal from the {domain} domain.
@@ -243,9 +250,8 @@ def evaluate_domain_proposals(
             resp_b = _call_claude(prompt_concise, model=model)
             scores_b = parse_rubric_scores(resp_b)
         except Exception as e:
-            print(f"  [WARN] concise prompt failed for {prop.get('id', '?')}: {e}")
-            # Use only detailed scores with agreement=N/A
-            scores_b = scores_a
+            print(f"  [WARN] concise prompt failed for {prop.get('id', '?')}: {e}; skipping")
+            continue
 
         agreement = compute_agreement(scores_a, scores_b)
         # Average the two variants for the final score

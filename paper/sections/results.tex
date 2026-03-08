@@ -219,8 +219,9 @@ whether proposals target structurally relevant neighbourhoods.
 \caption{Backtesting: exact and soft (typed-neighbourhood) match against 10\%
 held-out hidden edges.  Exact P/R require all three fields to match; Soft P/R
 require sharing \texttt{(source, edge\_type)} or \texttt{(edge\_type, target)}
-with a hidden triple.  Evaluated at the top-$N$ proposals pooled across 10
-seeds.}\label{tab:backtest}
+with a hidden triple.  Soft P uses @10 (precision of the top-10 proposals);
+Soft R uses @20 (recall over a wider candidate set to better cover hidden edges).
+Evaluated at the top-$N$ proposals pooled across 10 seeds.}\label{tab:backtest}
 \small
 \begin{tabular}{lcccc}
 \toprule
@@ -324,9 +325,10 @@ confirming that Harmony scoring provides essential signal for proposal ranking.
 Third, the \textbf{Full pipeline} (LLM + Harmony + MAP-Elites) achieves
 gain comparable to or slightly below Harmony-only on most domains.  On
 Wikidata Physics, Full ($0.003$) marginally exceeds Harmony-only ($0.002$);
-on Physics, Full ($0.028$) is close to Harmony-only ($0.032$).  On Astronomy
-and Materials, the single Full run did not converge to positive gain within
-the generation budget, while Harmony-only did.  This indicates the LLM
+on Physics, Full ($0.028$) is close to Harmony-only ($0.032$).  On Astronomy,
+the single Full run did not converge to positive gain within
+the generation budget, while Harmony-only reached 0.054; on Materials,
+Full achieved only negligible gain (0.001) versus Harmony-only's 0.029.  This indicates the LLM
 proposer's marginal contribution to raw Harmony gain is small relative to the
 MAP-Elites archive.  The LLM's primary value is \emph{semantic}---producing
 proposals with structured justifications and falsification conditions---rather
@@ -395,7 +397,7 @@ Domain & Plausibility & Novelty & Falsifiability & Clarity \\
 \midrule
 Astronomy         & 4.0 & 2.8 & 5.0 & 5.0 \\
 Physics           & 2.6 & 3.0 & 3.8 & 3.6 \\
-Materials         & 3.6 & 2.4 & 5.0 & 5.0 \\
+Materials         & 3.5 & 2.5 & 5.0 & 5.0 \\
 Wikidata Physics  & 3.4 & 3.2 & 4.0 & 4.8 \\
 Wikidata Materials & 4.4 & 2.6 & 4.6 & 4.8 \\
 \midrule
@@ -411,7 +413,7 @@ Wikidata Materials (4.4) and Astronomy (4.0), where domain knowledge is more
 concrete; Physics scores lower (2.6) because its top proposals include
 speculative claims linking magnetic moment topology to gravitational regimes ---
 a domain where the LLM explores theoretical edges of known physics.  Novelty
-is moderate across domains (2.4--3.2), reflecting the expected tension between
+is moderate across domains (2.5--3.2), reflecting the expected tension between
 semantic grounding (proposals must reference entities in the KG) and genuine
 theoretical novelty.
 

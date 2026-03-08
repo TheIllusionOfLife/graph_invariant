@@ -34,17 +34,16 @@
     ]
   },
   "materials": {
-    "n_evaluated": 5,
+    "n_evaluated": 4,
     "mean_scores": {
-      "plausibility": 3.6,
-      "novelty": 2.4,
+      "plausibility": 3.5,
+      "novelty": 2.5,
       "falsifiability": 5.0,
       "clarity": 5.0
     },
     "proposal_scores": [
       {"claim": "The density of structural defects in a material generally limits the maximum achievable optical transparency.", "scores": {"plausibility": 5, "novelty": 2, "falsifiability": 5, "clarity": 5}},
       {"claim": "The presence of an amorphous phase generally decreases its electrical conductivity compared to its crystalline counterpart.", "scores": {"plausibility": 4, "novelty": 2, "falsifiability": 5, "clarity": 5}},
-      {"claim": "The presence of amorphous phase generally decreases electrical conductivity compared to the crystalline form.", "scores": {"plausibility": 4, "novelty": 2, "falsifiability": 5, "clarity": 5}},
       {"claim": "The band gap magnitude EXPLAINS the absence of ferroelectric phase behavior in high-gap insulators.", "scores": {"plausibility": 2, "novelty": 3, "falsifiability": 5, "clarity": 5}},
       {"claim": "High-density fcc structure configurations in pure metals generally EXPLAINS elevated thermal conductivity.", "scores": {"plausibility": 3, "novelty": 3, "falsifiability": 5, "clarity": 5}}
     ]
@@ -82,10 +81,11 @@
     ]
   },
   "_overall": {
-    "n_proposals": 25,
+    "n_proposals": 24,
+    "note": "Mean of per-domain means (4 unique proposals for Materials after deduplication).",
     "mean_scores": {
-      "plausibility": 3.60,
-      "novelty": 2.80,
+      "plausibility": 3.58,
+      "novelty": 2.82,
       "falsifiability": 4.48,
       "clarity": 4.64
     }

@@ -222,7 +222,6 @@ def build_statistical_tests_table(json_path: Path | str) -> str:
 
 def build_runtime_table(
     mlx_base_dir: Path | str,
-    run_label: str = r"harmony\_mlx\_full (2026-03-05)",
 ) -> str | None:
     """Build LaTeX runtime summary table from MLX batch run.log files.
 

@@ -1,0 +1,120 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{enumitem}
+
+\setlist[itemize]{leftmargin=*,topsep=2pt,itemsep=2pt,parsep=0pt}
+
+\title{Review of ``Harmony-Driven Theory Discovery in Knowledge Graphs via LLM-Guided Island Search''}
+\author{Paper Review}
+\date{March 6, 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Executive Summary}
+This final global review finds a paper with a compelling system design and a clear intended contribution: LLM-generated KG mutations filtered by an interpretable structural objective and quality-diversity search. The manuscript is strongest when it is explicit about limitations and when it frames Harmony as a regime-dependent complement to standard baselines.
+
+The central issue is global consistency, not concept novelty. Cross-section mismatches in dataset/protocol facts, unresolved equation-level edge cases, and several claim-strength mismatches against quantitative evidence create a trust gap that currently dominates reviewer risk. A publication-ready revision should prioritize one coherent experimental record, fully closed-form metric definitions, and evidence-calibrated prose throughout abstract, results, discussion, and conclusion.
+
+\section*{Prioritized Findings}
+The findings below are ranked by confidence (highest first).
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{High confidence --- Internal consistency conflicts are the primary blocker.}
+  Dataset sizes, edge-type usage summaries, and split-related descriptions do not align across abstract/experiments/results/appendix. Readers cannot reliably infer which exact artifacts produced the headline numbers.
+
+  \item \textbf{High confidence --- Supplementary appendix content appears partially out-of-scope.}
+  Some generated appendix tables use naming and task conventions that do not map cleanly to the Harmony KG study narrative. This weakens reproducibility confidence even if core experiments are valid.
+
+  \item \textbf{High confidence --- Several quantitative statements overreach their own statistics.}
+  Main comparisons vs DistMult are small and statistically non-significant with negligible effect sizes, yet parts of the prose read as if robust superiority is established. The tone is uneven between cautious statistics and assertive summaries.
+
+  \item \textbf{High confidence --- Metric formalism still has unresolved edge-case behavior.}
+  Coherence needs an explicit definition when triangle count is zero, and compressibility interpretation should be reconciled with the equation as written. The frequency-based lower-bound argument also needs tighter linkage to the actual ranking protocol.
+
+  \item \textbf{High confidence --- Core validation narrative remains incomplete.}
+  The Harmony--downstream correlation subsection is still written as planned analysis rather than reported result. This leaves a visible hole in the claimed mechanism-to-performance story.
+
+  \item \textbf{Medium-high confidence --- Factor decomposition interpretation exceeds table support.}
+  Claims about component necessity and relative contribution are stronger than the currently reported factor table structure, especially without a clearly presented full-pipeline comparator in the same frame.
+
+  \item \textbf{Medium-high confidence --- Baseline definitions and fairness accounting need tighter specification.}
+  The frequency baseline is described in ways that mix relation-frequency intuition with entity-ranking evaluation, making method comparability harder to audit.
+
+  \item \textbf{Medium confidence --- Backtesting currently serves as negative evidence under exact match.}
+  Precision@\(N\) and Recall@\(N\) are all zero across domains, so external-validity framing should remain explicitly non-confirmatory unless the metric definition changes.
+
+  \item \textbf{Medium confidence --- Global narrative coherence can be improved with a single source-of-truth table set.}
+  The same claims are expressed differently across sections, creating local contradictions that are avoidable with centralized reporting conventions.
+\end{enumerate}
+
+\section*{Section Recommendations}
+
+\subsection*{Abstract and Introduction}
+\begin{itemize}
+  \item Keep the headline claim on framework design and regime-specific value, not broad empirical outperformance.
+  \item Use one fixed statement for domain counts, split protocol, and evaluation scope, then reuse that wording everywhere.
+  \item Surface uncertainty early by stating that directional gains vs DistMult are mixed and not statistically significant in this study.
+\end{itemize}
+
+\subsection*{Related Work and Positioning}
+\begin{itemize}
+  \item Add a compact contrast matrix (objective, output type, selection signal) to distinguish Harmony from KGC and KG+LLM reasoning pipelines.
+  \item Separate inherited ingredients (DistMult, MAP-Elites, island models) from the novel integration contribution to avoid novelty inflation.
+  \item Tighten proximity claims to the closest ``LLM proposes, symbolic scorer selects'' style literature.
+\end{itemize}
+
+\subsection*{Method: Equations and Definitions}
+\begin{itemize}
+  \item Define coherence explicitly for zero-triangle graphs and report sensitivity to that convention.
+  \item Align compressibility interpretation with the implemented formula, or revise the formula if the intended behavior differs.
+  \item Clarify whether frequency bound language is heuristic or formal and ensure notation matches the evaluated ranking task.
+  \item Specify \(\mathrm{Cost}(\Delta)\) consistently for add/remove mutation types so proposal values remain comparable.
+\end{itemize}
+
+\subsection*{Method: Search Procedure}
+\begin{itemize}
+  \item State whether proposals are scored on a fixed base KG or cumulatively modified KG, since this changes optimization semantics.
+  \item Document descriptor binning, insertion ties, and archive update rules so MAP-Elites behavior is reproducible.
+  \item Make migration/context retention rules explicit (capacity, replacement policy, and lifespan in prompt context).
+\end{itemize}
+
+\subsection*{Experiments}
+\begin{itemize}
+  \item Provide one canonical main-text table with exact entities, edges, active relation types, and split counts for every reported domain.
+  \item Harmonize budget accounting across baselines (proposal count, training effort, and evaluation budget) for fair comparison.
+  \item If multiple LLM backends are used across study parts, separate claims by backend and avoid pooled causal statements.
+\end{itemize}
+
+\subsection*{Results}
+\begin{itemize}
+  \item Reconcile every prose claim with table-level per-domain winners and uncertainty values before final submission.
+  \item Complete or remove planned-analysis placeholders; results sections should only contain completed analyses.
+  \item Add a full-pipeline reference row in factor decomposition and keep interpretation strictly bounded to shown comparisons.
+  \item Treat all-zero exact-match backtesting as a primary negative finding unless a new, justified matching criterion is introduced.
+\end{itemize}
+
+\subsection*{Discussion and Conclusion}
+\begin{itemize}
+  \item Keep the transparent limitations framing and mirror it in the conclusion with similarly cautious language.
+  \item Present the regime claim as provisional empirical evidence rather than settled generalization.
+  \item Ensure every summary sentence is traceable to a reported table, figure, or statistical test.
+\end{itemize}
+
+\subsection*{Appendix and Reproducibility}
+\begin{itemize}
+  \item Remove or regenerate appendix tables not directly produced by the described Harmony KG experiments.
+  \item Add an artifact manifest mapping each table/figure to scripts, outputs, dataset versions, and split hashes.
+  \item Recheck anonymization-sensitive entries for strict double-blind consistency.
+\end{itemize}
+
+\subsection*{Global Consistency}
+\begin{itemize}
+  \item Establish a single source-of-truth dataset/protocol table and reference it from all sections instead of restating numbers manually.
+  \item Run a final claim audit: every comparative adjective (better, best, robust, primary) must have a direct numeric and statistical anchor.
+  \item Enforce one tone policy across sections: uncertainty-calibrated language in abstract, results, discussion, and conclusion.
+\end{itemize}
+
+\end{document}

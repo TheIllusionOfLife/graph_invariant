@@ -242,3 +242,16 @@ generation to enable resumption.
 \ENDIF
 \end{algorithmic}
 \end{algorithm}
+
+\begin{figure}[t]
+  \centering
+  \input{figures/architecture.tikz}
+  \caption{Overview of the Harmony island-model search framework.  Four islands
+    run concurrently, each proposing KG mutations via an LLM following a cyclic
+    strategy schedule (Refine $\to$ Combine $\to$ Refine $\to$ Novel).  Proposals
+    are scored by the Harmony metric and archived in a MAP-Elites quality-diversity
+    grid ($5 \times 5$, axes = simplicity bin $\times$ Harmony-gain bin).  Periodic
+    migration (every $M=10$ generations) seeds each island from elite archive
+    entries via a ring topology.}
+  \label{fig:architecture}
+\end{figure}

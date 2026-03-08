@@ -11,12 +11,14 @@ ensuring that only targeted, structurally justified proposals achieve high
 scores.
 
 \paragraph{Sparse KG challenges.}
-Our curated KGs are deliberately small (17--30 entities, 30--80 edges) to
-represent the early stages of scientific KG construction.  This sparsity limits
-the generativity component: DistMult requires $\geq 10$ training edges to
-produce meaningful predictions, and the 20\% masking protocol leaves few test
-edges for evaluation.  Scaling to larger scientific KGs (e.g.\ Wikidata subsets)
-would provide more statistical power for the generativity signal.
+Our curated KGs range from 41--253 entities and 39--814 edges across all seven
+domains (Table~\ref{tab:reproducibility}).  The smaller hand-curated domains
+(41--49 entities) represent early-stage scientific KG construction where
+sparsity limits the generativity component: DistMult requires $\geq 10$
+training edges to produce meaningful predictions, and the 20\% masking protocol
+leaves few test edges for evaluation on these domains.  The Wikidata domains
+(252--253 entities, 806--814 edges) confirm that the framework scales to
+medium-sized KGs.
 
 \paragraph{Proposal quality vs.\ validity rate.}
 The stagnation recovery mechanism (constrained prompting after $S = 5$
@@ -93,10 +95,12 @@ The Harmony framework's computational cost is dominated by DistMult training
 ($O(|E| \cdot d \cdot \text{epochs})$) and LLM inference ($O(T_{\max} \cdot
 4)$ calls for 4 islands).  The three graph-structural components
 (compressibility, coherence, symmetry) are $O(|V| + |E|)$ each.  For our
-current KGs (17--22 entities), total wall time is $\sim$10 minutes per domain on
-a single CPU.  Scaling to medium-size KGs (200--300 entities) increases DistMult
-training time linearly with $|E|$ but does not change the LLM call count, making
-the framework practical for KGs up to $\sim$1000 entities without GPU hardware.
+hand-curated KGs (41--49 entities, 39--53 edges), total wall time is $\sim$10
+minutes per domain on a single CPU.  The Wikidata domains (252--253 entities,
+806--814 edges) complete in $\sim$27 minutes per seed (Table~\ref{tab:appendix_mlx_runtime}).
+Scaling to medium-size KGs ($\sim$1{,}000 entities) increases DistMult training
+time linearly with $|E|$ but does not change the LLM call count, making the
+framework practical without GPU hardware.
 
 \paragraph{Broader impacts.}
 This work aims to accelerate scientific theory discovery by automating the

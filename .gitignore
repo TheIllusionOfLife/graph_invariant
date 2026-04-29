@@ -44,4 +44,7 @@ paper/*.fls
 paper/*.fdb_latexmk
 paper/sections/*.aux
 
+# NeurIPS supplementary archive (built locally, contains anonymized README)
+supplementary.zip
+
 # Analysis outputs are tracked for backup

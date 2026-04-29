@@ -50,9 +50,12 @@ coherence; domain-specific type hierarchies could improve these signals.
 (iii)~Observed differences between Harmony and DistMult-alone are small
 relative to cross-seed variance; larger-scale experiments may be needed for
 stronger statistical significance.
-(iv)~The frequency heuristic outperforms all embedding-based methods on
-Hits@10; the regime characterisation identifies conditions where Harmony adds
-value but does not demonstrate universal superiority.
+(iv)~The frequency heuristic outperforms embedding-based methods on Hits@10
+specifically in small ($\leq 253$-entity) hand-curated KGs with peaked
+edge-type distributions; the regime characterisation
+(Section~\ref{sec:results}) identifies the complementary regime---denser,
+multi-type KGs such as Wikidata Materials---where Harmony-guided proposals
+add value over frequency alone.
 (v)~Evaluation circularity is partially addressed by Harmony-3 and external
 KGE baselines, but the primary configuration still includes DistMult.
 (vi)~Additional analysis---sparse KG challenges, proposal quality vs.\

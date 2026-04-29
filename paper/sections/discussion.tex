@@ -21,8 +21,11 @@ peripheral concepts, producing valid but redundant proposals.  This suggests
 domain-specific prompting strategies may be needed for hub-dominated KGs.
 
 \paragraph{LLM dependence and safety.}
-Our experiments use a single model (\texttt{gpt-oss:20b}); ensembling across
-model families could improve diversity.  To mitigate LLM-generated
+The main proposer is a single model (\texttt{gpt-oss:20b} via Ollama);
+factor-decomposition runs use \texttt{mlx-community/Qwen3.5-35B-A3B-4bit}
+via \texttt{mlx\_lm}, and the automated rubric uses Gemini~2.5~Pro
+(Appendix~\ref{app:llm-decl}).  Ensembling across model families within the
+proposer role could improve diversity.  To mitigate LLM-generated
 misinformation, proposals enter a staging layer: they are scored and archived
 but never automatically integrated into the base KG.  Every proposal requires
 a falsification condition, enabling principled rejection.
@@ -51,11 +54,13 @@ coherence; domain-specific type hierarchies could improve these signals.
 relative to cross-seed variance; larger-scale experiments may be needed for
 stronger statistical significance.
 (iv)~The frequency heuristic outperforms embedding-based methods on Hits@10
-specifically in small ($\leq 253$-entity) hand-curated KGs with peaked
-edge-type distributions; the regime characterisation
-(Section~\ref{sec:results}) identifies the complementary regime---denser,
-multi-type KGs such as Wikidata Materials---where Harmony-guided proposals
-add value over frequency alone.
+across most of the domains we evaluate; this advantage is most pronounced on
+small KGs with peaked edge-type distributions.  Harmony does not displace
+frequency baselines; rather, the regime characterisation
+(Section~\ref{sec:results}) shows that Harmony's complementary value over
+DistMult-alone is most visible in denser, multi-type KGs such as Wikidata
+Materials, where directional improvement is observed despite frequency
+remaining the strongest single baseline overall.
 (v)~Evaluation circularity is partially addressed by Harmony-3 and external
 KGE baselines, but the primary configuration still includes DistMult.
 (vi)~Additional analysis---sparse KG challenges, proposal quality vs.\

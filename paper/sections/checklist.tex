@@ -216,7 +216,7 @@
 \item {\bf Declaration of LLM usage}
     \item[] Question: Does the paper describe the usage of LLMs if it is an important, original, or non-standard component of the core methods in this research? Note that if the LLM is used only for writing, editing, or formatting purposes and does not impact the core methodology, scientific rigorousness, or originality of the research, declaration is not required.
     \item[] Answer: \answerYes{}
-    \item[] Justification: LLM-based proposal generation is a core methodological component described in Section~\ref{sec:method}. The specific model family (local Ollama-served model) and prompting strategy (entity-grounded, four-phase rotation: refine, combine, refine, novel) are detailed in Sections~\ref{sec:method} and~\ref{sec:experiments}.
+    \item[] Justification: LLM-based proposal generation is a core methodological component (Section~\ref{sec:method}). The proposer (\texttt{gpt-oss:20b} via Ollama, island temperatures $\{0.3, 0.3, 0.8, 1.2\}$), the factor-decomposition proposer (\texttt{mlx-community/Qwen3.5-35B-A3B-4bit} via \texttt{mlx\_lm}, temp~$0.7$), and the rubric judge (Gemini~2.5~Pro) are consolidated in Appendix~\ref{app:llm-decl} (Table~\ref{tab:llm-usage}), with verbatim prompts in Appendices~\ref{app:prompts} and~\ref{app:rubric-prompt}.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer NA means that the core method development in this research does not involve LLMs as any important, original, or non-standard components.

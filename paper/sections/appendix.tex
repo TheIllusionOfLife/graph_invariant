@@ -321,6 +321,38 @@ Value function
 \end{tabular}
 \end{table}
 
+\section{Declaration of LLM Usage}\label{app:llm-decl}
+
+LLMs are core methodological components of this work: as the proposer that
+generates KG mutations, as the proposer used in the factor decomposition
+study, and as a rubric judge for automated quality assessment.
+Table~\ref{tab:llm-usage} consolidates the model identifiers, backends, and
+sampling parameters; verbatim prompt templates appear in
+Appendices~\ref{app:prompts} (proposer) and~\ref{app:rubric-prompt} (judge).
+
+\begin{table}[h]\centering\small
+\caption{LLM components, model identifiers, backends, and sampling parameters.}\label{tab:llm-usage}
+\begin{tabular}{llll}
+\toprule
+Component & Model ID & Backend & Sampling \\
+\midrule
+Proposer (main)        & \texttt{gpt-oss:20b}                            & Ollama       & temp $\in \{0.3, 0.3, 0.8, 1.2\}$ \\
+Proposer (factor dec.) & \texttt{mlx-community/Qwen3.5-35B-A3B-4bit}     & \texttt{mlx\_lm} & temp $0.7$, top-$k$ $50$, top-$p$ $0.9$, max\_tok $1024$ \\
+Judge (rubric)         & Gemini~2.5~Pro                                  & Gemini CLI   & default \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent The 10 random seeds used across all multi-seed runs are
+$\{42, 123, 456, 789, 1024, 1337, 2048, 3141, 4096, 5000\}$.
+MLX backend defaults are defined in
+\texttt{src/harmony/proposals/mlx\_backend.py}
+(\texttt{max\_tokens=1024}, \texttt{temperature=0.7}, \texttt{top\_k=50},
+\texttt{top\_p=0.9}); the Ollama backend passes only
+\texttt{temperature} (per-island) and uses Ollama defaults for
+remaining parameters.  Self-correction repair calls fix temperature at
+$0.3$.
+
 \paragraph{Compute resources.}
 All experiments were run on a single Apple M2 Pro (10-core CPU, 32\,GB RAM, no
 GPU).  Main experiments use \texttt{gpt-oss:20b} via Ollama ($\sim$10~min per

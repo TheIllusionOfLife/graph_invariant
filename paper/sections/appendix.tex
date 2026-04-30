@@ -163,14 +163,19 @@ proposals.
 
 \section{Code and Data Availability}\label{app:code-data}
 
-Code and data are withheld for double-blind review and will be released upon acceptance:
+For double-blind review, the full implementation and supporting artifacts
+are provided as a supplementary ZIP archive accompanying the submission:
 \begin{itemize}[nosep]
-  \item \textbf{Code repository}: \texttt{[REDACTED FOR BLIND REVIEW]} ---
-    full implementation of the Harmony metric, island-model search loop,
-    MAP-Elites archive, and KG dataset builders.
-  \item \textbf{Data archive}: \texttt{[REDACTED FOR BLIND REVIEW]} ---
-    all KG datasets, per-domain checkpoints, generated proposals, and
-    analysis artifacts.
+  \item \textbf{Supplementary archive}: contains the Harmony metric
+    implementation, island-model search loop, MAP-Elites archive,
+    proposal validator, KG dataset builders, evaluation scripts,
+    KG datasets, per-domain checkpoints (subsets), generated proposals,
+    and analysis artifacts.  The README has been anonymised; absolute
+    paths and identifying URLs are removed.
+  \item \textbf{Public repository and Zenodo DOI}:
+    \texttt{[DEFERRED TO CAMERA-READY]} --- upon acceptance, the
+    de-anonymised public repository and a citable Zenodo DOI will be
+    released under an open-source licence.
 \end{itemize}
 
 \section{Statistical Methods}\label{sec:stat-methods}
@@ -332,6 +337,49 @@ main experiments; factor decomposition adds $\sim$2.5~CPU-hours.
 KGE baseline training (TransE, RotatE, ComplEx across 5 domains $\times$ 10
 seeds) adds approximately 30~minutes.  Statistical tests (bootstrap CI,
 permutation tests) add $<$10~minutes.
+
+\section{Declaration of LLM Usage}\label{app:llm-decl}
+
+LLMs are core methodological components of this work: as the main proposer
+that generates KG mutations, as the proposer used in the factor decomposition
+study, and as a rubric judge for automated quality assessment.
+Table~\ref{tab:llm-usage} consolidates the model identifiers, backends, and
+sampling parameters; verbatim prompt templates appear in
+Appendices~\ref{app:prompts} (proposer) and~\ref{app:rubric-prompt} (judge).
+
+\begin{table}[h]\centering\small
+\caption{LLM components, model identifiers, backends, and sampling parameters.}\label{tab:llm-usage}
+\begin{tabular}{p{2.3cm}p{3.8cm}p{1.4cm}p{4.2cm}}
+\toprule
+Component & Model ID & Backend & Sampling \\
+\midrule
+Proposer (main)        & \texttt{gpt-oss:20b}                            & Ollama       & temp $\in \{0.3, 0.3, 0.8, 1.2\}$ per island \\
+Proposer (factor dec.) & \texttt{mlx-community/}\allowbreak\texttt{Qwen3.5-35B-A3B-4bit}     & \texttt{mlx\_lm} & temp $0.7$, top-$k$ $50$, top-$p$ $0.9$, max\_tok $1024$ \\
+Judge (rubric)         & Gemini~2.5~Pro                                  & Gemini CLI   & defaults \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent The 10 random seeds used across all multi-seed runs are:
+\[
+  \{42,\; 123,\; 456,\; 789,\; 1024,\; 1337,\; 2048,\; 3141,\; 4096,\; 5000\}.
+\]
+MLX backend defaults
+(\texttt{max\_tokens=1024}, \texttt{temperature=0.7}, \texttt{top\_k=50},
+\texttt{top\_p=0.9}) are set in the supplementary code archive; the
+Ollama backend passes only \texttt{temperature} (per-island) and uses
+Ollama defaults for the remaining sampler parameters (\texttt{top\_k},
+\texttt{top\_p}, \texttt{repeat\_penalty}).  Self-correction repair
+calls fix temperature at $0.3$.
+
+\paragraph{Software environment.}
+Reproductions depend on the runtime versions of the inference engines.
+Main runs used Ollama~$\geq$~0.3 with the \texttt{gpt-oss:20b} model
+(SHA-256 manifest pinned in the supplementary archive); factor
+decomposition used \texttt{mlx-lm}~$\geq$~0.20 with the linked
+HuggingFace model card.  Gemini~2.5~Pro is invoked via the public Gemini
+CLI without a fixed checkpoint; the rubric output is reported only as a
+secondary diagnostic.
 
 \section{Edge Type Rationale}\label{app:edge-type-rationale}
 

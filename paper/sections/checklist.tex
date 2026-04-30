@@ -70,7 +70,7 @@
 \item {\bf Open access to data and code}
     \item[] Question: Does the paper provide open access to the data and code, with sufficient instructions to faithfully reproduce the main experimental results, as described in supplemental material?
     \item[] Answer: \answerYes{}
-    \item[] Justification: At submission time, an anonymised repository and a Zenodo draft artifact record are provided to support reproducibility. Upon acceptance, these assets will be de-anonymised and released under an open-source licence with a citable DOI.
+    \item[] Justification: Code is provided as a supplementary ZIP archive accompanying the submission; see Appendix~\ref{app:code-data}. The Zenodo DOI and de-anonymised public repository are deferred to camera-ready.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer NA means that paper does not include experiments requiring code.
@@ -98,7 +98,7 @@
 \item {\bf Experiment statistical significance}
     \item[] Question: Does the paper report error bars suitably and correctly defined or other appropriate information about the statistical significance of the experiments?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Table~\ref{tab:metrics} reports mean $\pm$ std across 10 random seeds for all main results. The ablation study (Appendix~\ref{app:ablation}) additionally reports bootstrap 95\% CIs. Standard deviations capture variability from dataset splitting, model initialisation, and edge masking.
+    \item[] Justification: Table~\ref{tab:metrics} reports mean $\pm$ std across $n = 10$ seeds for all main results. Pairwise comparisons against DistMult-alone use paired bootstrap 95\% CIs ($B = 2000$ resamples) and Cliff's $\delta$ for non-parametric effect size; the permutation-test protocol and full definitions are in Appendix~\ref{sec:stat-methods}. Variability sources captured by the standard deviations: dataset split, model initialisation, edge masking.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer NA means that the paper does not include experiments.
@@ -165,7 +165,7 @@
 \item {\bf Licenses for existing assets}
     \item[] Question: Are the creators or original owners of assets (e.g., code, data, models), used in the paper, properly credited and are the license and terms of use explicitly mentioned and properly respected?
     \item[] Answer: \answerYes{}
-    \item[] Justification: DistMult~\citep{yang2015distmult} and TransE~\citep{bordes2013transe} are cited. Core Python libraries (NumPy, scikit-learn) are BSD-3-Clause licensed. Knowledge graphs are original curated datasets.
+    \item[] Justification: DistMult~\citep{yang2015distmult}, TransE~\citep{bordes2013transe}, RotatE~\citep{sun2019rotate}, and ComplEx~\citep{trouillon2016complex} are cited. Core Python libraries (NumPy, scikit-learn, MLX, Ollama) are released under permissive licences (BSD-3-Clause, MIT, Apache-2.0). The five hand-curated KG datasets are original to this work; the two Wikidata-derived KGs (Wikidata Physics, Wikidata Materials) are subsets of the Wikidata knowledge graph, which is released under the Creative Commons CC0 1.0 licence (with attribution to Wikidata recommended).
     \item[] Guidelines:
     \begin{itemize}
         \item The answer NA means that the paper does not use existing assets.
@@ -216,7 +216,7 @@
 \item {\bf Declaration of LLM usage}
     \item[] Question: Does the paper describe the usage of LLMs if it is an important, original, or non-standard component of the core methods in this research? Note that if the LLM is used only for writing, editing, or formatting purposes and does not impact the core methodology, scientific rigorousness, or originality of the research, declaration is not required.
     \item[] Answer: \answerYes{}
-    \item[] Justification: LLM-based proposal generation is a core methodological component described in Section~\ref{sec:method}. The specific model family (local Ollama-served model) and prompting strategy (entity-grounded, four-phase rotation: refine, combine, refine, novel) are detailed in Sections~\ref{sec:method} and~\ref{sec:experiments}.
+    \item[] Justification: LLM-based proposal generation is a core methodological component (Section~\ref{sec:method}). The proposer (\texttt{gpt-oss:20b} via Ollama, island temperatures $\{0.3, 0.3, 0.8, 1.2\}$), the factor-decomposition proposer (\texttt{mlx-community/Qwen3.5-35B-A3B-4bit} via \texttt{mlx\_lm}, temp~$0.7$), and the rubric judge (Gemini~2.5~Pro) are consolidated in Appendix~\ref{app:llm-decl} (Table~\ref{tab:llm-usage}), with verbatim prompts in Appendices~\ref{app:prompts} and~\ref{app:rubric-prompt}.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer NA means that the core method development in this research does not involve LLMs as any important, original, or non-standard components.

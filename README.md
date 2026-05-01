@@ -41,14 +41,16 @@ The `harmony` console-script accepts the seven supported domains via `--domain`:
 
 ## Reproducing Paper Results
 
-Multi-seed evaluation (10 seeds across 5 discovery domains, ~1 CPU-hour total):
+Multi-seed evaluation aggregates per-domain run directories into mean ± std summaries (10 seeds across 5 discovery domains, ~1 CPU-hour total to generate the run dirs):
 
 ```bash
-uv run python scripts/run_multi_seed.py --domain astronomy
-uv run python scripts/run_multi_seed.py --domain physics
-uv run python scripts/run_multi_seed.py --domain materials
-uv run python scripts/run_multi_seed.py --domain wikidata_physics
-uv run python scripts/run_multi_seed.py --domain wikidata_materials
+uv run python scripts/run_multi_seed.py \
+  --astronomy         runs/astronomy \
+  --physics           runs/physics \
+  --materials         runs/materials \
+  --wikidata_physics  runs/wikidata_physics \
+  --wikidata_materials runs/wikidata_materials \
+  --output            data/results/multi_seed/
 ```
 
 Factor decomposition (Apple Silicon, MLX backend):
@@ -58,7 +60,7 @@ Factor decomposition (Apple Silicon, MLX backend):
 uv run python scripts/run_mlx_batch.py --seed 42
 ```
 
-Regenerate appendix tables and figures from bundled artifacts:
+Regenerate appendix tables and figures from bundled artifacts (note: writes into the paper source tree, which is **not** part of this supplementary archive — these commands are meaningful only inside the full repository):
 
 ```bash
 uv run python analysis/generate_appendix_tables.py \
@@ -97,8 +99,10 @@ uv run python analysis/generate_harmony_figures.py \
 
 ## Compiling the Paper
 
+The `paper/` source tree is **not** included in this supplementary archive (only the implementation, tests, and result summaries are). In the full repository:
+
 ```bash
-cd paper && tectonic main.tex
+cd paper && tectonic -r 2 main.tex
 ```
 
 The compiled PDF is `paper/main.pdf` (≤ 9 pages main body + appendix + checklist).

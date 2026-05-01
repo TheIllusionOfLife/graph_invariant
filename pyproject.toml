@@ -1,7 +1,7 @@
 [project]
 name = "graph-invariant"
 version = "0.1.0"
-description = "Phase 1 MVP for graph invariant discovery"
+description = "Harmony-driven theory discovery in knowledge graphs via LLM-guided island search"
 requires-python = ">=3.11"
 dependencies = [
   "networkx>=3.4",

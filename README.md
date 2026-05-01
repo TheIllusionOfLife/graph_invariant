@@ -57,7 +57,7 @@ Factor decomposition (Apple Silicon, MLX backend):
 
 ```bash
 # Switch backend by setting HarmonyConfig.backend = "mlx"; the loop dispatches automatically.
-uv run python scripts/run_mlx_batch.py --seed 42
+uv run python scripts/run_block_b.py --seed 42
 ```
 
 Regenerate appendix tables and figures from bundled artifacts (note: writes into the paper source tree, which is **not** part of this supplementary archive — these commands are meaningful only inside the full repository):
@@ -114,5 +114,5 @@ MIT. See [LICENSE](LICENSE) for details.
 ## Security and Safety Notes
 
 - The proposer calls a local LLM endpoint by default (`http://localhost:11434/api/generate`). Pass `--allow-remote` only with trusted endpoints.
-- Prompts and LLM responses are logged when `--output-dir` is set; treat the resulting JSONL files as sensitive.
-- Generated proposals are archived but never auto-applied to the base KG; see Section 6 of the paper for the safety rationale.
+- Per-generation summary events (counts, validity rates, model identifiers, accepted proposal text and structured fields) are logged to `<output-dir>/logs/harmony_events.jsonl`; raw prompts and full LLM response bodies are not persisted.
+- Generated proposals are archived but never auto-applied to the base KG; see the paper's Discussion section for the safety rationale.

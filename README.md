@@ -16,7 +16,7 @@ License: MIT
 
 - Python 3.11+
 - [`uv`](https://github.com/astral-sh/uv) for environment and dependency management
-- Optional: local [Ollama](https://ollama.com) server for the proposer LLM (default model: `gpt-oss:20b`)
+- Optional: local [Ollama](https://ollama.com) server for the proposer LLM (CLI default: `mistral`; paper experiments used `--model gpt-oss:20b`)
 - Optional: Apple Silicon + [`mlx_lm`](https://github.com/ml-explore/mlx-lm) for the factor-decomposition backend (`mlx-community/Qwen3.5-35B-A3B-4bit`)
 - Optional: [tectonic](https://tectonic-typesetting.github.io/) for compiling the paper
 

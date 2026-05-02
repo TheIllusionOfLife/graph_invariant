@@ -97,8 +97,11 @@ simplicity--gain trade-offs (Appendix~\ref{app:validity-coverage}).
 \paragraph{Factor decomposition.}
 Three ablated configurations isolate component contributions
 (Appendix~\ref{app:factor-detail}).  Key findings: (i)~the MAP-Elites archive
-is the dominant driver of structural gain---Harmony-only (random proposer)
-outperforms No-QD (greedy archive) on all five domains; (ii)~LLM-only
+(grid plus diversity bookkeeping) is the dominant driver of structural
+gain---Harmony-only (random proposer) outperforms No-QD (greedy archive)
+on all five domains;
+isolating grid structure from diversity bookkeeping is left for future work
+(Appendix~\ref{app:factor-detail}); (ii)~LLM-only
 (no Harmony scoring) saturates trivially, confirming that Harmony scoring
 provides essential selection pressure; (iii)~the LLM proposer's primary value
 is \emph{semantic}---producing justified, falsifiable claims---rather than
@@ -117,8 +120,15 @@ full results in Appendix~\ref{app:rubric-results}.  Human expert evaluation
 with measured inter-annotator agreement is planned.
 
 \paragraph{Calibration and regime.}
-The calibration gate passed on both calibration domains (31--65\% over
-frequency; Appendix~\ref{app:calibration-gate}).  Harmony's complementary
-value increases with graph density and edge-type diversity
-(Appendix~\ref{app:regime-detail}).  Per-component ablation details are in
-Appendix~\ref{app:ablation}.
+The calibration gate (Appendix~\ref{app:calibration-gate}) was
+pre-registered before live runs against the two calibration domains
+(linear algebra, periodic table) and passed there with $31$--$65\%$
+margins over frequency.  It did \emph{not} transfer to the discovery
+domains, where Harmony shows only directional, non-significant
+differences against DistMult-alone (this section, Table~\ref{tab:metrics}).
+We treat the calibration--discovery gap as a regime-finding rather than
+a refutation: the gate's pass on hand-curated dense KGs and its absence
+of transfer to sparser discovery KGs is itself diagnostic of the
+method's regime of applicability
+(Appendix~\ref{app:regime-detail}).  Per-component ablation details
+are in Appendix~\ref{app:ablation}.

@@ -20,7 +20,7 @@
 \item {\bf Limitations}
     \item[] Question: Does the paper discuss the limitations of the work performed by the authors?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Section~\ref{sec:discussion} contains a dedicated ``Limitations'' paragraph addressing concrete constraints including coarse relation vocabulary, metric-domain mismatch risk, evaluation circularity caveats, and lack of statistical significance on most domains despite multi-seed evaluation.
+    \item[] Justification: Section~\ref{sec:discussion} contains a dedicated ``Limitations'' paragraph addressing concrete constraints including coarse relation vocabulary, metric-domain mismatch risk, evaluation circularity caveats, lack of statistical significance on most domains despite multi-seed evaluation, KG-size scope (all seven evaluation domains $\leq 253$ entities, not addressing production-scale KGs), and LLM-as-judge evaluator-independence concerns (Gemini judging \texttt{gpt-oss:20b} proposals; see ``Evaluator independence'' paragraph in Section~\ref{sec:discussion}).
     \item[] Guidelines:
     \begin{itemize}
         \item The answer NA means that the paper has no limitation while the answer No means that the paper has limitations, but those are not discussed in the paper.

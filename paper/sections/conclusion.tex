@@ -10,9 +10,10 @@ external KGE baselines shows that Harmony-guided proposals achieve directional
 improvements over DistMult-alone on Hits@10 in three of five domains, though
 differences do not reach statistical significance.  The frequency heuristic
 remains highly competitive on small KGs.  Factor decomposition identifies the
-MAP-Elites archive as the dominant driver of structural gain, while the LLM
-proposer's primary contribution is semantic---producing justified, falsifiable
-theory-level claims.
+MAP-Elites archive (grid plus diversity bookkeeping) as the dominant
+driver of structural gain, while the LLM proposer's identifiable
+contribution is qualitative---producing justified, falsifiable
+theory-level claims---rather than quantitative link-prediction gain.
 
 Future work includes scaling to larger scientific KGs, domain-adaptive
 component weighting, multi-LLM ensembles across islands, and human expert

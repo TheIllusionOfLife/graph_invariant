@@ -15,12 +15,17 @@ island-model search topology.  We evaluate on seven KG domains (five
 hand-curated, two Wikidata-sourced) with 10-seed cross-validation and four
 external KGE baselines (DistMult, TransE, RotatE, ComplEx).  Factor
 decomposition isolates the contributions of the LLM proposer, Harmony scoring,
-and quality-diversity archive.  A regime characterisation analysis reveals that
-Harmony adds complementary value to frequency-based approaches in denser,
-multi-type KGs: on Wikidata Materials, Harmony-guided proposals show the largest
-directional improvement over DistMult-alone on both Hits@10 ($0.34$ vs.\ $0.32$)
-and MRR ($0.12$ vs.\ $0.11$), though differences do not reach statistical
-significance at $\alpha = 0.05$.  Backtesting against held-out edges shows that proposals do not reproduce
+and quality-diversity archive.  A regime characterisation analysis reveals where
+Harmony's design aligns with KG structure: on Wikidata Materials,
+Harmony-guided proposals show the largest directional improvement over
+DistMult-alone on both Hits@10 ($0.34$ vs.\ $0.32$) and MRR ($0.12$
+vs.\ $0.11$), though differences do not reach statistical significance
+at $\alpha = 0.05$ and the effect size $|\delta_C|\,\leq\,0.12$ falls in
+the ``negligible'' range per \citet{cliff1993dominance}.  A
+pre-registered calibration gate passed on the two calibration domains
+($31$--$65\%$ over frequency) but did not transfer to the discovery
+domains, a regime-finding rather than a refutation.
+Backtesting against held-out edges shows that proposals do not reproduce
 known edges, serving as a negative control consistent with theory-level
 rather than interpolation behaviour; a typed-neighbourhood soft-match
 diagnostic suggests proposals tend toward structurally adjacent knowledge.

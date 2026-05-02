@@ -12,7 +12,7 @@
 
 The most damaging single finding is **not** a flagged risk but a discovery from the appendix audit: Table 5 (factor decomposition) shows that the Full pipeline (LLM + Harmony + MAP-Elites) **underperforms Harmony-only** (random proposer + MAP-Elites) on Astronomy (0.000 vs 0.054) and Materials (0.001 vs 0.029). The intro and conclusion credit the Harmony metric as a primary contribution, but the evidence isolates MAP-Elites archiving as the actual driver and shows the LLM + Harmony combination can be neutral or harmful. This needs honest reframing.
 
-**Counts**: 8 P0, 12 P1, 3 P2.
+**Counts**: 6 P0, 17 P1, 3 P2 *(after Codex meta-review recalibration; original counts were 8 P0 / 12 P1 / 3 P2 — see "Process notes")*.
 
 ## P0 — must fix before submission
 
@@ -42,7 +42,31 @@ The paper mentions the gate exactly once, in `results.tex:120`: "The calibration
 
 **Severity**: P0. For a Concept-and-Feasibility paper, hiding a registered-hypothesis failure is the worst possible honesty issue — it converts a defensible "directional null" into "we cherry-picked our reporting".
 
-### P0-3. No multiple-testing correction declared
+### P0-NEW. LLM-guidance non-identifiability *(Codex meta-review addition)*
+**Where**: `paper/sections/appendix.tex:470-556` (factor decomposition Table 5), `paper/sections/introduction.tex:42-58` (contributions list)
+**Flag**: Codex meta-review
+
+This goes deeper than P0-1 (framing). If random proposer + MAP-Elites achieves comparable or better gains than the Full pipeline (LLM + Harmony + MAP-Elites) on 4 of 5 domains, the **claim "LLM-guided theory discovery" may be wrong as a contribution claim**, not just mis-framed. P0-1 fixes the attribution narrative; this finding asks whether the LLM proposer's contribution is identifiable at all.
+
+The honest contribution that survives the data is: "(1) Quality-diversity archiving for KG mutations is feasible; (2) the Harmony score provides interpretable selection pressure; (3) **the LLM proposer's contribution is qualitative (semantic structure, falsifiable claims) not quantitative (Hits@10 gain)**." The current paper title — "Harmony-Driven Theory Discovery in Knowledge Graphs via LLM-Guided Island Search" — name-checks LLM-guided as the methodology, when the evidence supports calling it semantic-overlay instead.
+
+**Suggested change**: in `discussion.tex` after the limitations paragraph, add an "Identifiability of the LLM contribution" sub-paragraph: "The factor decomposition shows that random proposers in MAP-Elites achieve gains comparable to the LLM-guided variant on four of five domains. We interpret this as evidence that the LLM's quantitative contribution to link prediction is not statistically identifiable in our experimental design; its identifiable contribution is qualitative (the proposal schema's claim/justification/falsifiability fields, which random proposers cannot fill). This is consistent with the C&F framing: feasibility of LLM-as-proposer is demonstrated by valid_rate convergence (Section X) but not the magnitude of any link-prediction advantage." The paper title may also need to soften "LLM-Guided" to "LLM-Augmented" or similar — flag for user judgment.
+
+**Severity**: P0 because it is the deeper version of P0-1 and a strong area chair will push to it. The fix can coexist with P0-1's reframing.
+
+### P0-NEW2. No-QD ablation confounds grid vs archive *(elevated from P1-8 by Codex)*
+**Where**: `paper/sections/appendix.tex:475-478` (No-QD = greedy single-bin archive)
+**Flag**: hygiene Empirical (originally P1) + Codex meta-review elevation
+
+The No-QD ablation simultaneously removes (a) the 5×5 MAP-Elites grid and (b) the diversity-based archive. The paper attributes "MAP-Elites is the dominant driver" (the headline claim from P0-1's reframing) to this ablation, but the design cannot isolate whether the grid or the archive bookkeeping carries the credit.
+
+This was originally graded P1 because it is a methodological gap. Codex elevated it to P0 because it is the *direct empirical foundation* of P0-1's reframing — if "MAP-Elites is dominant" is going to become a primary claim, the ablation behind it must support a clean attribution.
+
+**Suggested change**: either (a) add a fourth ablation condition (greedy-with-grid) and re-run on at least one domain to disambiguate, or (b) qualify the "MAP-Elites is dominant" claim everywhere it appears: "the MAP-Elites archive (combining grid structure with diversity bookkeeping) is the dominant driver; isolating their individual contributions is left for future work". Option (b) is the 4-day-deadline-realistic fix.
+
+**Severity**: P0 because it is the empirical foundation of the now-primary contribution claim.
+
+### P0-3 [DEMOTED to P1-13]. No multiple-testing correction declared
 **Where**: `paper/sections/appendix.tex:181-203` (statistical methods), `paper/sections/results.tex:11-12` (p-values)
 **Flag**: hygiene Empirical
 
@@ -78,7 +102,7 @@ The discussion section's "LLM dependence and safety" paragraph (lines 23-31) add
 
 **Severity**: P0 because the paper currently presents LLM-judged scores as quality evidence without the independence caveat. A single-sentence acknowledgment converts the issue from "missing limitation" to "honestly disclosed scope".
 
-### P0-6. KG-size limitation not acknowledged
+### P0-6 [DEMOTED to P1-14]. KG-size limitation not acknowledged
 **Where**: `paper/sections/discussion.tex:48-70`, `paper/sections/appendix.tex:8-26` (Table 2 dataset sizes)
 **Convergent flag**: hygiene Empirical + hygiene Honesty (2 agents)
 
@@ -90,7 +114,7 @@ The discussion mentions "small KGs" only in the context of frequency dominance (
 
 **Severity**: P0 because "you only show toy KGs" is a routine reviewer attack, and pre-empting it with an explicit acknowledgment is essentially free.
 
-### P0-7. Per-domain failure analysis is shallow on 4 of 5 domains
+### P0-7 [DEMOTED to P1-15, but kept "strong P1"]. Per-domain failure analysis is shallow on 4 of 5 domains
 **Where**: `paper/sections/discussion.tex:17-21` (Physics is the only domain with mechanism analysis)
 **Flag**: substance Null-Result
 
@@ -108,7 +132,7 @@ These do not need to be definitively proven — they need to be *named*, so a fo
 
 **Severity**: P0 because the absence of mechanism analysis converts the paper from "informative null" to "inconclusive null".
 
-### P0-8. Eq. 2 boundedness rests on undeclared assumption
+### P0-8 [DEMOTED to P1-16]. Eq. 2 boundedness rests on undeclared assumption
 **Where**: `paper/sections/method.tex:47-51` (Compressibility), `paper/sections/introduction.tex:42-44` (boundedness claim)
 **Flag**: hygiene Logic+Math
 
@@ -194,6 +218,30 @@ Zero exact matches against held-out edges is framed positively ("proposals are t
 
 "~10 min/domain, <2 CPU-hours total" is ambiguous: per-seed or aggregate? With 10 seeds × 5 domains × 20 generations, the math doesn't obviously close. Clarify: is the 10-min figure the total for all 10 seeds of one domain, or per-seed?
 
+### P1-NEW1. Metric construct validity (4-component linear composite) *(Codex meta-review addition)*
+**Where**: `paper/sections/method.tex:35-51` (Eq. 1 + 2), `paper/sections/appendix.tex` (calibration weight grid)
+**Flag**: Codex meta-review
+
+The Harmony score is a linear combination of four sub-scores (Compress, Cohere, Symm, Gener) with default weights α=β=γ=δ=0.25. The review never asked the foundational construct-validity question: are these four components theoretically commensurable under linear addition? Why not a multiplicative or geometric-mean composition? How were the equal-weight defaults selected, and is the calibration-weight grid (`appendix.tex:42-46`, α∈{0.3,0.5,0.7}, β∈{0.1,0.3}, γ=δ=0.25) the result of a sensitivity analysis or post-hoc adjustment to make the gate pass?
+
+A reviewer asking "why this composite?" deserves a one-paragraph answer.
+
+**Suggested change**: in `method.tex` after the weight statement (line 38), add: "We use a linear composition of the four components for interpretability — the contribution of each axis is identifiable in any given Harmony score. Multiplicative compositions (geometric means) penalise low values disproportionately and would conflate sub-axis weakness with overall metric failure. The equal-weight default reflects the absence of theoretical priors over the four desiderata; the calibration grid in Appendix~\ref{app:calibration-gate} explores this neighbourhood and confirms the gate passes across all six configurations." This converts an implicit design choice into a stated rationale.
+
+**Severity**: P1 because the metric-design choice is not a P0 contribution-killer, but a strong reviewer will ask and a one-line answer pre-empts the question.
+
+### P1-NEW2. Baseline budget fairness *(Codex meta-review addition)*
+**Where**: `paper/sections/experiments.tex` (baseline setup), `paper/sections/appendix.tex:300-307` (hyperparameter table)
+**Flag**: Codex meta-review
+
+The 4 KGE baselines (TransE, DistMult, RotatE, ComplEx), the random-proposer ablation, and the Full Harmony pipeline are compared on Hits@10. But the paper does not document whether they receive comparable compute budgets, candidate counts, or tuning effort. If Harmony's pipeline runs 20 generations × 8 proposals/gen = 160 proposal-scoring rounds per seed, but the KGE baselines train once with 100 epochs and call it done, the comparison's "fairness" is implicit and can be attacked.
+
+This is partially adjacent to the existing P1-7 (custom KGE implementation reproducibility), but Codex flagged it as a *separately-attackable axis*: even with cleanly implemented baselines, a budget mismatch undermines the comparison.
+
+**Suggested change**: add one paragraph to `appendix.tex` near the hyperparameter table: "**Compute-budget parity.** The KGE baselines (TransE, DistMult, RotatE, ComplEx) train for 100 epochs on the full edge set, which on the largest domain (Wikidata Materials, 814 edges) consumes ≈ X seconds of CPU time. The Harmony pipeline runs Y generations × Z proposals/generation × W seconds/proposal-scoring ≈ V seconds. The Harmony pipeline thus consumes approximately R× the compute budget of the KGE baselines. A reviewer assessing the link-prediction comparison should treat this as a budget-asymmetric comparison favouring Harmony; the paper's directional-but-non-significant results should be read against this caveat." Fill in actual numbers from instrumentation.
+
+**Severity**: P1 because budget unfairness is a standard reviewer attack but the paper's hedged framing already softens its impact.
+
 ### P1-12. NeurIPS Checklist Item 2 (Limitations) drift
 **Where**: `paper/sections/checklist.tex:23`
 **Flag**: hygiene Compliance
@@ -227,16 +275,40 @@ No 50→100→200→500-entity scaling curve within a single domain. P2 because 
 - **LLM declaration in appendix is complete**: 3 LLMs, 10 seeds listed verbatim, sampling parameters per island stated.
 - **Broader impacts paragraph**: positive + negative + mitigation all present.
 
-## Recommended fix sequence (if user opts to apply)
+## Recommended fix sequence (if user opts to apply) — **REVISED post Codex meta-review**
 
-The 8 P0s break into two clusters:
+Codex's meta-review correctly flagged that the original "framing first" sequencing is operationally risky for a 4-day deadline: disclosure paragraphs add text and affect page density, so doing them after framing edits forces re-trimming. The corrected sequence is:
 
-1. **Framing edits** (P0-1, P0-2, P0-4) — rewrite intro contributions, add calibration-gate transfer paragraph, qualify "complementary value". Same author, same paragraph cluster, can be done in one sitting.
-2. **Disclosure additions** (P0-3, P0-5, P0-6, P0-7, P0-8) — add multiple-testing paragraph, LLM-judge caveat, KG-size limitation, per-domain failure analyses, Eq. 2 footnote. Each is 1-3 sentences in a different file.
+**Phase 1 — Disclosures and limitations** (recompile + page-count check after this phase). Land all the "add a paragraph" fixes first so the remaining page budget is known when framing edits are written:
+- P0-2 calibration-gate transfer paragraph (results + abstract sentence)
+- P0-5 LLM-judge circularity caveat (discussion)
+- P1-13 (was P0-3) multiple-testing correction paragraph (appendix statistical methods)
+- P1-14 (was P0-6) KG-size limitation (discussion limitations)
+- P1-15 (was P0-7) per-domain failure-analysis paragraphs (discussion, 2-4 sentences per under-analysed domain)
+- P1-16 (was P0-8) Eq. 2 boundedness footnote (method.tex)
+- P1-NEW2 baseline budget-parity paragraph (appendix)
 
-P1s are all 1-line or 1-paragraph edits. P2s can be deferred to camera-ready.
+**Phase 2 — Framing rewrites** sized to the actual remaining page budget:
+- P0-1 contribution attribution rewrite (intro contributions list, conclusion claim list, abstract opening)
+- P0-NEW LLM-guidance non-identifiability sub-paragraph (discussion)
+- P0-NEW2 (was P1-8) "MAP-Elites is dominant" qualification everywhere it appears
+- P0-4 effect-size grounding ("complementary value" → "directional in negligible range") in abstract + discussion
+- P1-NEW1 metric construct validity rationale (method.tex after weight statement)
 
-**Estimated effort**: 4-6 hours for P0 + P1; recompile and reverify page count.
+**Phase 3 — Hygiene edits** (no page-density impact):
+- P1-1 DistMult bib venue cleanup
+- P1-2 KG-BERT citation
+- P1-3 CMA-ME citation
+- P1-4 AlphaProof citation
+- P1-5 triangle-agreement clarification
+- P1-6 hyperparameter consolidation forward-reference
+- P1-7 custom KGE baseline implementation note
+- P1-9 stagnation-recovery acknowledgment
+- P1-10 backtesting interpretation footnote
+- P1-11 compute-resources phrasing fix
+- P1-12 checklist Item 2 sync (after Phase 1 disclosures land)
+
+**Estimated effort**: 4-6 hours for the full P0+P1 batch; recompile and reverify page count between phases.
 
 ## Out of scope for this review
 
@@ -249,3 +321,17 @@ P1s are all 1-line or 1-paragraph edits. P2s can be deferred to camera-ready.
 Eight subagents ran in two parallel waves (3 substance + 5 hygiene). Each was prompted with explicit "stress-test, do not be charitable" framing. Cross-validation by convergent independent finding: P0-1 flagged by 3 agents; P0-2 by 3 agents; P0-4, P0-5, P0-6 by 2 agents each. Single-agent P0 findings (P0-3, P0-7, P0-8) were elevated because they identify reviewer-attack vectors with high impact and low fix cost.
 
 Codex was consulted before plan-mode exit to validate the perspective structure; it identified the missing centerpiece question ("would this still matter if directional results stayed weak?") which became the organising principle of the review.
+
+### Codex meta-review of this review document
+
+After the synthesis was complete, Codex was given the entire review document and asked to act as a senior NeurIPS area chair meta-reviewing the review itself. Three substantive corrections were applied:
+
+1. **Convergent-finding bias acknowledgement**: all 8 subagents got the same adversarial "centerpiece question" framing. Their agreement is **shared-prompt convergence**, not independent reviewer convergence. The original review treated convergence as confidence, which inflated 4 of the 8 P0s. The convergence counts in this document should be read as "multiple angles surfaced this", not "three independent reviewers independently found this".
+
+2. **Severity recalibration**: P0-3 (multiple-testing), P0-6 (KG-size), P0-7 (per-domain failure analysis depth), and P0-8 (Eq. 2 boundedness) were demoted to P1 because they conflate "cheap to fix and reviewer might object" with "submission blocker". P1-8 (No-QD ablation confound) was elevated to P0 because it is the empirical foundation of P0-1's reframed claim "MAP-Elites is dominant". The original "convergent-finding bias" was a major contributor to the over-grading.
+
+3. **Missing findings added**: Codex flagged three substantive issues the 8 subagents did not surface, all attributable to shared-prompt blind spots: (i) LLM-guidance *non-identifiability* — a deeper version of P0-1 that asks whether the LLM contribution is identifiable at all, not just attributed correctly; (ii) metric *construct validity* — why a linear composite of 4 components, why these weights; (iii) baseline *budget fairness* — comparable compute / candidate counts across Harmony vs KGE baselines.
+
+4. **Fix sequence inverted**: original "framing first" was operationally risky; corrected sequence puts disclosures first so framing edits can be sized to actual remaining page budget.
+
+The bottom line from Codex: "apply with these specific changes" — directionally sound, but recalibrate severity and add the three missing findings. All four corrections applied above.

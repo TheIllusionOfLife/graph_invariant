@@ -5,7 +5,7 @@ Embedding-based methods---TransE \citep{bordes2013transe}, DistMult
 \citep{yang2015distmult}, RotatE \citep{sun2019rotate}, among others
 \citep{ji2021kgsurvey}---project entities and relations into low-dimensional
 vector spaces and produce ranked link predictions without theoretical
-justification.  LLM-based scorers such as KG-BERT
+justification.  Pretrained language model-based scorers such as KG-BERT
 \citep{yao2019kgbert} offer a contemporary alternative; we use DistMult
 as Harmony's generativity component for its lower compute cost and
 well-understood ranking behaviour, and additionally generate
@@ -17,8 +17,9 @@ constructions by evolving Python programs.  PySR
 \citep{cranmer2023pysr} performs symbolic regression via genetic programming
 \citep{koza1992gp}, discovering closed-form expressions from numerical data.
 The survey by \citet{makke2024sr_survey} covers the broader symbolic regression
-landscape.  More recently, \citet{alphaproof2024} use LLM + RL agents to
-discover formal mathematical proofs verified by Lean.
+landscape.  More recently, \citet{alphaproof2024} announce LLM + RL agents that
+discover formal mathematical proofs verified by Lean (non-archival
+DeepMind report).
 These systems discover \emph{formulas} or \emph{proofs}; Harmony discovers
 \emph{relational propositions} over typed knowledge graphs, with heuristic
 scoring rather than the formal verification used by AlphaProof.

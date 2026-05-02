@@ -64,7 +64,7 @@ Domain & Method & Hits@10 & MRR & $p$ & $\delta_C$ \\
 
 \smallskip
 \noindent\textsuperscript{$\dagger$}Harmony-3 ($\delta=0$) matches
-DistMult-alone on all domains, confirming that generativity drives any
+DistMult-alone on all domains, consistent with generativity driving any
 observed difference; full rows in Appendix~\ref{app:ablation}.
 \end{table*}
 
@@ -109,8 +109,8 @@ maximising raw Harmony gain.
 
 \paragraph{Backtesting.}
 Backtesting against 10\% held-out edges yields zero exact matches across all
-domains, confirming proposals behave as theory-level mutations rather than
-triple interpolation.  Soft-match rates reach 10--25\% on structurally adjacent
+domains, consistent with proposals behaving as theory-level mutations rather
+than triple interpolation.  Soft-match rates reach 10--25\% on structurally adjacent
 neighbourhoods (Appendix~\ref{app:backtesting}).
 
 \paragraph{Automated quality assessment.}
@@ -127,8 +127,8 @@ margins over frequency.  It did \emph{not} transfer to the discovery
 domains, where Harmony shows only directional, non-significant
 differences against DistMult-alone (this section, Table~\ref{tab:metrics}).
 We treat the calibration--discovery gap as a regime-finding rather than
-a refutation: the gate's pass on hand-curated dense KGs and its absence
-of transfer to sparser discovery KGs is itself diagnostic of the
+a refutation: the gate's pass on the curated calibration KGs and its absence
+of transfer to the heterogeneous discovery KGs is itself diagnostic of the
 method's regime of applicability
 (Appendix~\ref{app:regime-detail}).  Per-component ablation details
 are in Appendix~\ref{app:ablation}.

@@ -208,7 +208,8 @@ MRR).  We report uncorrected $p$-values to permit downstream
 meta-analysis.  Under family-wise error control across the $20$
 Hits@10 tests, the Bonferroni-corrected threshold for $\alpha\,=\,0.05$
 becomes $0.0025$; under Benjamini--Hochberg FDR control at $q\,=\,0.05$
-the threshold at the smallest observed $p$ becomes ${\approx}\,0.025$.
+the threshold at the smallest observed $p$ becomes ${\approx}\,0.0025$
+($q\,\cdot\,1/m$ at rank~1).
 None of our reported $p$-values clear either threshold, consistent with
 the lack of significance reported in Section~\ref{sec:results}.
 
@@ -599,10 +600,7 @@ which random proposers cannot fill.  This is consistent with the
 Concept-and-Feasibility framing of the paper: the feasibility of
 LLM-as-proposer is demonstrated by valid-rate convergence
 (Section~\ref{sec:results}), not by the magnitude of any
-link-prediction advantage.  A title softened from ``LLM-guided'' to
-``LLM-augmented'' would more accurately reflect this attribution; we
-keep the original title to maintain consistency with the abstract and
-related-work positioning.
+link-prediction advantage.
 
 \section{Backtesting Detail}\label{app:backtesting}
 

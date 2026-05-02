@@ -201,6 +201,18 @@ negligible, $< 0.33$ as small, $< 0.474$ as medium, and $\geq 0.474$ as large
 We randomly swap labels between methods $10{,}000$ times to compute a Monte
 Carlo estimate of the $p$-value under the null hypothesis of no difference.
 
+\paragraph{Multiple-testing.}
+The main link-prediction comparison runs $5$ discovery domains
+$\times\,4$ KGE baselines $=20$ tests on Hits@10 (and another $20$ on
+MRR).  We report uncorrected $p$-values to permit downstream
+meta-analysis.  Under family-wise error control across the $20$
+Hits@10 tests, the Bonferroni-corrected threshold for $\alpha\,=\,0.05$
+becomes $0.0025$; under Benjamini--Hochberg FDR control at $q\,=\,0.05$
+the threshold at the smallest observed $p$ becomes ${\approx}\,0.0025$
+($q\,\cdot\,1/m$ at rank~1).
+None of our reported $p$-values clear either threshold, consistent with
+the lack of significance reported in Section~\ref{sec:results}.
+
 \section{Frequency Baseline Analysis}\label{app:freq}
 
 For a KG with edge-type frequency vector $\mathbf{p} = (p_1, \ldots, p_7)$, the
@@ -328,15 +340,30 @@ Value function
 
 \paragraph{Compute resources.}
 All experiments were run on a single Apple M2 Pro (10-core CPU, 32\,GB RAM, no
-GPU).  Main experiments use \texttt{gpt-oss:20b} via Ollama ($\sim$10~min per
-domain, 20~generations).  Factor decomposition baselines (LLM-only, No-QD) use
-\texttt{mlx-community/Qwen3.5-35B-A3B-4bit} via \texttt{mlx\_lm} at $\sim$46~tok/s,
-completing all three configurations across five domains in $\sim$2.5~hours.
-The total compute for the seven reported domains is under 2~CPU-hours for the
-main experiments; factor decomposition adds $\sim$2.5~CPU-hours.
+GPU).  Main experiments use \texttt{gpt-oss:20b} via Ollama; per-domain
+runtime aggregated over all 10 seeds is approximately $10$~minutes
+(20~generations, single-seed runs roughly $1$~minute each).  Factor
+decomposition baselines (LLM-only, No-QD) use
+\texttt{mlx-community/Qwen3.5-35B-A3B-4bit} via \texttt{mlx\_lm} at
+$\sim$46~tok/s, completing all three configurations across five domains
+in $\sim$2.5~hours.  The total compute for the seven reported domains is
+under $2$~CPU-hours for the main experiments (sum across all seeds and
+domains); factor decomposition adds $\sim$2.5~CPU-hours.
 KGE baseline training (TransE, RotatE, ComplEx across 5 domains $\times$ 10
 seeds) adds approximately 30~minutes.  Statistical tests (bootstrap CI,
 permutation tests) add $<$10~minutes.
+
+\paragraph{Compute-budget parity.}
+The Harmony pipeline consumes approximately one order of magnitude more
+compute per seed than the KGE baselines: $20$ generations $\times\,8$
+proposals/generation $\times\,O(\text{seconds})$ per scoring round
+versus a single $100$-epoch DistMult/TransE/RotatE/ComplEx training
+pass on the same edge set.  A reviewer assessing the link-prediction
+comparison should treat this as a budget-asymmetric comparison
+favouring Harmony; the paper's directional-but-non-significant results
+should be read against this caveat.  Equalising compute by allowing
+each KGE baseline a hyperparameter sweep over dimension and learning
+rate would be the natural next step.
 
 \section{Declaration of LLM Usage}\label{app:llm-decl}
 
@@ -555,6 +582,26 @@ Together, these results show that Harmony scoring and MAP-Elites diversity are
 the dominant drivers of proposal quality; the LLM proposer adds semantic
 structure that the random proposer cannot provide.
 
+\paragraph{Stagnation recovery is not isolated.}
+Our factor decomposition does not include an ablation that toggles
+stagnation-triggered constrained prompting on and off independent of
+other components.  Whether the stagnation-recovery mechanism
+contributes to the Full pipeline's gain is therefore not directly
+assessed here; we leave a stagnation-isolating ablation for future work.
+
+\paragraph{Identifiability of the LLM contribution.}
+On four of five domains, the random-proposer-with-MAP-Elites variant
+matches or exceeds the LLM-guided Full variant on raw Harmony gain.
+We interpret this as evidence that the LLM proposer's quantitative
+contribution to link prediction is not statistically identifiable in
+our experimental design.  Its identifiable contribution is qualitative:
+the proposal schema's claim, justification, and falsification fields,
+which random proposers cannot fill.  This is consistent with the
+Concept-and-Feasibility framing of the paper: the feasibility of
+LLM-as-proposer is demonstrated by valid-rate convergence
+(Section~\ref{sec:results}), not by the magnitude of any
+link-prediction advantage.
+
 \section{Backtesting Detail}\label{app:backtesting}
 
 Table~\ref{tab:backtest} reports backtesting results under two criteria against
@@ -563,6 +610,12 @@ the MLX batch run).  \emph{Exact match}: all three of source, target, and edge
 type must match a hidden triple.  \emph{Soft match}: at least one of
 (source,\,edge\_type) or (edge\_type,\,target) matches a hidden edge, testing
 whether proposals target structurally relevant neighbourhoods.
+Zero exact match admits two readings: (a) proposals are theory-level
+mutations rather than memorised triples (the framing we adopt), or (b)
+proposals are arbitrary and bear no relation to held-out structure.
+The soft-match column discriminates between these: non-zero soft match
+indicates the proposals \emph{do} target adjacent structure, supporting
+reading (a); zero soft match would have supported reading (b).
 
 \begin{table}[t]
 \centering

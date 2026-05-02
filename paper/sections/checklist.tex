@@ -8,7 +8,7 @@
 \item {\bf Claims}
     \item[] Question: Do the main claims made in the abstract and introduction accurately reflect the paper's contributions and scope?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The abstract and introduction state three contributions: (1)~the Harmony metric (Section~\ref{sec:method}), (2)~the island-model search loop (Section~\ref{sec:method}), and (3)~LLM-guided proposal generation (Section~\ref{sec:method}). Section~\ref{sec:results} validates each with quantitative results.
+    \item[] Justification: The abstract and introduction state three contributions: (1)~the Harmony metric (Section~\ref{sec:method}), (2)~the island-model search loop with MAP-Elites archive (Section~\ref{sec:method}), and (3)~LLM-guided proposal generation under a structured schema (Section~\ref{sec:method}). Section~\ref{sec:results} reports quantitative evidence (link-prediction directional gains on Wikidata Materials, valid-rate convergence, archive coverage), and Appendix~\ref{app:factor-detail} factor-decomposes the components, identifying the MAP-Elites archive as the dominant driver of structural gain and noting that the LLM proposer's quantitative contribution to link prediction is not statistically identifiable in our experimental design (its identifiable contribution is the qualitative proposal schema). Claim scope is hedged accordingly throughout.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer NA means that the abstract and introduction do not include the claims made in the paper.
@@ -20,7 +20,7 @@
 \item {\bf Limitations}
     \item[] Question: Does the paper discuss the limitations of the work performed by the authors?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Section~\ref{sec:discussion} contains a dedicated ``Limitations'' paragraph addressing concrete constraints including coarse relation vocabulary, metric-domain mismatch risk, evaluation circularity caveats, and lack of statistical significance on most domains despite multi-seed evaluation.
+    \item[] Justification: Section~\ref{sec:discussion} contains a dedicated ``Limitations'' paragraph addressing concrete constraints including coarse relation vocabulary, metric-domain mismatch risk, evaluation circularity caveats, lack of statistical significance on most domains despite multi-seed evaluation, KG-size scope (all seven evaluation domains $\leq 253$ entities, not addressing production-scale KGs), and LLM-as-judge evaluator-independence concerns (Gemini judging \texttt{gpt-oss:20b} proposals; see ``Evaluator independence'' paragraph in Section~\ref{sec:discussion}).
     \item[] Guidelines:
     \begin{itemize}
         \item The answer NA means that the paper has no limitation while the answer No means that the paper has limitations, but those are not discussed in the paper.

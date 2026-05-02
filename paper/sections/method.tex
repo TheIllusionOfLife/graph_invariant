@@ -39,6 +39,13 @@ Default weights are uniform over the four core components
 frequency component $\Freq(G)$ is the Hits@$K$ of the frequency heuristic
 (predicting the most common edge type between entity pairs) and is included
 only when $\varepsilon > 0$ for hybrid analysis (Appendix~\ref{app:freq}).
+We use a linear composition for interpretability: each axis's contribution
+to a Harmony score is identifiable.  Multiplicative compositions
+(geometric means) penalise low values disproportionately and would
+conflate sub-axis weakness with overall metric failure.  The equal-weight
+default reflects the absence of theoretical priors over the four
+desiderata; a calibration weight grid (Appendix~\ref{app:calibration-gate})
+explores this neighbourhood.
 
 \paragraph{Compressibility.}
 An MDL proxy combining edge-type entropy and spanning structure:
@@ -50,7 +57,11 @@ An MDL proxy combining edge-type entropy and spanning structure:
 \end{equation}
 where $H(\mathbf{p})$ is the Shannon entropy of the edge-type distribution
 and the spanning fraction counts BFS spanning-tree edges over an undirected
-view of~$G$.
+view of~$G$.\footnote{The denominator $\log_2 7$ matches the cardinality of
+the EdgeType enum (Section~\ref{sec:schema}); for extensibility, an
+implementation should use $\log_2|\text{EdgeType}|$.  This bounds
+$H(\mathbf{p})/\log_2 7 \in [0,1]$ for any KG drawn from the current
+vocabulary.}
 
 \paragraph{Coherence.}
 Path-semantic consistency via triangle type-agreement and contradiction rate:
@@ -60,6 +71,10 @@ Path-semantic consistency via triangle type-agreement and contradiction rate:
     + 1 - \frac{|\{e : r_e = \texttt{contradicts}\}|}{|E|}
   \right).
 \end{equation}
+Triangle agreement is satisfied when the closing edge $r_{ac}$ has
+\emph{exactly} one of the two path types $\{r_{ab}, r_{bc}\}$;
+neither inclusion in the union of all edge types nor consistency
+with a separate semantic compatibility table is required.
 
 \paragraph{Symmetry.}
 Intra-type behavioural consistency via Jensen--Shannon divergence.  For each
@@ -77,7 +92,10 @@ masked edges:
 \begin{equation}\label{eq:gener}
   \Gener(G) = \Hits@K\bigl(\text{DistMult}, G_{\text{mask}}\bigr),
 \end{equation}
-with $d{=}50$ embeddings, 100 training epochs, and $K{=}10$.
+with $d{=}50$ embeddings, 100 training epochs, and $K{=}10$
+(full DistMult hyperparameters, including margin, learning rate,
+negative sampling rate, and mask ratio, in
+Appendix~\ref{app:hyperparams}).
 
 \paragraph{Proposal value function.}
 Given a base graph $G$ and a proposed mutation $\Delta$ (new edges/entities),

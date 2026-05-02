@@ -5,9 +5,11 @@ Embedding-based methods---TransE \citep{bordes2013transe}, DistMult
 \citep{yang2015distmult}, RotatE \citep{sun2019rotate}, among others
 \citep{ji2021kgsurvey}---project entities and relations into low-dimensional
 vector spaces and produce ranked link predictions without theoretical
-justification.  Our work uses DistMult as the generativity \emph{component}
-within a broader metric, and additionally generates natural-language
-propositions explaining each mutation.
+justification.  Pretrained language model-based scorers such as KG-BERT
+\citep{yao2019kgbert} offer a contemporary alternative; we use DistMult
+as Harmony's generativity component for its lower compute cost and
+well-understood ranking behaviour, and additionally generate
+natural-language propositions explaining each mutation.
 
 \paragraph{Automated scientific discovery.}
 FunSearch \citep{romeraparedes2024funsearch} uses LLMs to discover mathematical
@@ -15,14 +17,19 @@ constructions by evolving Python programs.  PySR
 \citep{cranmer2023pysr} performs symbolic regression via genetic programming
 \citep{koza1992gp}, discovering closed-form expressions from numerical data.
 The survey by \citet{makke2024sr_survey} covers the broader symbolic regression
-landscape.  These systems discover \emph{formulas} over numerical features;
-Harmony discovers \emph{relational propositions} over typed knowledge graphs,
-a structurally different search space.
+landscape.  More recently, \citet{alphaproof2024} announce LLM + RL agents that
+discover formal mathematical proofs verified by Lean (non-archival
+DeepMind report).
+These systems discover \emph{formulas} or \emph{proofs}; Harmony discovers
+\emph{relational propositions} over typed knowledge graphs, with heuristic
+scoring rather than the formal verification used by AlphaProof.
 
 \paragraph{Quality-diversity search.}
 MAP-Elites \citep{mouret2015mapelites} maintains a grid of solutions indexed by
-behavioural descriptors.  We adopt MAP-Elites with a two-dimensional descriptor
-(simplicity, Harmony gain) combined with an island-model
+behavioural descriptors.  Adaptive variants such as CMA-ME
+\citep{fontaine2020cmame} improve sample efficiency over vanilla MAP-Elites;
+we adopt the simpler grid for interpretability of the (simplicity, gain)
+descriptor and combine it with an island-model
 \citep{whitley1997island} topology (Section~\ref{sec:search}).
 
 \paragraph{LLM-guided reasoning over KGs.}

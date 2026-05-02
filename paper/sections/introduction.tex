@@ -39,21 +39,24 @@ are scored by Harmony gain and archived in a MAP-Elites
 
 \paragraph{Contributions.}
 \begin{enumerate}[nosep]
-  \item A four-component \textbf{Harmony metric} for scoring KG quality that
-    is domain-agnostic, bounded in $[0,1]$, and decomposes into interpretable
+  \item A four-component \textbf{Harmony metric} that provides interpretable
+    selection pressure (compressibility, coherence, symmetry, generativity),
+    is bounded in $[0,1]$, and decomposes into independently computable
     sub-scores (Section~\ref{sec:metric}).
   \item A \textbf{proposal schema} that elevates KG mutations from bare triples
-    to falsifiable theory-level claims (Section~\ref{sec:proposals}).
-  \item An \textbf{island-model LLM search loop} with MAP-Elites archiving and
-    stagnation-triggered constrained prompting (Section~\ref{sec:search}).
-  \item Empirical evaluation on \textbf{seven KG domains} (five hand-curated:
-    linear algebra, periodic table, astronomy, physics, materials science; two
-    Wikidata-sourced: Wikidata Physics, Wikidata Materials).
-    Harmony-guided proposals show directional improvements over
-    DistMult-alone on three of five discovery domains (Materials, Wikidata
-    Physics, Wikidata Materials), none reaching statistical significance at
-    $\alpha = 0.05$ and with small effect sizes ($|\delta_C| \leq 0.12$);
-    the framework's contribution is the factor decomposition isolating the
-    MAP-Elites archive as the dominant driver of structural gain
-    (Section~\ref{sec:results}).
+    to falsifiable theory-level claims with claim, justification, and
+    falsification fields (Section~\ref{sec:proposals}).
+  \item An \textbf{island-model LLM search loop} with MAP-Elites quality-diversity
+    archiving and stagnation-triggered constrained prompting
+    (Section~\ref{sec:search}); factor decomposition identifies the
+    archive (grid + diversity bookkeeping combined) as the dominant driver of
+    structural gain in our experiments.
+  \item Evaluation on \textbf{seven KG domains} (five hand-curated, two
+    Wikidata-sourced) with 10-seed cross-validation: Harmony shows
+    directional but non-significant improvements over DistMult-alone on
+    three of five discovery domains
+    ($|\delta_C| \leq 0.12$, in the ``negligible'' range per
+    \citet{cliff1993dominance}).  The LLM proposer's identifiable
+    contribution is qualitative (semantic structure, falsifiability)
+    rather than quantitative (link-prediction gain) (Section~\ref{sec:results}).
 \end{enumerate}
